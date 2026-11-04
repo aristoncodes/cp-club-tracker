@@ -15,8 +15,8 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
   - An unrated user counts as 1200.
   - The Rp mapping is correct for each platform, including missing ratings.
 - **`contests.countsForAttendance`**
-  - True for Div. 2, Div. 3, Div. 4, Educational, Div. 1 + Div. 2, Global Round, a round with no "Div." in its name, and CodeChef Starters.
-  - False for Div. 1 only, Kotlin Heroes, April Fools, Testing Round, Q#, and CodeChef Cook-Off / Lunchtime.
+  - True for Div. 2, Div. 3, Div. 4, Educational, Div. 1 + Div. 2, and CodeChef Starters.
+  - False for Div. 1 only, Global Round, a round with no "Div." in its name, Kotlin Heroes, April Fools, Testing Round, Q#, and CodeChef Cook-Off / Lunchtime.
 - **`time.periodStart`**
   - At 2026-11-04 23:59 IST, "day" starts at 2026-11-04 00:00 IST.
   - At 00:01 IST it moves to the new day.

@@ -8,14 +8,15 @@ describe('countsForAttendance', () => {
     'Codeforces Round 1095 (Div. 4)',
     'Educational Codeforces Round 170 (Rated for Div. 2)',
     'Codeforces Round 1095 (Div. 1 + Div. 2)',
-    'Codeforces Global Round 28',
-    'Refact.ai Match 1 (Codeforces Round 985)',
   ])('counts cf: %s', (name) => {
     expect(countsForAttendance('cf', name)).toBe(true);
   });
 
   it.each([
     'Codeforces Round 1095 (Div. 1)',
+    'Codeforces Global Round 28',
+    'CodeTON Round 9',
+    'Refact.ai Match 1 (Codeforces Round 985)',
     'Kotlin Heroes: Episode 12',
     'April Fools Day Contest 2026',
     'Codeforces Testing Round 19 (Div. 3)',

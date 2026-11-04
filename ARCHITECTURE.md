@@ -163,7 +163,7 @@ Rp is the Codeforces-equivalent rating of the problem. The conversion is a const
 ## Contest rules (`shared/contests.ts`)
 
 - `countsForAttendance(platform, name)`:
-  - **cf:** true unless the name contains `Div. 1` but not `Div. 2`, or contains `Kotlin Heroes`, `April Fools`, `Testing Round` or `Q#`.
+  - **cf:** true if the name contains `Div. 2`, `Div. 3`, `Div. 4` or `Educational` (`Div. 1 + Div. 2` contains `Div. 2`), unless it also contains `Kotlin Heroes`, `April Fools`, `Testing Round` or `Q#`.
   - **cc:** true if the name starts with `Starters`.
 - **Parallel CF rounds:** in `sync-contests`, a CF Div. 1 round whose `start_at` equals that of a counted Div. 2 round is stored as that round's `alt_external_id`, not as its own row.
 - **Non-counted contests** are still stored, with `counts = 0`, so an admin can tick them on. `counts` is set only on insert, so re-syncing never overwrites an admin's choice.

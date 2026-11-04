@@ -31,7 +31,7 @@ The college competitive programming club (40–50 students across all years) has
 
 ### Contests that count
 
-- **Codeforces:** every contest except pure Div. 1 rounds and special rounds (Kotlin Heroes, April Fools, testing rounds, Q#). A pure Div. 1 round that runs in parallel with a counted Div. 2 round is merged into the Div. 2 entry, so a student in either one is present.
+- **Codeforces:** only Div. 2, Div. 3, Div. 4, Educational and Div. 1 + Div. 2 rounds. Everything else doesn't count, including Global Rounds, pure Div. 1 rounds and special rounds such as Kotlin Heroes, April Fools, testing rounds and Q#. A pure Div. 1 round that runs in parallel with a counted Div. 2 round is merged into the Div. 2 entry, so a student in either one is present.
 - **CodeChef:** Starters (all divisions are one entry).
 - Admins can untick any contest so it doesn't count (e.g. during exams).
 
