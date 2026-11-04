@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { adminRoutes } from './admin';
 import { authRoutes, type AppEnv } from './auth';
+import { ingestRoutes } from './ingest';
 import { studentRoutes } from './routes';
 
 const app = new Hono<AppEnv>().basePath('/api');
@@ -22,6 +23,7 @@ app.get('/health', async (c) => {
 });
 
 app.route('/auth', authRoutes);
+app.route('/ingest', ingestRoutes);
 app.route('/admin', adminRoutes);
 app.route('/', studentRoutes);
 
