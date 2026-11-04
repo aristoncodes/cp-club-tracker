@@ -1,0 +1,68 @@
+# TESTING — CP Club Tracker
+
+Test logic that is pure and easy to get wrong. Verify the rest by running it. No end-to-end framework, no UI snapshot tests, no mocks of D1: use a real local D1 through `wrangler dev`.
+
+## Automated (Vitest)
+
+Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
+
+### shared
+
+- **`scoring`**
+  - User 1200 solving CF 800 → 3.2, 1200 → 14.4, 1400 → 29.4.
+  - The multiplier is clamped at 0.5 and 2.
+  - A live solve gives × 1.5.
+  - An unrated user counts as 1200.
+  - The Rp mapping is correct for each platform, including missing ratings.
+- **`contests.countsForAttendance`**
+  - True for Div. 2, Div. 3, Div. 4, Educational, Div. 1 + Div. 2, Global Round, a round with no "Div." in its name, and CodeChef Starters.
+  - False for Div. 1 only, Kotlin Heroes, April Fools, Testing Round, Q#, and CodeChef Cook-Off / Lunchtime.
+- **`time.periodStart`**
+  - At 2026-11-04 23:59 IST, "day" starts at 2026-11-04 00:00 IST.
+  - At 00:01 IST it moves to the new day.
+  - "week" starts on Monday even when now is a Sunday at 23:59 IST.
+  - "month" works across month ends.
+
+### jobs
+
+- Every adapter's `parse*` runs against a saved real response in `jobs/fixtures/`. It keeps only accepted verdicts and extracts problem id, rating, tags and time correctly.
+- When a site changes, update the fixture and the parser together.
+- `sync-contests` merges a parallel Div. 1 round into its Div. 2 round (fixture with two contests sharing a start time).
+- `snapshots` diff: given old and new solved lists, only the new problems are returned.
+
+### api
+
+- **Cron decision functions** (pure helpers in `cron.ts`): given `now` and a contest row, they return reminder / rsvp / verify / nothing at the right boundaries (T−3600, T−300, end+900). A contest first seen inside T−5 returns rsvp, not reminder. They do nothing for `counts = 0`.
+- **Standings marking:** `CONTESTANT` and `OUT_OF_COMPETITION` → present; `VIRTUAL`, `PRACTICE` and missing → absent. An earlier RSVP "no" reason is kept.
+
+## Manual checks per task
+
+Set up local data first:
+
+```bash
+pnpm --filter api db:local
+wrangler d1 execute cp-tracker --local --file api/seed.dev.sql
+pnpm --filter api dev    # includes --test-scheduled
+curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
+```
+
+`seed.dev.sql` inserts 3 users (1 admin), approved handles (including one real active CF handle), a contest starting in 6 minutes, and a finished real CF contest id.
+
+| Task | Check |
+|---|---|
+| Auth | Sign in on web and app; an admin email sees `/admin`, a student gets 403 on `/api/admin/*` |
+| Ingest | A call without `X-Ingest-Secret` gets 401; posting the same solve twice leaves one row; a solve dated before the handle's `approved_at` adds no row |
+| Reminder / RSVP | Trigger the cron at T−60 and T−5; exactly one push each arrives on your device; triggering again sends nothing (stage advanced) |
+| RSVP from notification | With the app killed, tap Yes → row has `rsvp = 'yes'`. No + text → reason stored, no "why" push later |
+| Verify (CF) | Set the finished contest's `end_at` to 16 minutes ago and trigger the cron; statuses match the real standings and pushes arrive |
+| Verify (CC) | Trigger `cc-participation` with `workflow_dispatch` on a past Starters; statuses update |
+| Solves | Submit an AC on Codeforces with a test handle; within 10 min of cron runs it's in `solves` with the expected points |
+| Leaderboard | Today / Week / Month totals match a hand-written `SELECT SUM(points)` with the same boundaries |
+| Admin grid | Grid and CSV agree with the `attendance` table for the range |
+| CPU | `wrangler tail` during cron runs shows no `exceededCpu` outcome |
+
+## Before onboarding the club
+
+- [ ] Run one full real contest cycle (reminder → RSVP → verify) with 3 test students.
+- [ ] Check that the APK installs on a clean Android phone and still receives pushes after a reboot.
+- [ ] Check that the website works at 375 px width and in light and dark mode.
