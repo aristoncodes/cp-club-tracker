@@ -1,7 +1,7 @@
 import type { Platform } from './types';
 
 const DEFAULT_RATING = 1200;
-const LEETCODE_RP: Record<string, number> = { Easy: 900, Medium: 1300, Hard: 1700 };
+const LEETCODE_RP: Record<string, number> = { Easy: 1000, Medium: 1300, Hard: 1600 };
 
 export function problemRp(platform: Platform, difficulty: number | string | null): number {
   if (platform === 'leetcode') return LEETCODE_RP[String(difficulty)] ?? DEFAULT_RATING;

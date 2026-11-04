@@ -40,9 +40,9 @@ describe('problemRp', () => {
   });
 
   it('maps leetcode difficulty names, or 1200 if missing', () => {
-    expect(problemRp('leetcode', 'Easy')).toBe(900);
+    expect(problemRp('leetcode', 'Easy')).toBe(1000);
     expect(problemRp('leetcode', 'Medium')).toBe(1300);
-    expect(problemRp('leetcode', 'Hard')).toBe(1700);
+    expect(problemRp('leetcode', 'Hard')).toBe(1600);
     expect(problemRp('leetcode', null)).toBe(1200);
   });
 });

@@ -154,7 +154,7 @@ Rp is the Codeforces-equivalent rating of the problem. The conversion is a const
 | cf | problem rating; unrated → 1200 |
 | cc | difficulty − 200; missing → 1200 |
 | atcoder | estimated difficulty + 400, floored at 800; missing → 1200 |
-| leetcode | Easy 900, Medium 1300, Hard 1700 |
+| leetcode | Easy 1000, Medium 1300, Hard 1600 |
 
 ## Contest rules (`shared/contests.ts`)
 
