@@ -2,7 +2,14 @@
 
 Last updated: 2026-11-04. `IMPLEMENTATION_PLAN.md` has the full detail of each task, and `SETUP.md` has the steps to go live.
 
-**Overall:** the code is written for 20 of 21 tasks. Task 17 (ship) needs your accounts. 9 tasks are fully checked; the other 11 still need real accounts, a phone or a real contest.
+**Overall:** the code is written for 20 of 21 tasks, and task 17 (ship) is under way. The API, website, database and contest sync are live. 9 tasks are fully checked; the other 11 still need a phone or a real contest.
+
+**Live:**
+- Website: https://cp-club-web.aristoncodes247.workers.dev
+- API: https://cp-tracker-api.aristoncodes247.workers.dev
+- Code: https://github.com/aristoncodes/cp-club-tracker
+
+**Still needed to finish task 17:** Firebase file and key, GitHub token on the Worker, Android build.
 
 ## Code written
 
