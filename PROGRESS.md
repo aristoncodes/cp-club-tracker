@@ -8,12 +8,12 @@ Last updated: 2026-11-04. `IMPLEMENTATION_PLAN.md` has the full detail of each t
 
 | Area | Code lines | Test lines | Status |
 |---|---|---|---|
-| `shared/` | 164 | 205 | Done, 40 tests passing |
+| `shared/` | 165 | 206 | Done, 41 tests passing |
 | `api/` | 1,028 | 141 | Done, 15 tests passing |
 | `jobs/` | 429 | 203 | Done, 28 tests passing |
 | `web/` | 1,134 | 0 | Done, clicked through in real Chrome |
 | `app/` | 1,063 | 0 | Done; typechecks and bundles, never run on a device |
-| **Total** | **3,818** | **549** | |
+| **Total** | **3,819** | **550** | |
 
 Lines of TypeScript only. Config files, SQL, fixtures and docs aren't counted.
 
