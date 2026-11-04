@@ -1,0 +1,14 @@
+name = "cp-tracker-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+WEB_ORIGIN = "http://localhost:5173"
+
+[triggers]
+crons = ["* * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cp-tracker"
+database_id = "00000000-0000-0000-0000-000000000000"

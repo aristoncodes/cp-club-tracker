@@ -40,7 +40,7 @@ Set up local data first:
 
 ```bash
 pnpm --filter api db:local
-wrangler d1 execute cp-tracker --local --file api/seed.dev.sql
+pnpm --filter api db:seed
 pnpm --filter api dev    # includes --test-scheduled
 curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
 ```

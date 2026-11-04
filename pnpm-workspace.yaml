@@ -4,3 +4,7 @@ packages:
   - web
   - app
   - jobs
+
+allowBuilds:
+  esbuild: true
+  workerd: true

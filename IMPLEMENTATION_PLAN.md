@@ -17,7 +17,7 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
    - Done when: `pnpm -r typecheck` passes on empty packages.
 2. [x] **`shared/`.** `time.ts`, `scoring.ts`, `contests.ts`, `rating-color.ts`, `types.ts`, with unit tests.
    - Done when: the tests in `TESTING.md → shared` pass.
-3. [ ] **Schema + Worker shell.** `schema.sql`, `wrangler.toml` (D1 binding, cron `* * * * *`), Hono app, CORS, error handler.
+3. [x] **Schema + Worker shell.** `schema.sql`, `wrangler.toml` (D1 binding, cron `* * * * *`), Hono app, CORS, error handler.
    - Done when: `GET /api/health` returns `{ ok: true }` locally with the schema applied.
 4. [ ] **Auth.** `/auth/google`, session JWT, `requireUser` / `requireAdmin`, `ADMIN_EMAILS` bootstrap.
    - Done when: a real Google ID token signs in, and an admin email gets `role: 'admin'`.

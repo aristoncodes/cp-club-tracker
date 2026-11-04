@@ -3,6 +3,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "tsc -p ."
+    "typecheck": "wrangler types && tsc -p .",
+    "db:local": "rm -rf .wrangler/state && wrangler d1 execute cp-tracker --local --file schema.sql",
+    "db:seed": "wrangler d1 execute cp-tracker --local --file seed.dev.sql",
+    "dev": "wrangler dev --test-scheduled",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.13.16",
+    "jose": "^6.2.15",
+    "shared": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^5.1.0",
+    "wrangler": "^4.157.0"
   }
 }
