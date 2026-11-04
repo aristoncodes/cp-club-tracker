@@ -1,64 +1,51 @@
 # Progress — CP Club Tracker
 
-Last updated: 2026-11-04, after task 10. `IMPLEMENTATION_PLAN.md` has the full detail of each task.
+Last updated: 2026-11-04. `IMPLEMENTATION_PLAN.md` has the full detail of each task, and `SETUP.md` has the steps to go live.
 
-**Overall:** 10 of 21 tasks built. 7 are fully checked; tasks 4, 9 and 10 still need your Google client ID and an Android phone. Version 1 is tasks 1–17.
+**Overall:** the code is written for 20 of 21 tasks. Task 17 (ship) needs your accounts. 9 tasks are fully checked; the other 11 still need real accounts, a phone or a real contest.
 
 ## Code written
 
 | Area | Code lines | Test lines | Status |
 |---|---|---|---|
-| `shared/` | 77 | 112 | Done, 26 tests passing |
-| `api/` | 682 | 51 | Tasks 3–9 built, 8 tests passing; tasks 11–13, 15 and 16 still add to it |
-| `jobs/` | 111 | 54 | Contest sync built, 7 tests passing; solve sync not started |
-| `app/` | 626 | 0 | Login, onboarding, home and reason built; not yet run on a device |
-| `web/` | 0 | 0 | Not started |
-| **Total** | **1,496** | **217** | |
+| `shared/` | 164 | 205 | Done, 40 tests passing |
+| `api/` | 1,028 | 141 | Done, 15 tests passing |
+| `jobs/` | 429 | 203 | Done, 28 tests passing |
+| `web/` | 1,134 | 0 | Done, clicked through in real Chrome |
+| `app/` | 1,063 | 0 | Done; typechecks and bundles, never run on a device |
+| **Total** | **3,818** | **549** | |
 
 Lines of TypeScript only. Config files, SQL, fixtures and docs aren't counted.
 
-## Done and checked
+## Fully checked
 
 - [x] 1. Repo skeleton
-- [x] 2. `shared/`: time, scoring, contest rules, rating colours, types
+- [x] 2. `shared/`
 - [x] 3. Schema and Worker shell
 - [x] 5. Profile and handles
 - [x] 6. Ingest
-- [x] 7. Contest sync job (the GitHub workflow itself hasn't run yet; there's no repo on GitHub)
+- [x] 7. Contest sync job, with real Codeforces and CodeChef data
 - [x] 8. RSVP and reason endpoints, push sender
+- [x] 13. Codeforces solves and ratings, with real Codeforces data
+- [x] 16. Website and admin pages, in real Chrome at phone and desktop widths, light and dark (everything except a real Google sign-in)
 
-## Built, waiting for your check
+## Written, waiting on a real-world check
 
-- [ ] 4. Auth: rejected tokens and role guards work; a real Google sign-in hasn't been tried
-- [ ] 9. Cron steps 1–2: stages and messages work with fake tokens; no push has reached a phone
-- [ ] 10. App: typechecks and bundles for Android; never run on a device
+| Task | What already works | What's left to check |
+|---|---|---|
+| 4. Auth | Bad tokens rejected, role guards, sign-in SQL | A real Google sign-in |
+| 9. Cron steps 1–2 | Stages and messages, with fake tokens | A push reaching a phone |
+| 10. App: login, onboarding, home | Typecheck and Android bundle | Running on a phone; RSVP buttons with the app killed |
+| 11. Codeforces verification | The job marks attendance correctly from real Codeforces data | The Worker starting it on GitHub Actions |
+| 12. CodeChef participation | Tested on saved real data | A Starters that just ended, where CodeChef shows relative times |
+| 14. CodeChef and LeetCode solves | Parsers on saved real data; the sync ran with real Codeforces and LeetCode | Real recent CodeChef and LeetCode solves |
+| 15. Leaderboard, profile | Endpoint and website | The app screens on a phone |
+| 18. AtCoder | Parser on saved real data | A real recent AtCoder solve |
+| 19. Feed | Endpoint and website | The app screen on a phone |
+| 20. Streaks, heatmap, top tags | Endpoint and website | The app screen on a phone |
+| 21. Web push | Sent through Google's real push service and shown in Chrome | A real iPhone |
 
 ## Left
 
-### Phase 0: setup (yours)
-
-Unticked in the plan. Some of it may already be done outside this repo.
-
-- [ ] Cloudflare account and D1 database
-- [ ] Google OAuth client IDs for web and Android
-- [ ] Expo account and `eas init`
-- [ ] Firebase project and FCM credentials
-- [ ] Public GitHub repo and Actions token
-- [ ] `SESSION_SECRET` and `INGEST_SECRET`
-
-### Phase 2: verification, leaderboard, website
-
-- [ ] 11. Codeforces verification and result pushes
-- [ ] 12. CodeChef participation
-- [ ] 13. Codeforces solves and ratings
-- [ ] 14. CodeChef and LeetCode solves, Codeforces backstop
-- [ ] 15. Leaderboard and basic profile
-- [ ] 16. Website and admin pages
-- [ ] 17. Ship
-
-### Phase 3: week 2
-
-- [ ] 18. AtCoder adapter
-- [ ] 19. Feed
-- [ ] 20. Streaks, heatmap, top tags
-- [ ] 21. Web push for iPhone users
+- [ ] 17. Ship: follow `SETUP.md`
+- [ ] Run the checks in `SETUP.md` part 10

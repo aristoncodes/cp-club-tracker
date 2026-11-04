@@ -22,6 +22,8 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
   - At 00:01 IST it moves to the new day.
   - "week" starts on Monday even when now is a Sunday at 23:59 IST.
   - "month" works across month ends.
+- **`time` helpers:** `istDay` changes at IST midnight; `solveStreak` still counts when today has no solve yet and breaks on a missed day; `heatmapWeeks` gives 26 weeks ending in the current week.
+- **`cf`:** keeps only accepted submissions; `CONTESTANT` and `OUT_OF_COMPETITION` are live; reads a missing handle from either Codeforces error.
 
 ### jobs
 
@@ -31,6 +33,8 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 
 ### api
 
+- **Web push:** a message from `encryptPayload` decrypts correctly with an independent implementation.
+- **Leaderboard ranks:** equal points share a rank.
 - **Cron decision functions** (pure helpers in `cron.ts`): given `now` and a contest row, they return reminder / rsvp / verify / nothing at the right boundaries (T−3600, T−300, end+900). A contest first seen inside T−5 returns rsvp, not reminder. They do nothing for `counts = 0`.
 - **Live participation** (`jobs`): `CONTESTANT` and `OUT_OF_COMPETITION` → present; `VIRTUAL`, `PRACTICE` and no submissions → absent. On CodeChef, only submissions to that contest or its divisions, inside the contest window, count.
 

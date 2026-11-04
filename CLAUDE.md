@@ -46,7 +46,7 @@ pnpm -r typecheck
 pnpm -r test
 pnpm --filter api db:local      # apply schema.sql to local D1
 pnpm --filter api dev           # wrangler dev with local D1 (+ --test-scheduled)
-pnpm --filter api deploy
+pnpm --filter api exec wrangler deploy
 pnpm --filter web dev
 pnpm --filter app start         # Expo dev server
 pnpm --filter jobs sync-contests | sync-solves | participation

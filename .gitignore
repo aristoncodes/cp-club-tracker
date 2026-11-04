@@ -5,3 +5,4 @@ dist/
 .wrangler/
 .expo/
 worker-configuration.d.ts
+.env.*

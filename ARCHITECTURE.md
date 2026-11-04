@@ -25,8 +25,8 @@ Everything runs on free tiers. Cloudflare Workers Free gives 100k requests/day, 
 |---|---|
 | root | `typescript` (dev) |
 | `shared` | `vitest` (dev) |
-| `api` | `hono`, `jose`, `wrangler` (dev), `vitest` (dev) |
-| `web` | `react`, `react-dom`, `react-router-dom`, `vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/vite`, `@react-oauth/google` |
+| `api` | `hono`, `jose`, `wrangler` (dev), `vitest` (dev), `@types/node` (dev) |
+| `web` | `react`, `react-dom`, `react-router-dom`, `vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/vite`, `@react-oauth/google`, `@types/react` (dev), `@types/react-dom` (dev) |
 | `app` | `react`, `react-native`, `expo`, `expo-router`, `expo-notifications`, `expo-task-manager`, `expo-device`, `expo-auth-session`, `expo-secure-store`, `expo-updates`, `expo-font`, `expo-constants`, `expo-linking`, `react-native-screens`, `react-native-safe-area-context`, `@expo/metro-runtime`, `@expo/log-box`, `@expo-google-fonts/inter`, `@expo-google-fonts/jetbrains-mono`, `@types/react` (dev) |
 | `jobs` | `cheerio`, `tsx`, `@types/node` (dev), `vitest` (dev) |
 
@@ -47,11 +47,13 @@ api/     schema.sql  wrangler.toml  seed.dev.sql
          src/cron.ts       per-minute dispatcher
          src/records.ts    writing solves and contest results, used by cron and ingest
          src/cf.ts         Codeforces API client (user.status, user.info)
-         src/push.ts       Expo push sender
-web/     src/main.tsx  src/api.ts  src/pages/*.tsx  index.css  tailwind.config.ts
+         src/push.ts       push sender for Expo and web
+         src/web-push.ts   RFC 8291 encryption and VAPID for web push
+web/     src/main.tsx  src/api.ts  src/ui.tsx  src/pages/*.tsx  src/index.css  vite.config.ts
+         public/sw.js  public/manifest.webmanifest  public/icon-*.png
 app/     index.ts (registers the background task before any screen)
-         app/(tabs)/*.tsx  app/reason.tsx  app/onboarding.tsx  app/login.tsx  app/+native-intent.ts
-         lib/api.ts  lib/push.ts  lib/ui.tsx  theme.ts
+         app/(tabs)/*.tsx  app/user/[id].tsx  app/reason.tsx  app/onboarding.tsx  app/login.tsx  app/+native-intent.ts
+         lib/api.ts  lib/push.ts  lib/ui.tsx  lib/profile-view.tsx  theme.ts
 jobs/    lib.ts (fetch with UA + delay, ingest poster)
          adapters/{cf,cc,atcoder,leetcode}.ts
          sync-contests.ts  sync-solves.ts  participation.ts
@@ -192,8 +194,8 @@ The contest steps make no Codeforces calls. Other Codeforces calls in a run are 
 - absent with no `reason_type` → "You missed X. Why?" with data `{ contestId, screen: 'reason' }`.
 
 **Push sending (`push.ts`):**
-- Batch up to 100 messages per request to `https://exp.host/--/api/v2/push/send`.
-- Delete tokens that come back as `DeviceNotRegistered`.
+- **Expo:** batch up to 100 messages per request to `https://exp.host/--/api/v2/push/send`. Delete tokens that come back as `DeviceNotRegistered`.
+- **Web:** `push_tokens.token` holds the browser's subscription as JSON. Send one encrypted request per subscription. Delete subscriptions that return 404 or 410. A tap opens `url` if the push has one, otherwise `/me`, where iPhone users answer RSVPs and give reasons.
 
 ## API (`/api/*`, JSON)
 
@@ -210,8 +212,8 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | POST | /contests/:id/rsvp | student | `{ going: boolean, reasonType?, reasonText? }`; a reason is required when `going` is false. Accepted until the contest reaches `stage = 4`, then 409 |
 | POST | /contests/:id/reason | student | `{ reasonType, reasonText? }`. Only allowed when my status is `absent` |
 | GET | /leaderboard?period=day\|week\|month | student | `[{ rank, userId, name, batchYear, cfHandle, cfRating, points, solves, hardest }]`. `hardest` is the highest `solves.rp` in the period. Only users with a solve in the period; equal points share a rank |
-| GET | /feed?before= | student | Week 2. 30 latest solves with problem info |
-| GET | /users/:id | student | Profile, period stats, streak, top tags, heatmap counts (week 2) |
+| GET | /feed?before= | student | 30 latest solves with problem info |
+| GET | /users/:id | student | Profile, period stats, streak, top tags, heatmap counts. No attendance data |
 | GET | /admin/attendance?from&to&platform&batch | admin | `{ contests, students, cells }`; the web builds the CSV |
 | PATCH | /admin/contests/:id | admin | `{ counts }` |
 | GET | /admin/students | admin | Students + handles + approval state |
@@ -244,7 +246,8 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 - **LeetCode:** unofficial GraphQL `recentAcSubmissionList` (about the last 20) plus `question` difficulty. Solves are never live.
 
 **GitHub secrets:** `API_URL`, `INGEST_SECRET`.
-**Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`.
+**Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`.
+**Worker var:** `WEB_ORIGIN` in `wrangler.toml`, used for CORS and as the VAPID subject.
 
 ## App notifications (`app/lib/push.ts`)
 

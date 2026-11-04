@@ -40,7 +40,7 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
     - Done when: a new AC appears in `solves` with correct points.
 14. [ ] **CodeChef and LeetCode solves and the Codeforces backstop** in `sync-solves.ts` + workflow.
 15. [ ] **Leaderboard endpoint + app Leaderboard tab + Profile (basic).**
-16. [ ] **Website.** Login, leaderboard, profile, `/me`, `/download`; admin pages Attendance (grid + CSV), Students & handles, Admins, Flags.
+16. [x] **Website.** Login, leaderboard, profile, `/me`, `/download`; admin pages Attendance (grid + CSV), Students & handles, Admins, Flags.
 17. [ ] **Ship.**
     - Deploy the Worker and set its secrets.
     - Deploy Pages.
