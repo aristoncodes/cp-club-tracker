@@ -54,7 +54,7 @@ curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
 | Task | Check |
 |---|---|
 | Auth | Sign in on web and app; an admin email sees `/admin`, a student gets 403 on `/api/admin/*` |
-| Ingest | A call without `X-Ingest-Secret` gets 401; posting the same solve twice leaves one row; a solve dated before the handle's `approved_at` adds no row |
+| Ingest | A call without `X-Ingest-Secret` gets 401; posting the same solve twice leaves one row; a solve dated before the handle's `approved_at` is stored with 0 points and appears on the profile but not on the leaderboard or feed |
 | Reminder / RSVP | Trigger the cron at T−60 and T−5; exactly one push each arrives on your device; triggering again sends nothing (stage advanced) |
 | RSVP from notification | With the app killed, tap Yes → row has `rsvp = 'yes'`. No + text → reason stored, no "why" push later |
 | Verify (CF) | Run `participation` on a finished contest with one handle that took part and one that didn't; statuses match, an earlier RSVP reason is kept and pushes arrive |

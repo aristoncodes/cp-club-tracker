@@ -67,7 +67,7 @@ The college competitive programming club (40–50 students across all years) has
 
 ## Feature 2 — Leaderboard
 
-- Counts every first accepted submission per problem on Codeforces, CodeChef, AtCoder and LeetCode, made after that handle was approved. Version 1 covers Codeforces, CodeChef and LeetCode; AtCoder comes in week 2. LeetCode contests don't count for attendance.
+- Counts every first accepted submission per problem on Codeforces, CodeChef, AtCoder and LeetCode, made after that handle was approved. Solves from before approval show on the profile as history and earn no points. Version 1 covers Codeforces, CodeChef and LeetCode; AtCoder comes in week 2. LeetCode contests don't count for attendance.
 - Each solve earns points (formula in `ARCHITECTURE.md → Scoring`). Harder problems are worth much more, and problems above your own rating get a bonus.
 - Tabs: **Today**, **This week** (Monday to Sunday, IST), **This month**. Each row shows rank, name, year (1st, 2nd, 3rd or 4th), points, number of solves, and the hardest problem solved in the period, by Codeforces-equivalent rating. Only students with at least one solve in the period are listed. Equal points share a rank.
 - **Feed (week 2):** latest solves across the club, e.g. "Aman solved 1700 · dp, greedy · 12 min ago".

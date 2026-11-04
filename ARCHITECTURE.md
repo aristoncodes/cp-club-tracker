@@ -56,7 +56,7 @@ app/     index.ts (registers the background task before any screen)
          lib/api.ts  lib/push.ts  lib/ui.tsx  lib/profile-view.tsx  theme.ts
 jobs/    lib.ts (fetch with UA + delay, ingest poster)
          adapters/{cf,cc,atcoder,leetcode}.ts
-         sync-contests.ts  sync-solves.ts  participation.ts
+         sync-contests.ts  sync-solves.ts  backfill.ts  participation.ts
          fixtures/  (saved responses for tests)
 ```
 
@@ -139,7 +139,7 @@ CREATE INDEX solves_by_time ON solves (solved_at);
 ```
 
 - `INSERT OR IGNORE` into `solves` guarantees that only the first accepted submission counts.
-- Submissions with `solved_at` before the handle's `approved_at` are dropped, on every path into `solves`. A re-solve of a problem first solved before approval still scores.
+- Submissions with `solved_at` before the handle's `approved_at` are stored with `points = 0`, on every path into `solves`. They count as history for profiles (activity, streak, top tags) and never for the leaderboard, feed, challenge or flags, which all filter on `points > 0`. A re-solve of a problem already in history doesn't score, because only the first accepted submission counts.
 - Points are computed once at insert, using the student's rating at that moment, and never recomputed.
 
 ## Scoring (`shared/scoring.ts`)
@@ -186,7 +186,7 @@ The contest steps make no Codeforces calls. Other Codeforces calls in a run are 
 
    If the window was missed, still create the rows and skip to verify.
 3. **Verify**, for counted contests with `stage < 3` and `now ≥ end_at + 900`: POST to GitHub `actions/workflows/participation.yml/dispatches` with inputs `platform`, `contest`, `alt`, `start` and `end`, and set `stage = 3`. The Action posts to `/ingest/participation`, which marks attendance (handles it lists as present → `present`, everyone else → `absent`), keeps any RSVP reason, sends result pushes (below) and sets `stage = 4`. A contest still at `stage = 3` is dispatched again every hour, up to 24 hours after `end_at + 900`. Codeforces no longer allows filtered `contest.standings` calls, and one call per student doesn't fit the Worker's 50 subrequests, so this runs in `jobs/`.
-4. **Every 10th minute:** refresh Codeforces solves for the 4 students with the oldest `handles.synced_at` for `cf`. Use `user.status?handle=…&from=1&count=50`, 2 s apart, keep `verdict = 'OK'`, upsert `problems`, and insert solves with `live = participantType is CONTESTANT or OUT_OF_COMPETITION`.
+4. **Codeforces solves.** Every minute, handles approved but not yet fetched (`synced_at` is NULL) are a queue: up to 4 are fetched, rating first. **Every 10th minute:** refresh Codeforces solves for the 4 students with the oldest `handles.synced_at` for `cf`. Use `user.status?handle=…&from=1&count=50`, 2 s apart, keep `verdict = 'OK'`, upsert `problems`, and insert solves with `live = participantType is CONTESTANT or OUT_OF_COMPETITION`.
 5. **Daily at 18:30 UTC (00:00 IST):** refresh `cf_rating` for all students with one `user.info?handles=…` call.
 
 **Result pushes:**
@@ -218,7 +218,7 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | GET | /admin/attendance?from&to&platform&batch | admin | `{ contests, students, cells }`; the web builds the CSV |
 | PATCH | /admin/contests/:id | admin | `{ counts }` |
 | GET | /admin/students | admin | Students + handles + approval state |
-| PATCH | /admin/handles/:userId/:platform | admin | `{ approved }`. `true` sets `approved_at` to now if unset; `false` clears it |
+| PATCH | /admin/handles/:userId/:platform | admin | `{ approved }`. `true` sets `approved_at` to now if unset; `false` clears it. Approving fetches straight away: Codeforces recent solves and rating in the Worker, then `backfill.yml` for 6 months of history on any platform. A failed Codeforces fetch stays queued for the next minute |
 | PATCH | /admin/users/:id | admin | `{ role?, active? }` |
 | POST | /admin/admins | admin | `{ email }`. Promotes the user, or inserts a `users` row with `role = 'admin'` and an empty name, filled in at first sign-in |
 | GET | /admin/flags | admin | Users with > 30 solves in one IST day in the last 30 days, and handles with `broken = 1` |
@@ -238,6 +238,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 |---|---|---|
 | `sync-contests.ts` | `0 */6 * * *` | CF `contest.list?gym=false` (future contests only) + CodeChef upcoming contests → apply `countsForAttendance` and parallel-round merge → `/ingest/contests` |
 | `sync-solves.ts` | `*/30 * * * *` | cc, atcoder, leetcode (and cf as a backstop) accepted submissions from the last 48 hours for approved handles → `/ingest/solves`, one post per handle |
+| `backfill.ts` | `workflow_dispatch` (inputs `platform`, `handle`) | On approval: up to 6 months of accepted submissions → `/ingest/solves`, 50 at a time. Codeforces and AtCoder give full history; CodeChef gives about the last page and LeetCode the last 20 |
 | `participation.ts` | `workflow_dispatch` (inputs `platform`, `contest`, `alt`, `start`, `end`) | **cf:** `contest.status?contestId=…&handle=…` for each handle, and for `alt`; any submission with participantType `CONTESTANT` or `OUT_OF_COMPETITION` → present. A handle Codeforces says doesn't exist is reported in `brokenHandles`. **cc:** each handle's recent submissions; any submission linked to the contest or one of its divisions (`START263`, `START263A`…) with a time inside the contest → present. Any other failure stops the run without posting, so nobody is wrongly marked absent → `/ingest/participation` |
 
 **Platform notes:**

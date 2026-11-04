@@ -1,0 +1,27 @@
+name: backfill
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        required: true
+      handle:
+        required: true
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile --filter jobs...
+      - run: pnpm --filter jobs backfill
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          PLATFORM: ${{ inputs.platform }}
+          HANDLE: ${{ inputs.handle }}

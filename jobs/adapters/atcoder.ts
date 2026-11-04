@@ -1,5 +1,5 @@
 import type { IngestSolve } from 'shared/types';
-import { politeFetch, RECENT_SECONDS } from '../lib';
+import { politeFetch } from '../lib';
 
 const BASE = 'https://kenkoooo.com/atcoder';
 const MAX_LIVE_CONTEST_SECONDS = 86400;
@@ -48,9 +48,9 @@ export function parseSubmissions(handle: string, raw: Submission[], { models, co
     });
 }
 
-export async function fetchSolves(handle: string, now: number, resources: Resources): Promise<IngestSolve[]> {
+export async function fetchSolves(handle: string, since: number, resources: Resources): Promise<IngestSolve[]> {
   const raw = await fetchJson<Submission[]>(
-    `${BASE}/atcoder-api/v3/user/submissions?user=${encodeURIComponent(handle)}&from_second=${now - RECENT_SECONDS}`,
+    `${BASE}/atcoder-api/v3/user/submissions?user=${encodeURIComponent(handle)}&from_second=${since}`,
   );
   return parseSubmissions(handle, raw, resources);
 }

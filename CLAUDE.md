@@ -49,7 +49,7 @@ pnpm --filter api dev           # wrangler dev with local D1 (+ --test-scheduled
 pnpm --filter api exec wrangler deploy
 pnpm --filter web dev
 pnpm --filter app start         # Expo dev server
-pnpm --filter jobs sync-contests | sync-solves | participation
+pnpm --filter jobs sync-contests | sync-solves | backfill | participation
 ```
 
 ## Repo layout

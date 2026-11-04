@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { IST_OFFSET, istDay } from 'shared/time';
 import { requireAdmin, requireUser, type AppEnv } from './auth';
+import { syncNewlyApproved } from './cron';
 
 const FLAG_SOLVES_PER_DAY = 30;
 const FLAG_WINDOW_SECONDS = 30 * 86400;
@@ -14,12 +15,17 @@ adminRoutes.patch('/handles/:userId/:platform', async (c) => {
   if (typeof approved !== 'boolean') return c.json({ error: 'approved must be true or false' }, 400);
   const result = await c.env.DB.prepare(
     `UPDATE handles
-     SET approved_at = CASE WHEN ?1 THEN COALESCE(approved_at, unixepoch()) ELSE NULL END
+     SET approved_at = CASE WHEN ?1 THEN COALESCE(approved_at, unixepoch()) ELSE NULL END,
+         synced_at = CASE WHEN ?1 AND approved_at IS NULL THEN NULL ELSE synced_at END
      WHERE user_id = ?2 AND platform = ?3`,
   )
     .bind(approved ? 1 : 0, Number(c.req.param('userId')), c.req.param('platform'))
     .run();
   if (!result.meta.changes) return c.json({ error: 'Handle not found' }, 404);
+  if (approved) {
+    const sync = syncNewlyApproved(c.env, Number(c.req.param('userId')), c.req.param('platform'), Math.floor(Date.now() / 1000));
+    c.executionCtx.waitUntil(sync.catch((err) => console.error('Sync after approval failed:', err)));
+  }
   return c.json({ ok: true });
 });
 
@@ -110,7 +116,7 @@ adminRoutes.get('/flags', async (c) => {
       .prepare(
         `SELECT u.id AS userId, u.name, (s.solved_at + ${IST_OFFSET}) / 86400 AS day, COUNT(*) AS solves
          FROM solves s JOIN users u ON u.id = s.user_id
-         WHERE s.solved_at >= ?
+         WHERE s.solved_at >= ? AND s.points > 0
          GROUP BY u.id, day HAVING solves > ${FLAG_SOLVES_PER_DAY}
          ORDER BY day DESC`,
       )

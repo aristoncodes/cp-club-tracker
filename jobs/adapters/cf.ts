@@ -45,6 +45,11 @@ export async function fetchUserStatus(handle: string): Promise<CfSubmissionList>
   return response.json() as Promise<CfSubmissionList>;
 }
 
+export async function fetchAllSubmissions(handle: string): Promise<CfSubmissionList> {
+  const response = await politeFetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}`, CF_GAP_MS);
+  return response.json() as Promise<CfSubmissionList>;
+}
+
 export async function fetchContestStatus(contestId: string, handle: string): Promise<CfSubmissionList> {
   const response = await politeFetch(
     `https://codeforces.com/api/contest.status?contestId=${contestId}&handle=${encodeURIComponent(handle)}&from=1&count=100`,

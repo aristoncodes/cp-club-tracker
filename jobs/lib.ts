@@ -1,8 +1,6 @@
 const USER_AGENT = 'cp-club-tracker/1.0 (college competitive programming club attendance tracker)';
 const lastCall = new Map<string, number>();
 
-export const RECENT_SECONDS = 48 * 3600;
-
 export async function politeFetch(url: string, gapMs = 1000, init: RequestInit = {}): Promise<Response> {
   const host = new URL(url).host;
   const wait = (lastCall.get(host) ?? 0) + gapMs - Date.now();

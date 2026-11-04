@@ -1,7 +1,7 @@
 import { load } from 'cheerio';
 import { countsForAttendance } from 'shared/contests';
 import type { IngestContest, IngestSolve } from 'shared/types';
-import { politeFetch, RECENT_SECONDS } from '../lib';
+import { politeFetch } from '../lib';
 
 const BASE = 'https://www.codechef.com';
 const IST_OFFSET_MS = 19800_000;
@@ -110,9 +110,9 @@ export function solveFrom(handle: string, submission: CcSubmission, problem: CcP
 const problemCache = new Map<string, CcProblem>();
 const contestCache = new Map<string, CcContest>();
 
-export async function fetchSolves(handle: string, now: number): Promise<IngestSolve[]> {
+export async function fetchSolves(handle: string, now: number, since: number): Promise<IngestSolve[]> {
   const submissions = parseRecent(await fetchRecent(handle), now);
-  const recent = submissions.filter((s) => s.accepted && s.solvedAt >= now - RECENT_SECONDS);
+  const recent = submissions.filter((s) => s.accepted && s.solvedAt >= since);
   const solves: IngestSolve[] = [];
   for (const submission of recent) {
     const problem = problemCache.get(submission.problemCode) ?? (await fetchProblem(submission.contestCode, submission.problemCode));

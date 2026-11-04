@@ -67,28 +67,16 @@ function setStage(db: D1Database, contest: ContestRow, stage: number): Promise<D
   return db.prepare('UPDATE contests SET stage = ? WHERE id = ?').bind(stage, contest.id).run();
 }
 
-async function dispatchVerification(env: Bindings, contest: ContestRow): Promise<void> {
-  const response = await fetch(
-    `https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/participation.yml/dispatches`,
-    {
-      method: 'POST',
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-        'User-Agent': 'cp-club-tracker',
-      },
-      body: JSON.stringify({
-        ref: 'main',
-        inputs: {
-          platform: contest.platform,
-          contest: contest.external_id,
-          alt: contest.alt_external_id ?? '',
-          start: String(contest.start_at),
-          end: String(contest.end_at),
-        },
-      }),
+async function dispatchWorkflow(env: Bindings, workflow: string, inputs: Record<string, string> = {}): Promise<void> {
+  const response = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/${workflow}/dispatches`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      'User-Agent': 'cp-club-tracker',
     },
-  );
+    body: JSON.stringify({ ref: 'main', inputs }),
+  });
   if (!response.ok) throw new Error(`GitHub dispatch returned ${response.status}: ${await response.text()}`);
 }
 
@@ -98,7 +86,13 @@ async function advanceContest(env: Bindings, contest: ContestRow, now: number): 
   if (!action) return;
 
   if (action === 'verify') {
-    await dispatchVerification(env, contest);
+    await dispatchWorkflow(env, 'participation.yml', {
+      platform: contest.platform,
+      contest: contest.external_id,
+      alt: contest.alt_external_id ?? '',
+      start: String(contest.start_at),
+      end: String(contest.end_at),
+    });
     await setStage(db, contest, 3);
     return;
   }
@@ -136,23 +130,42 @@ async function reportIfBroken(db: D1Database, err: unknown): Promise<boolean> {
   return handle !== null;
 }
 
-async function syncCfSolves(db: D1Database, now: number): Promise<void> {
+type CfHandleRow = { userId: number; handle: string; syncedAt: number | null };
+
+// A handle's first fetch also reads its rating, so its first solves score correctly.
+async function syncCfHandle(db: D1Database, row: CfHandleRow, now: number): Promise<void> {
+  try {
+    if (row.syncedAt === null) {
+      const [info] = await fetchUserInfo([row.handle]);
+      await db.prepare('UPDATE users SET cf_rating = ? WHERE id = ?').bind(info?.rating ?? null, row.userId).run();
+    }
+    await insertSolves(db, cfSolves(row.handle, await fetchUserStatus(row.handle)));
+    await db.prepare(`UPDATE handles SET synced_at = ? WHERE user_id = ? AND platform = 'cf'`).bind(now, row.userId).run();
+  } catch (err) {
+    if (!(await reportIfBroken(db, err))) console.error(`Solve sync failed for ${row.handle}:`, err);
+  }
+}
+
+async function syncCfSolves(db: D1Database, now: number, onlyNewHandles: boolean): Promise<void> {
   const { results } = await db
     .prepare(
-      `SELECT h.user_id AS userId, h.handle FROM handles h JOIN users u ON u.id = h.user_id
+      `SELECT h.user_id AS userId, h.handle, h.synced_at AS syncedAt FROM handles h JOIN users u ON u.id = h.user_id
        WHERE h.platform = 'cf' AND h.approved_at IS NOT NULL AND h.broken = 0 AND u.active = 1
+         ${onlyNewHandles ? 'AND h.synced_at IS NULL' : ''}
        ORDER BY h.synced_at IS NOT NULL, h.synced_at LIMIT ?`,
     )
     .bind(SOLVE_SYNC_STUDENTS)
-    .all<{ userId: number; handle: string }>();
-  for (const { userId, handle } of results) {
-    try {
-      await insertSolves(db, cfSolves(handle, await fetchUserStatus(handle)));
-      await db.prepare(`UPDATE handles SET synced_at = ? WHERE user_id = ? AND platform = 'cf'`).bind(now, userId).run();
-    } catch (err) {
-      if (!(await reportIfBroken(db, err))) console.error(`Solve sync failed for ${handle}:`, err);
-    }
-  }
+    .all<CfHandleRow>();
+  for (const row of results) await syncCfHandle(db, row, now);
+}
+
+export async function syncNewlyApproved(env: Bindings, userId: number, platform: string, now: number): Promise<void> {
+  const row = await env.DB.prepare(`SELECT user_id AS userId, handle, synced_at AS syncedAt FROM handles WHERE user_id = ? AND platform = ?`)
+    .bind(userId, platform)
+    .first<CfHandleRow>();
+  if (!row) return;
+  if (platform === 'cf') await syncCfHandle(env.DB, row, now);
+  await dispatchWorkflow(env, 'backfill.yml', { platform, handle: row.handle });
 }
 
 async function refreshRatings(db: D1Database): Promise<void> {
@@ -188,7 +201,7 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
   for (const contest of results) {
     await attempt(`contest ${contest.id}`, () => advanceContest(env, contest, now));
   }
-  if (isSolveSyncTick(now)) await attempt('solve sync', () => syncCfSolves(env.DB, now));
+  await attempt('solve sync', () => syncCfSolves(env.DB, now, !isSolveSyncTick(now)));
   if (isRatingRefreshTick(now)) {
     await attempt('rating refresh', async () => {
       try {

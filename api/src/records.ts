@@ -28,11 +28,12 @@ export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promi
   const oldestFirst = [...solves].sort((a, b) => a.solvedAt - b.solvedAt);
   const statements = oldestFirst.flatMap((s) => {
     const owner = byHandle.get(`${s.platform}:${s.handle.toLowerCase()}`);
-    if (!owner || s.solvedAt < owner.approvedAt) return [];
+    if (!owner) return [];
     const rp = problemRp(s.platform, s.rating ?? null);
+    const scores = s.solvedAt >= owner.approvedAt;
     return [
       upsertProblem.bind(s.platform, s.problemId, s.name ?? null, s.rating ?? null, s.tags ? JSON.stringify(s.tags) : null, s.url ?? null),
-      insertSolve.bind(owner.userId, s.platform, s.problemId, s.solvedAt, s.live ? 1 : 0, rp, solvePoints(rp, owner.cfRating, s.live)),
+      insertSolve.bind(owner.userId, s.platform, s.problemId, s.solvedAt, s.live ? 1 : 0, rp, scores ? solvePoints(rp, owner.cfRating, s.live) : 0),
     ];
   });
   if (statements.length) await db.batch(statements);

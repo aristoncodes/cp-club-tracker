@@ -176,7 +176,7 @@ studentRoutes.get('/leaderboard', async (c) => {
          FROM solves s
          JOIN users u ON u.id = s.user_id
          LEFT JOIN handles h ON h.user_id = u.id AND h.platform = 'cf'
-         WHERE s.solved_at >= ? AND u.active = 1
+         WHERE s.solved_at >= ? AND s.points > 0 AND u.active = 1
          GROUP BY u.id
          ORDER BY points DESC`,
       )
@@ -185,7 +185,7 @@ studentRoutes.get('/leaderboard', async (c) => {
       .prepare(
         `SELECT s.user_id AS userId, SUM(s.points) AS points
          FROM solves s JOIN users u ON u.id = s.user_id
-         WHERE s.solved_at >= ? AND s.solved_at < ? AND u.active = 1
+         WHERE s.solved_at >= ? AND s.solved_at < ? AND s.points > 0 AND u.active = 1
          GROUP BY s.user_id
          ORDER BY points DESC`,
       )
@@ -203,7 +203,7 @@ studentRoutes.get('/leaderboard', async (c) => {
 studentRoutes.get('/challenge', async (c) => {
   const row = await c.env.DB.prepare(
     `SELECT COUNT(*) AS solved FROM solves s JOIN users u ON u.id = s.user_id
-     WHERE s.solved_at >= ? AND s.rp >= ? AND u.active = 1`,
+     WHERE s.solved_at >= ? AND s.rp >= ? AND s.points > 0 AND u.active = 1`,
   )
     .bind(periodStart('week', Math.floor(Date.now() / 1000)), CHALLENGE_MIN_RATING)
     .first<{ solved: number }>();
@@ -218,7 +218,7 @@ studentRoutes.get('/feed', async (c) => {
      FROM solves s
      JOIN users u ON u.id = s.user_id
      LEFT JOIN problems p ON p.platform = s.platform AND p.problem_id = s.problem_id
-     WHERE s.solved_at < ? AND u.active = 1
+     WHERE s.solved_at < ? AND s.points > 0 AND u.active = 1
      ORDER BY s.solved_at DESC LIMIT ?`,
   )
     .bind(before, FEED_SIZE)
@@ -243,11 +243,11 @@ studentRoutes.get('/users/:id', async (c) => {
       .prepare(
         `SELECT
            COALESCE(SUM(CASE WHEN solved_at >= ?1 THEN points END), 0) AS dayPoints,
-           COUNT(CASE WHEN solved_at >= ?1 THEN 1 END) AS daySolves,
+           COUNT(CASE WHEN solved_at >= ?1 AND points > 0 THEN 1 END) AS daySolves,
            COALESCE(SUM(CASE WHEN solved_at >= ?2 THEN points END), 0) AS weekPoints,
-           COUNT(CASE WHEN solved_at >= ?2 THEN 1 END) AS weekSolves,
+           COUNT(CASE WHEN solved_at >= ?2 AND points > 0 THEN 1 END) AS weekSolves,
            COALESCE(SUM(CASE WHEN solved_at >= ?3 THEN points END), 0) AS monthPoints,
-           COUNT(CASE WHEN solved_at >= ?3 THEN 1 END) AS monthSolves
+           COUNT(CASE WHEN solved_at >= ?3 AND points > 0 THEN 1 END) AS monthSolves
          FROM solves WHERE user_id = ?4`,
       )
       .bind(periodStart('day', now), periodStart('week', now), periodStart('month', now), id),

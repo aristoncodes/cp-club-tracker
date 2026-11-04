@@ -1,5 +1,5 @@
 import type { IngestSolve } from 'shared/types';
-import { politeFetch, RECENT_SECONDS } from '../lib';
+import { politeFetch } from '../lib';
 
 type RecentAc = { data: { recentAcSubmissionList: { title: string; titleSlug: string; timestamp: string }[] | null } };
 type Question = { data: { question: { difficulty: string; topicTags: { name: string }[] } | null } };
@@ -47,9 +47,9 @@ export function solveFrom(handle: string, submission: ReturnType<typeof parseRec
   };
 }
 
-export async function fetchSolves(handle: string, now: number): Promise<IngestSolve[]> {
+export async function fetchSolves(handle: string, since: number): Promise<IngestSolve[]> {
   const solves: IngestSolve[] = [];
-  for (const submission of parseRecentAc(await fetchRecentAc(handle), now - RECENT_SECONDS)) {
+  for (const submission of parseRecentAc(await fetchRecentAc(handle), since)) {
     const question = questionCache.get(submission.slug) ?? (await fetchQuestion(submission.slug));
     questionCache.set(submission.slug, question);
     solves.push(solveFrom(handle, submission, question));
