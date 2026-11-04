@@ -1,0 +1,28 @@
+name: health
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * *'
+concurrency:
+  group: health
+permissions:
+  actions: read
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile --filter jobs...
+      - run: pnpm --filter jobs health
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          GITHUB_TOKEN: ${{ github.token }}

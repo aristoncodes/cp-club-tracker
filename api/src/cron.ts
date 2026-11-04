@@ -21,6 +21,7 @@ const RATING_REFRESH_SECOND_OF_DAY = 18.5 * HOUR;
 const STREAK_REMINDER_SECOND_OF_DAY = 15.5 * HOUR;
 const SOLVE_JOB_SECONDS = 5 * 60;
 const CONTEST_JOB_SECONDS = 6 * HOUR;
+const HEALTH_JOB_SECOND_OF_DAY = 0.5 * HOUR;
 const DAY = 86400;
 
 type ContestRow = {
@@ -57,6 +58,7 @@ function isDailyTick(now: number, secondOfDay: number): boolean {
 }
 
 export const isRatingRefreshTick = (now: number) => isDailyTick(now, RATING_REFRESH_SECOND_OF_DAY);
+export const isHealthJobTick = (now: number) => isDailyTick(now, HEALTH_JOB_SECOND_OF_DAY);
 export const isStreakReminderTick = (now: number) => isDailyTick(now, STREAK_REMINDER_SECOND_OF_DAY);
 export const isSolveJobTick = (now: number) => now % SOLVE_JOB_SECONDS < CRON_TICK;
 export const isContestJobTick = (now: number) => now % CONTEST_JOB_SECONDS < CRON_TICK;
@@ -283,6 +285,7 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
   if (meal) await attempt('meal push', () => sendMealPushes(env, meal, now));
   if (isSolveJobTick(now)) await attempt('solve job', () => dispatchWorkflow(env, 'sync-solves.yml'));
   if (isContestJobTick(now)) await attempt('contest job', () => dispatchWorkflow(env, 'sync-contests.yml'));
+  if (isHealthJobTick(now)) await attempt('health job', () => dispatchWorkflow(env, 'health.yml'));
   if (isRatingRefreshTick(now)) {
     await attempt('rating refresh', async () => {
       try {

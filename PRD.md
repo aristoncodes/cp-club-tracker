@@ -1,4 +1,4 @@
-# PRD — CP Club Tracker
+# PRD — OOPS CLUB
 
 ## Problem
 
@@ -31,7 +31,7 @@ The college competitive programming club (40–50 students across all years) has
 
 ## Platforms
 
-- **Android app** (Expo, branded grind.club): the main way students use it, because of notifications. Distributed as an APK from the website, not the Play Store.
+- **Android app** (Expo, branded OOPS CLUB): the main way students use it, because of notifications. Distributed as an APK from the website, not the Play Store.
 - **Website:** leaderboard, profiles, and the admin dashboard. iPhone users use the website, installable as a PWA. Web push for iPhone comes in week 2.
 - No iOS app and no desktop app.
 

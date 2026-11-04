@@ -1,4 +1,4 @@
-# Setup: taking CP Club Tracker live
+# Setup: taking OOPS CLUB live
 
 Every service here is free and needs no credit card. Do the parts in order; each part uses values from the one before it. Run commands from the repo root unless a step says otherwise.
 
@@ -147,3 +147,19 @@ Sign in with your admin email first.
 - [ ] Run one full contest cycle with 3 test students. Then invite the club.
 
 To send everyone to the app, share your web URL followed by `/download`.
+
+## Maintenance
+
+**If GitHub emails you that `health` failed:** open the failed run; its log lists each problem as `PROBLEM: …`.
+
+| When | What |
+|---|---|
+| When more students are approved | Run `wrangler tail` for a few minutes and check Codeforces fetch speed and CPU use |
+| After the first few contests | Compare attendance with the real standings, especially CodeChef |
+| Monthly | `pnpm audit`, failed Actions runs, expiry of `GITHUB_TOKEN` (Worker secret) and `EXPO_TOKEN` (GitHub secret), Cloudflare's D1 usage page |
+| Every 6 months | Update Expo and check Google's target API rule; this needs a new APK |
+| Every August | Check students' years rolled over |
+
+**Restore the database:** `wrangler d1 time-travel info cp-tracker` shows the current bookmark, and `wrangler d1 time-travel restore cp-tracker --bookmark=…` restores in place (any point in the last 30 days). A copy: `wrangler d1 export cp-tracker --remote --output=backup.sql`. Backups contain student emails, so never commit them.
+
+**Handover:** add the next admin's email to `ADMIN_EMAILS` with `wrangler secret put ADMIN_EMAILS` (comma-separated), and give them access to the Cloudflare account, this GitHub repo and the Expo project.

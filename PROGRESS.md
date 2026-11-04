@@ -1,4 +1,4 @@
-# Progress — CP Club Tracker
+# Progress — OOPS CLUB
 
 Last updated: 2026-11-05. `IMPLEMENTATION_PLAN.md` has the full detail of each task, and `SETUP.md` has the steps to go live.
 

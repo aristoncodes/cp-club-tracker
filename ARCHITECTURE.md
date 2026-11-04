@@ -1,4 +1,4 @@
-# ARCHITECTURE — CP Club Tracker
+# ARCHITECTURE — OOPS CLUB
 
 ## Overview
 
@@ -205,6 +205,8 @@ The contest steps make no Codeforces calls. Other Codeforces calls in a run are 
    **At 03:30, 07:30, 11:30 and 15:30 UTC (9 AM, 1 PM, 5 PM, 9 PM IST):** meal-time push to users with `notify_meals = 1`, lines from `api/src/meal-pushes.ts`, chosen by IST day number. People the 15:30 streak reminder goes to skip dinner's line.
 7. **GitHub jobs:** because GitHub's own schedules proved unreliable, the Worker dispatches `sync-solves.yml` every 5 minutes (the workflow's concurrency group keeps at most one run and one queued) and `sync-contests.yml` every 6 hours.
 
+8. **Health check:** `health.yml` runs on GitHub's own schedule at 01:00 UTC and is also dispatched by the Worker at 00:30 UTC, so one still fires if the other fails. `jobs/health.ts` reads `GET /api/ingest/health` and recent GitHub runs. Any problem fails the run, and GitHub's failure email is the alert. It covers: a stalled Codeforces fetch, no solves on a platform with 5+ students for 14 days, no upcoming contests, attendance unfinished 6 hours after a contest, broken handles, and late or failing jobs. It can't read Cloudflare's CPU or D1 usage; a Worker over its CPU limit shows up as the stalled-fetch problem.
+
 Every push checks its own preference column: reminder `notify_hour`, RSVP `notify_rsvp`, results `notify_result`, streak `notify_streak`, meal-time `notify_meals`.
 
 **Result pushes:**
@@ -261,6 +263,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 | Script | When | Does |
 |---|---|---|
 | `sync-contests.ts` | Every 6 hours, dispatched by the Worker | CF `contest.list?gym=false` (future contests only) + CodeChef upcoming contests → apply `countsForAttendance` and parallel-round merge → `/ingest/contests` |
+| `health.ts` | Daily | Fails the run with a list of problems if anything looks wrong |
 | `sync-solves.ts` | Every 5 minutes, dispatched by the Worker | cc, atcoder, leetcode (and cf as a backstop) accepted submissions from the last 48 hours for approved handles → `/ingest/solves`, one post per handle |
 | `backfill.ts` | `workflow_dispatch` (inputs `platform`, `handle`) | On approval: up to 6 months of accepted submissions → `/ingest/solves`, 50 at a time. Codeforces and AtCoder give full history; CodeChef gives about the last page and LeetCode the last 20 |
 | `participation.ts` | `workflow_dispatch` (inputs `platform`, `contest`, `alt`, `start`, `end`) | **cf:** `contest.status?contestId=…&handle=…` for each handle, and for `alt`; any submission with participantType `CONTESTANT` or `OUT_OF_COMPETITION` → present. A handle Codeforces says doesn't exist is reported in `brokenHandles`. **cc:** each handle's recent submissions; any submission linked to the contest or one of its divisions (`START263`, `START263A`…) with a time inside the contest → present. Any other failure stops the run without posting, so nobody is wrongly marked absent → `/ingest/participation` |

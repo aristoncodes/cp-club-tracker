@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "grind.club",
+    "name": "OOPS CLUB",
     "slug": "cp-club-tracker",
     "scheme": [
       "cpclub",
@@ -12,7 +12,20 @@
     "backgroundColor": "#0E0E14",
     "android": {
       "package": "com.cpclub.tracker",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-foreground.png",
+        "monochromeImage": "./assets/adaptive-monochrome.png",
+        "backgroundColor": "#8B5CF6"
+      },
+      "allowBackup": false,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -41,6 +54,7 @@
     "updates": {
       "url": "https://u.expo.dev/9136a425-3c99-4b28-b939-5358a9315f2e"
     },
-    "ios": {}
+    "ios": {},
+    "icon": "./assets/icon.png"
   }
 }

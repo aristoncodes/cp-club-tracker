@@ -1,7 +1,7 @@
 import { exchangeCodeAsync, ResponseType, useAuthRequest, useAutoDiscovery } from 'expo-auth-session';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { api, setSession } from '../lib/api';
 import { Button, common } from '../lib/ui';
 import { theme } from '../theme';
@@ -37,8 +37,8 @@ export default function Login() {
   return (
     <View style={styles.page}>
       <View style={styles.brand}>
-        <View style={styles.logoTile}><Text style={styles.logoMark}>&gt;_</Text></View>
-        <Text style={styles.wordmark}>grind<Text style={styles.lime}>.</Text>club</Text>
+        <Image source={require('../assets/icon.png')} style={styles.logoTile} />
+        <Text style={styles.wordmark}>OOPS <Text style={styles.lime}>CLUB</Text></Text>
       </View>
       <View style={styles.middle}>
         <Text style={styles.headline}>Welcome back.{'\n'}<Text style={styles.lime}>Let's grind.</Text></Text>
@@ -53,8 +53,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   page: { flex: 1, padding: theme.gutter, paddingTop: 56 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoTile: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.violet, transform: [{ rotate: '-6deg' }] },
-  logoMark: { color: theme.white, fontFamily: theme.font.monoBold, fontSize: 14 },
+  logoTile: { width: 34, height: 34, borderRadius: 10, transform: [{ rotate: '-6deg' }] },
   wordmark: { color: theme.text, fontFamily: theme.font.display, fontSize: 22 },
   lime: { color: theme.lime },
   middle: { flex: 1, justifyContent: 'center', gap: 16 },

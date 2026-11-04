@@ -1,4 +1,4 @@
-# IMPLEMENTATION_PLAN — CP Club Tracker
+# IMPLEMENTATION_PLAN — OOPS CLUB
 
 Build in this order. Each task ends with its "Done when" verified (see `TESTING.md`) and a commit. Tick boxes as you go.
 

@@ -1,4 +1,4 @@
-# CLAUDE.md — How to work on CP Club Tracker
+# CLAUDE.md — How to work on OOPS CLUB
 
 Read these before writing any code, in this order:
 

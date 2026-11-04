@@ -1,4 +1,4 @@
-# DESIGN — CP Club Tracker ("grind.club")
+# DESIGN — OOPS CLUB
 
 The reference mockups are the five artboards on the "CP Club Tracker redesign" canvas (Web · Leaderboard, Web · Admin attendance, Web · Sign in, App · Home, App · Leaderboard). When this file and the canvas disagree, this file wins.
 
@@ -94,7 +94,7 @@ Build only these. Each lives in the file that uses it unless 2+ screens need it.
 
 - **Button.** Primary: `lime` fill, `ink` text, 800 weight, pill; height 40–44 on web, 48 on app. Secondary: transparent with a 2 px outline (`violet-soft` on violet cards, `line` elsewhere). Warning: `sun` fill, `ink` text.
 - **Segmented tabs** (Today / Week / Month): a pill track (`card` with a `line` border, 4–5 px padding). The active segment has a `lime` fill and `ink` text; inactive segments use `muted` text.
-- **Nav (web):** logo tile (34 px `violet` square, radius 10, rotated −6°, `>_` in mono) + wordmark "grind" + lime "." + "club" in Space Grotesk. Links, in order: **Home · Leaderboard · Contests · Feed · Admin** (admins only). Links are pills; the active one has a `text` fill and `ink` text. Right side: streak pill (`sun`, flame icon + mono number) and the **avatar, which links to your Profile**; on the Profile page it gets a 2 px `lime` outline. There is no "Me" or "Settings" link in the nav.
+- **Nav (web):** logo tile (the app icon at 34 px, radius 10, rotated −6°) + wordmark "OOPS" + lime "CLUB" in Space Grotesk. Links, in order: **Home · Leaderboard · Contests · Feed · Admin** (admins only). Links are pills; the active one has a `text` fill and `ink` text. Right side: streak pill (`sun`, flame icon + mono number) and the **avatar, which links to your Profile**; on the Profile page it gets a 2 px `lime` outline. There is no "Me" or "Settings" link in the nav.
 - **Bottom tabs (app):** **Home · Board · Contests · Feed**. No "Me" tab. Stroke icons at 22 px; the active tab is `lime`, inactive ones `muted`. 1 px top border. Profile and Settings are pushed screens: none of the four tabs is active on them.
 - **Avatar button (app):** a 44 px avatar at the top right of Home and Board that opens Profile.
 - **Screen header (app, pushed screens):** a 44 px back chevron on the left and the title. On Profile, the title is centred with a 44 px settings gear on the right; on Settings, the title is in display 24 next to the back chevron.
@@ -147,6 +147,7 @@ Build only these. Each lives in the file that uses it unless 2+ screens need it.
 | Route | Layout |
 |---|---|
 | `/login` | Two columns. Left (max width 460): logo; display headline 56 "Welcome back. **Let's grind.**" (line 2 in `lime`) and a sub-line saying new members use the same button; a white "Continue with Google" pill; the Android / iPhone hint. Right: a tilted `lime` "This week" example card, a `violet` T−5 notification preview, a feed item, all clearly marked as examples. Under 900 px it stacks into one column with the preview cards hidden |
+| Any unknown URL | Logo; display H1 48 "Page not found"; one `muted` line; `lime` "Go home" link. No nav |
 | `/signup` | One page after the first Google sign-in, max width 640: logo; display H1 48 "Welcome to the club"; display name; Username with a `muted` "@" prefix, mono value, live "✓ available" (`lime`, with a `lime-tint` border) or "taken" (`pink`), helper "3–20 characters… You can change it **once** later"; year chips (1st–4th year; selected is a `lime` fill); Codeforces and CodeChef inputs (required; label in platform colour) and LeetCode and AtCoder (optional); **Continue** (primary) goes to Home |
 | `/` Home | Date line; H1 "Evening, {name}." (display 48); one line with your rank (`lime`) and streak status; pending banner. Main column: a large violet next-contest card (name in display 30, time · length · "31 of 47 going", inline RSVP with all three states, and a three-tile countdown on the right); four stat tiles (points this week in `lime`, solves this week, attendance, CF rating); the "Coming up" list. Sidebar: chase card (linking to the leaderboard), streak card, weekly challenge, a short live feed (3 items + "See all") |
 | `/leaderboard` | Eyebrow "Who's grinding"; H1 This week / Today / This month; sub-line; segmented tabs. Year filter chips + platform filter. Podium. Two-column layout: leaderboard card (chase bar, rows, scoring footnote) and a sidebar (year vs year, biggest climbers, toughest solves). Clicking a row opens that student's profile |

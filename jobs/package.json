@@ -8,7 +8,8 @@
     "sync-contests": "tsx --env-file-if-exists=.env sync-contests.ts",
     "sync-solves": "tsx --env-file-if-exists=.env sync-solves.ts",
     "participation": "tsx --env-file-if-exists=.env participation.ts",
-    "backfill": "tsx --env-file-if-exists=.env backfill.ts"
+    "backfill": "tsx --env-file-if-exists=.env backfill.ts",
+    "health": "tsx --env-file-if-exists=.env health.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

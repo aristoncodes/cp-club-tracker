@@ -7,7 +7,7 @@ export const MEAL_LINES: Record<Meal, readonly Line[]> = {
   breakfast: [
     ['Good morning, coder', "Yesterday's problem is still awake. Ready to start your day with it?"],
     ['Chai is ready', "So is the problem you left yesterday. One of them gets cold. It isn't the problem."],
-    ['Rise and grind', 'Literally. It is in the name of the app.'],
+    ['Rise and grind', 'Oops, you hit snooze again. We saw that.'],
     ['Breakfast of champions', 'Two parathas, one chai, one problem from yesterday.'],
     ['Morning!', 'That WA from yesterday slept better than you did.'],
     ['Fresh day, fresh submissions', 'Your rating has no idea what is coming. Neither do we.'],

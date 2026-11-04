@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contestAction, isContestJobTick, isRatingRefreshTick, isSolveJobTick, ratingHistoryIsDue, isStreakReminderTick } from './cron';
+import { contestAction, isContestJobTick, isHealthJobTick, isRatingRefreshTick, isSolveJobTick, ratingHistoryIsDue, isStreakReminderTick } from './cron';
 import { biggestClimbers, withRanks } from './routes';
 
 const START = 2_000_000_000;
@@ -114,6 +114,8 @@ describe('job ticks', () => {
     expect(isSolveJobTick(360)).toBe(false);
     expect(isContestJobTick(21600)).toBe(true);
     expect(isContestJobTick(1800)).toBe(false);
+    expect(isHealthJobTick(1800)).toBe(true);
+    expect(isHealthJobTick(1860)).toBe(false);
   });
 });
 

@@ -3,7 +3,7 @@ import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import { signSession, USER_COLUMNS, type AppEnv, type User } from './auth';
 
 const USERNAME = /^[a-z0-9_.]{3,20}$/;
-const RESERVED_USERNAMES = ['admin', 'root', 'support', 'grind', 'club', 'api', 'me', 'settings'];
+const RESERVED_USERNAMES = ['admin', 'root', 'support', 'oops', 'grind', 'club', 'api', 'me', 'settings'];
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 
 export function usernameError(username: string): string | null {

@@ -56,7 +56,7 @@ function Shell() {
     <div className="pb-20 sm:pb-10">
       <header className="border-b border-line">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
-          <Link to="/" aria-label="grind.club home"><Logo /></Link>
+          <Link to="/" aria-label="OOPS CLUB home"><Logo /></Link>
           <nav className="hidden flex-wrap items-center gap-1 sm:flex">
             {links.map((link) => (
               <NavLink key={link.to} to={link.to} end className={pillClass}>{link.label}</NavLink>
@@ -100,6 +100,17 @@ function Shell() {
   );
 }
 
+function NotFound() {
+  return (
+    <main className="mx-auto flex min-h-screen max-w-[640px] flex-col justify-center gap-4 px-4 sm:px-6">
+      <Logo />
+      <h1 className="display text-5xl leading-none tracking-[-0.035em]">Page not found</h1>
+      <p className="text-muted">That link goes nowhere. Your streak is still fine.</p>
+      <Link className="font-bold text-lime" to="/">Go home</Link>
+    </main>
+  );
+}
+
 function App() {
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
@@ -123,6 +134,7 @@ function App() {
             <Route path="/reason/:contestId" element={<Reason />} />
             <Route path="/admin" element={<Admin />} />
           </Route>
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </GoogleOAuthProvider>

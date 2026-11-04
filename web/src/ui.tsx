@@ -98,11 +98,9 @@ export function Avatar({ userId, name, size = 36 }: { userId: number; name: stri
 export function Logo() {
   return (
     <span className="flex items-center gap-2">
-      <span className="flex size-[34px] -rotate-6 items-center justify-center rounded-[10px] bg-violet text-sm font-bold text-white" style={{ fontFamily: 'var(--font-mono)' }}>
-        &gt;_
-      </span>
+      <img src="/icon-192.png" alt="" className="size-[34px] -rotate-6 rounded-[10px]" />
       <span className="display text-xl">
-        grind<span className="text-lime">.</span>club
+        OOPS <span className="text-lime">CLUB</span>
       </span>
     </span>
   );

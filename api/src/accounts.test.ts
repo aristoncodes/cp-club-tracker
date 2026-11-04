@@ -12,7 +12,7 @@ describe('usernameError', () => {
     expect(usernameError(name)).not.toBeNull();
   });
 
-  it.each(['admin', 'root', 'support', 'grind', 'club', 'api', 'me', 'settings'])('reserves %s', (name) => {
+  it.each(['admin', 'root', 'support', 'oops', 'grind', 'club', 'api', 'me', 'settings'])('reserves %s', (name) => {
     expect(usernameError(name)).not.toBeNull();
   });
 

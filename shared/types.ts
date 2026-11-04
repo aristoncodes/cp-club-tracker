@@ -24,3 +24,12 @@ export type IngestSolve = {
   solvedAt: number;
   live: boolean;
 };
+
+export type HealthReport = {
+  cfHandles: number;
+  oldestCfSync: number | null;
+  platforms: { platform: string; approvedHandles: number; lastSolve: number | null }[];
+  latestContests: { platform: string; startAt: number }[];
+  stuckContests: string[];
+  brokenHandles: string[];
+};

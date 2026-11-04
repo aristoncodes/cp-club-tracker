@@ -4,7 +4,7 @@ import { Card, Logo } from '../ui';
 export function Download() {
   return (
     <main className="mx-auto flex max-w-[720px] flex-col gap-5 px-6 py-8">
-      <Link to="/" aria-label="grind.club home"><Logo /></Link>
+      <Link to="/" aria-label="OOPS CLUB home"><Logo /></Link>
       <h1 className="display text-4xl tracking-[-0.035em]">Get the app</h1>
       <Card className="flex flex-col items-start gap-3">
         <h2 className="display text-xl">Android</h2>
