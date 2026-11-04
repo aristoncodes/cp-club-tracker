@@ -13,7 +13,7 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 
 ## Phase 1 — Day 1: backend and attendance
 
-1. [ ] **Repo skeleton.** pnpm workspace with `shared`, `api`, `web`, `app`, `jobs`; a strict `tsconfig` in each; root scripts `typecheck` and `test`.
+1. [x] **Repo skeleton.** pnpm workspace with `shared`, `api`, `web`, `app`, `jobs`; a strict `tsconfig` in each; root scripts `typecheck` and `test`.
    - Done when: `pnpm -r typecheck` passes on empty packages.
 2. [ ] **`shared/`.** `time.ts`, `scoring.ts`, `contests.ts`, `rating-color.ts`, `types.ts`, with unit tests.
    - Done when: the tests in `TESTING.md → shared` pass.

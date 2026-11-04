@@ -1,0 +1,6 @@
+packages:
+  - shared
+  - api
+  - web
+  - app
+  - jobs

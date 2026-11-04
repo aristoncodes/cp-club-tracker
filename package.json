@@ -1,0 +1,12 @@
+{
+  "name": "cp-club-tracker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
