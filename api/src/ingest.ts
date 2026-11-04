@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { problemRp, solvePoints } from 'shared/scoring';
 import type { IngestContest, Platform } from 'shared/types';
 import type { AppEnv } from './auth';
+import { sendPushes, type PushMessage } from './push';
 
 type IngestSolve = {
   platform: Platform;
@@ -87,10 +88,10 @@ ingestRoutes.post('/participation', async (c) => {
     presentHandles: string[];
   }>();
   const contest = await c.env.DB.prepare(
-    'SELECT id, stage FROM contests WHERE platform = ? AND external_id = ? AND counts = 1',
+    'SELECT id, name, stage FROM contests WHERE platform = ? AND external_id = ? AND counts = 1',
   )
     .bind(platform, externalId)
-    .first<{ id: number; stage: number }>();
+    .first<{ id: number; name: string; stage: number }>();
   if (!contest) return c.json({ error: 'Contest not found' }, 404);
   if (contest.stage === 4) return c.json({ ok: true });
 
@@ -107,8 +108,23 @@ ingestRoutes.post('/participation', async (c) => {
        ) THEN 'present' ELSE 'absent' END
        WHERE contest_id = ?3`,
     ).bind(platform, JSON.stringify(presentHandles), contest.id),
-    c.env.DB.prepare('UPDATE contests SET stage = 4 WHERE id = ?').bind(contest.id),
   ]);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT p.token, a.status, a.reason_type AS reasonType
+     FROM attendance a JOIN push_tokens p ON p.user_id = a.user_id
+     WHERE a.contest_id = ? AND p.kind = 'expo'`,
+  )
+    .bind(contest.id)
+    .all<{ token: string; status: string; reasonType: string | null }>();
+  const messages = results.flatMap((r): PushMessage[] => {
+    if (r.status === 'present') return [{ to: r.token, body: `Marked present for ${contest.name}.` }];
+    if (r.reasonType) return [];
+    return [{ to: r.token, body: `You missed ${contest.name}. Why?`, data: { contestId: contest.id, screen: 'reason' } }];
+  });
+  await sendPushes(c.env.DB, messages);
+
+  await c.env.DB.prepare('UPDATE contests SET stage = 4 WHERE id = ?').bind(contest.id).run();
   return c.json({ ok: true });
 });
 

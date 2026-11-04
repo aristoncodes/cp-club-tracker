@@ -25,7 +25,7 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 6. [x] **Ingest.** `/ingest/contests`, `/ingest/solves`, `/ingest/participation`, `/ingest/handles`, protected by the secret.
 7. [x] **Contest sync job.** `jobs/lib.ts`, `adapters/cf.ts` (contest list), `adapters/cc.ts` (contest list), `sync-contests.ts`, and the workflow.
    - Done when: running it locally against `wrangler dev` fills `contests` with the correct `counts` and merged parallel rounds.
-8. [ ] **RSVP + reason endpoints and `push.ts`.**
+8. [x] **RSVP + reason endpoints and `push.ts`.**
 9. [ ] **Cron steps 1–2** (reminder, RSVP push).
    - Done when: with `seed.dev.sql` (a contest starting in 6 min) and `--test-scheduled`, the pushes go to your own token.
 10. [ ] **App: login → onboarding → home.** Google sign-in, handle form, approval-waiting state, upcoming ContestCard, push registration, `rsvp` category, Reason screen.
