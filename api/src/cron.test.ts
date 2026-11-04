@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { contestAction, isContestJobTick, isRatingRefreshTick, isSolveJobTick, isSolveSyncTick, isStreakReminderTick } from './cron';
+import { contestAction, isContestJobTick, isRatingRefreshTick, isSolveJobTick, ratingHistoryIsDue, isStreakReminderTick } from './cron';
 import { biggestClimbers, withRanks } from './routes';
 
 const START = 2_000_000_000;
@@ -76,10 +76,10 @@ describe('contestAction', () => {
 });
 
 describe('scheduled ticks', () => {
-  it('syncs solves every 10th minute', () => {
-    expect(isSolveSyncTick(600)).toBe(true);
-    expect(isSolveSyncTick(659)).toBe(true);
-    expect(isSolveSyncTick(660)).toBe(false);
+  it('refreshes rating history on first fetch and then once an hour', () => {
+    expect(ratingHistoryIsDue(null, 7200)).toBe(true);
+    expect(ratingHistoryIsDue(7200, 7259)).toBe(false);
+    expect(ratingHistoryIsDue(7199, 7200)).toBe(true);
   });
 
   it('refreshes ratings at 00:00 IST', () => {
@@ -109,9 +109,9 @@ describe('job ticks', () => {
     expect(isStreakReminderTick(ninePm + 60)).toBe(false);
   });
 
-  it('starts GitHub jobs every 30 minutes and 6 hours', () => {
-    expect(isSolveJobTick(1800)).toBe(true);
-    expect(isSolveJobTick(1860)).toBe(false);
+  it('starts GitHub jobs every 5 minutes and 6 hours', () => {
+    expect(isSolveJobTick(300)).toBe(true);
+    expect(isSolveJobTick(360)).toBe(false);
     expect(isContestJobTick(21600)).toBe(true);
     expect(isContestJobTick(1800)).toBe(false);
   });

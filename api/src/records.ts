@@ -14,7 +14,8 @@ export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promi
   const byHandle = new Map(handles.map((h) => [`${h.platform}:${h.handle}`, h]));
 
   const upsertProblem = db.prepare(
-    `INSERT INTO problems (platform, problem_id, name, rating, tags, url) VALUES (?, ?, ?, ?, ?, ?)
+    `INSERT INTO problems (platform, problem_id, name, rating, tags, url)
+     SELECT ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM solves WHERE user_id = ? AND platform = ? AND problem_id = ?)
      ON CONFLICT (platform, problem_id) DO UPDATE SET
        name = COALESCE(excluded.name, name),
        rating = COALESCE(excluded.rating, rating),
@@ -32,7 +33,7 @@ export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promi
     const rp = problemRp(s.platform, s.rating ?? null);
     const scores = s.solvedAt >= owner.approvedAt;
     return [
-      upsertProblem.bind(s.platform, s.problemId, s.name ?? null, s.rating ?? null, s.tags ? JSON.stringify(s.tags) : null, s.url ?? null),
+      upsertProblem.bind(s.platform, s.problemId, s.name ?? null, s.rating ?? null, s.tags ? JSON.stringify(s.tags) : null, s.url ?? null, owner.userId, s.platform, s.problemId),
       insertSolve.bind(owner.userId, s.platform, s.problemId, s.solvedAt, s.live ? 1 : 0, rp, scores ? solvePoints(rp, owner.cfRating, s.live) : 0),
     ];
   });

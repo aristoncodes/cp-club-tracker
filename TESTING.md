@@ -67,7 +67,7 @@ curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
 | RSVP from notification | With the app killed, tap Yes → row has `rsvp = 'yes'`. No + text → reason stored, no "why" push later |
 | Verify (CF) | Run `participation` on a finished contest with one handle that took part and one that didn't; statuses match, an earlier RSVP reason is kept and pushes arrive |
 | Verify (CC) | Run `participation` on a Starters within an hour of it ending, while CodeChef shows relative times; statuses update |
-| Solves | Submit an AC on Codeforces with a test handle; within 10 min of cron runs it's in `solves` with the expected points |
+| Solves | Submit an AC on Codeforces with a test handle; within 2 min of cron runs it's in `solves` with the expected points |
 | Accounts | Google sign-in and resuming onboarding, on web and on a real Android phone |
 | Leaderboard | Today / Week / Month totals match a hand-written `SELECT SUM(points)` with the same boundaries |
 | Admin grid | Grid and CSV agree with the `attendance` table for the range |

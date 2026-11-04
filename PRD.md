@@ -86,7 +86,7 @@ The college competitive programming club (40–50 students across all years) has
 - **Notification preferences:** a switch for each type: 1 hour before, 5 min RSVP, after contest, streak.
 - Admin page lists students with more than 30 solves in one day, for manual review. There is no automatic penalty.
 
-**Done when:** a Codeforces AC appears on the leaderboard within 2 hours (usually about 30 min), with points matching the formula.
+**Done when:** a Codeforces AC appears on the leaderboard within about 2 minutes (other platforms within about 5–10 minutes; 30 minutes at most if a run is skipped), with points matching the formula.
 
 ## Handles
 

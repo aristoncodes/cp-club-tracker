@@ -1,6 +1,8 @@
 name: sync-solves
 on:
   workflow_dispatch:
+concurrency:
+  group: sync-solves
 jobs:
   sync:
     runs-on: ubuntu-latest

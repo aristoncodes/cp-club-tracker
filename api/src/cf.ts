@@ -15,8 +15,8 @@ async function cfGet<T>(path: string): Promise<T> {
   return body.result;
 }
 
-export function fetchUserStatus(handle: string): Promise<CfSubmission[]> {
-  return cfGet(`user.status?handle=${encodeURIComponent(handle)}&from=1&count=50`);
+export function fetchUserStatus(handle: string, count: number): Promise<CfSubmission[]> {
+  return cfGet(`user.status?handle=${encodeURIComponent(handle)}&from=1&count=${count}`);
 }
 
 export function fetchRatingHistory(handle: string): Promise<{ contestId: number; ratingUpdateTimeSeconds: number; oldRating: number; newRating: number }[]> {

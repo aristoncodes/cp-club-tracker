@@ -20,6 +20,7 @@ type FeedItem = {
 };
 
 const PAGE_SIZE = 30;
+const REFRESH_MS = 60_000;
 
 export function Feed() {
   const [items, setItems] = useState<FeedItem[] | null>(null);
@@ -38,6 +39,11 @@ export function Feed() {
 
   useEffect(() => {
     load();
+    const timer = setInterval(async () => {
+      const page = await api<FeedItem[]>('/feed').catch(() => []);
+      setItems((current) => [...page.filter((item) => item.solvedAt > (current?.[0]?.solvedAt ?? 0)), ...(current ?? [])]);
+    }, REFRESH_MS);
+    return () => clearInterval(timer);
   }, []);
 
   const now = Date.now() / 1000;

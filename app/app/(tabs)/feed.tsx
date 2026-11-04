@@ -22,6 +22,8 @@ type FeedItem = {
 
 const PAGE_SIZE = 30;
 
+const REFRESH_MS = 60_000;
+
 export default function Feed() {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -42,6 +44,11 @@ export default function Feed() {
     }
   }, []);
 
+  const addNewest = useCallback(async () => {
+    const page = await api<FeedItem[]>('/feed').catch(() => []);
+    setItems((current) => [...page.filter((item) => item.solvedAt > (current[0]?.solvedAt ?? 0)), ...current]);
+  }, []);
+
   async function loadMore() {
     if (!hasMore || !items.length) return;
     setHasMore(false);
@@ -57,7 +64,9 @@ export default function Feed() {
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load]),
+      const timer = setInterval(addNewest, REFRESH_MS);
+      return () => clearInterval(timer);
+    }, [load, addNewest]),
   );
 
   const now = Date.now() / 1000;
