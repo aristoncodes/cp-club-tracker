@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "wrangler types && tsc -p .",
+    "test": "vitest run",
     "db:local": "rm -rf .wrangler/state && wrangler d1 execute cp-tracker --local --file schema.sql",
     "db:seed": "wrangler d1 execute cp-tracker --local --file seed.dev.sql",
     "dev": "wrangler dev --test-scheduled",

@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { adminRoutes } from './admin';
-import { authRoutes, type AppEnv } from './auth';
+import { authRoutes, type AppEnv, type Bindings } from './auth';
+import { runCron } from './cron';
 import { ingestRoutes } from './ingest';
 import { studentRoutes } from './routes';
 
@@ -27,4 +28,7 @@ app.route('/ingest', ingestRoutes);
 app.route('/admin', adminRoutes);
 app.route('/', studentRoutes);
 
-export default app;
+export default {
+  fetch: app.fetch,
+  scheduled: (event, env, ctx) => ctx.waitUntil(runCron(env.DB, Math.floor(event.scheduledTime / 1000))),
+} satisfies ExportedHandler<Bindings>;
