@@ -245,7 +245,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 - **AtCoder:** AtCoder Problems API for submissions (`from_second`), difficulty estimates, problem names and contest times. A solve is live if it falls inside its contest, for contests up to a day long. Be polite: one request per second.
 - **LeetCode:** unofficial GraphQL `recentAcSubmissionList` (about the last 20) plus `question` difficulty. Solves are never live.
 
-**GitHub secrets:** `API_URL`, `INGEST_SECRET`.
+**GitHub secrets:** `API_URL`, `INGEST_SECRET`, `EXPO_TOKEN`.
 **Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`.
 **Worker var:** `WEB_ORIGIN` in `wrangler.toml`, used for CORS and as the VAPID subject.
 
@@ -262,5 +262,5 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 
 ## Distribution
 
-- **Android:** an EAS Build `preview` profile produces an APK, linked from the website's `/download`. JS updates go over the air via `expo-updates` (EAS Update).
+- **Android:** the `build-apk` workflow runs the EAS `preview` profile locally on GitHub Actions, avoiding Expo's free queue, and publishes the APK as a GitHub Release. The website's `/download` links to the latest release. JS updates go over the air via `expo-updates` (EAS Update).
 - **Web:** `vite build`, deployed as a static-assets Worker (`web/wrangler.toml`), because new Cloudflare Pages projects are now Workers. The API Worker has its own `workers.dev` domain, with CORS for the website's origin. Don't run `wrangler pages project create` from `api/`: it deploys that folder as a second Worker, cron included.
