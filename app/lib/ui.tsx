@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
+import { ratingColor } from 'shared/rating-color';
 import { theme } from '../theme';
 
 type ButtonProps = {
@@ -22,7 +24,12 @@ export function Button({ title, onPress, variant = 'primary', disabled }: Button
   );
 }
 
+export function Rating({ value, children }: { value: number | null; children?: ReactNode }) {
+  return <Text style={[styles.rating, { color: ratingColor(value ?? 0) }]}>{children ?? value ?? '—'}</Text>;
+}
+
 const styles = StyleSheet.create({
+  rating: { fontFamily: theme.font.mono, fontSize: 14 },
   button: { height: 48, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   title: { fontFamily: theme.font.semibold, fontSize: 14 },
 });

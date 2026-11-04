@@ -9,6 +9,8 @@ import { theme } from '../../theme';
 
 type Contest = { id: number; platform: string; name: string; url: string; startAt: number; rsvp: string | null };
 type Destination = 'login' | 'onboarding' | null;
+type Standing = { userId: number; rank: number; points: number };
+type Stats = { rank: number | null; points: number };
 
 const PLATFORM_LABELS: Record<string, string> = { cf: 'Codeforces', cc: 'CodeChef' };
 
@@ -43,6 +45,21 @@ function ContestCard({ contest }: { contest: Contest }) {
   );
 }
 
+function standingOf(rows: Standing[], userId: number): Stats {
+  const mine = rows.find((row) => row.userId === userId);
+  return { rank: mine?.rank ?? null, points: mine?.points ?? 0 };
+}
+
+function StatCard({ label, stats }: { label: string; stats: Stats }) {
+  return (
+    <View style={[styles.card, styles.stat]}>
+      <Text style={styles.tag}>{label}</Text>
+      <Text style={styles.bigStat}>{stats.points}</Text>
+      <Text style={styles.muted}>{stats.rank ? `Rank ${stats.rank}` : 'Not ranked yet'}</Text>
+    </View>
+  );
+}
+
 function needsOnboarding({ user, handles }: Me): boolean {
   const approved = (platform: string) => handles.some((h) => h.platform === platform && h.approved);
   return !user.batchYear || !approved('cf') || !approved('cc');
@@ -51,6 +68,8 @@ function needsOnboarding({ user, handles }: Me): boolean {
 export default function Home() {
   const [me, setMe] = useState<Me | null>(null);
   const [contests, setContests] = useState<Contest[]>([]);
+  const [today, setToday] = useState<Stats>({ rank: null, points: 0 });
+  const [week, setWeek] = useState<Stats>({ rank: null, points: 0 });
   const [destination, setDestination] = useState<Destination>(null);
   const [error, setError] = useState('');
 
@@ -58,11 +77,18 @@ export default function Home() {
     setError('');
     if (!(await getSession())) return setDestination('login');
     try {
-      const [meData, upcoming] = await Promise.all([api<Me>('/me'), api<Contest[]>('/contests/upcoming')]);
+      const [meData, upcoming, dayRows, weekRows] = await Promise.all([
+        api<Me>('/me'),
+        api<Contest[]>('/contests/upcoming'),
+        api<Standing[]>('/leaderboard?period=day'),
+        api<Standing[]>('/leaderboard?period=week'),
+      ]);
       registerPushToken().catch(console.warn);
       if (needsOnboarding(meData)) return setDestination('onboarding');
       setMe(meData);
       setContests(upcoming);
+      setToday(standingOf(dayRows, meData.user.id));
+      setWeek(standingOf(weekRows, meData.user.id));
     } catch (err) {
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
         await clearSession();
@@ -108,6 +134,11 @@ export default function Home() {
       ) : (
         <Text style={styles.muted}>No contests coming up yet. Check back soon.</Text>
       )}
+      <View style={styles.stats}>
+        <StatCard label="TODAY" stats={today} />
+        <StatCard label="THIS WEEK" stats={week} />
+      </View>
+      <Button title="See the leaderboard" variant="secondary" onPress={() => router.push('/leaderboard')} />
     </ScrollView>
   );
 }
@@ -116,6 +147,9 @@ const styles = StyleSheet.create({
   page: { padding: 16, paddingTop: 64, gap: 16 },
   centered: { flex: 1, justifyContent: 'center', padding: 16, gap: 16 },
   card: { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1, borderRadius: 12, padding: 16, gap: 8 },
+  stats: { flexDirection: 'row', gap: 12 },
+  stat: { flex: 1 },
+  bigStat: { color: theme.accent, fontFamily: theme.font.monoBold, fontSize: 32 },
   tag: { color: theme.muted, fontFamily: theme.font.medium, fontSize: 12, letterSpacing: 0.48 },
   contestName: { color: theme.text, fontFamily: theme.font.semibold, fontSize: 18 },
   time: { color: theme.text, fontFamily: theme.font.mono, fontSize: 14 },

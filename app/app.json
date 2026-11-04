@@ -2,13 +2,29 @@
   "expo": {
     "name": "CP Club Tracker",
     "slug": "cp-club-tracker",
-    "scheme": ["cpclub", "com.cpclub.tracker"],
+    "scheme": [
+      "cpclub",
+      "com.cpclub.tracker"
+    ],
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0B0D10",
-    "android": { "package": "com.cpclub.tracker" },
-    "plugins": ["expo-router", "expo-notifications", "expo-secure-store", "expo-font"],
-    "experiments": { "typedRoutes": false }
+    "android": {
+      "package": "com.cpclub.tracker"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      "expo-secure-store",
+      "expo-font",
+      "expo-updates"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

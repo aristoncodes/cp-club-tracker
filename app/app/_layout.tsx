@@ -1,5 +1,5 @@
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { JetBrainsMono_500Medium } from '@expo-google-fonts/jetbrains-mono';
+import { JetBrainsMono_500Medium, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { router, Stack } from 'expo-router';
@@ -15,6 +15,7 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
     JetBrainsMono_500Medium,
+    JetBrainsMono_700Bold,
   });
   const response = Notifications.useLastNotificationResponse();
 
