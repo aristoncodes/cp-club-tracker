@@ -5,11 +5,39 @@ const SESSION_KEY = 'session';
 
 export type Handle = { platform: string; handle: string; approved: number };
 
+export type User = {
+  id: number;
+  email: string;
+  name: string;
+  username: string | null;
+  usernameChangesLeft: number;
+  batchYear: number | null;
+  onboardingStep: string;
+  hasPassword: number;
+  hasGoogle: number;
+  cfRating: number | null;
+  notifyHour: number;
+  notifyRsvp: number;
+  notifyResult: number;
+  notifyStreak: number;
+};
+
 export type Me = {
-  user: { id: number; name: string; batchYear: number | null };
+  user: User;
   handles: Handle[];
   pendingReasons: { id: number; name: string }[];
   streak: number;
+};
+
+export type Contest = {
+  id: number;
+  platform: string;
+  name: string;
+  url: string;
+  startAt: number;
+  rsvp: string | null;
+  goingCount: number;
+  participantCount: number;
 };
 
 export class ApiError extends Error {

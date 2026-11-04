@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { solvesText } from 'shared/time';
 import { api, type Me } from '../../lib/api';
-import { Avatar, initials, Rating } from '../../lib/ui';
+import { Avatar, AvatarButton, common, initials, Rating } from '../../lib/ui';
 import { theme } from '../../theme';
 
 type Period = 'day' | 'week' | 'month';
@@ -56,7 +56,8 @@ function Podium({ rows }: { rows: Row[] }) {
 export default function Leaderboard() {
   const [period, setPeriod] = useState<Period>('week');
   const [rows, setRows] = useState<Row[]>([]);
-  const [myId, setMyId] = useState<number | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
+  const myId = me?.user.id ?? null;
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
@@ -64,9 +65,9 @@ export default function Leaderboard() {
     setError('');
     setRefreshing(true);
     try {
-      const [data, me] = await Promise.all([api<Row[]>(`/leaderboard?period=${period}`), api<Me>('/me')]);
+      const [data, meData] = await Promise.all([api<Row[]>(`/leaderboard?period=${period}`), api<Me>('/me')]);
       setRows(data);
-      setMyId(me.user.id);
+      setMe(meData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load the leaderboard.');
     } finally {
@@ -86,7 +87,10 @@ export default function Leaderboard() {
 
   return (
     <View style={styles.page}>
-      <Text style={styles.title}>Leaderboard</Text>
+      <View style={common.between}>
+        <Text style={styles.title}>Leaderboard</Text>
+        {me ? <AvatarButton userId={me.user.id} name={me.user.name} /> : null}
+      </View>
       <View style={styles.tabs} accessibilityRole="tablist">
         {TABS.map((tab) => {
           const active = tab.id === period;

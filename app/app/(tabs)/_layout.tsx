@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { theme } from '../../theme';
 
-const ICONS = { index: 'home', leaderboard: 'bar-chart-2', feed: 'list', profile: 'user' } as const;
+const ICONS = { index: 'home', leaderboard: 'bar-chart-2', contests: 'calendar', feed: 'list' } as const;
 
 export default function TabsLayout() {
   return (
@@ -18,8 +18,8 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="leaderboard" options={{ title: 'Board' }} />
+      <Tabs.Screen name="contests" options={{ title: 'Contests' }} />
       <Tabs.Screen name="feed" options={{ title: 'Feed' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Me' }} />
     </Tabs>
   );
 }

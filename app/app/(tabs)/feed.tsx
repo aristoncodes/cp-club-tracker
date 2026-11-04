@@ -9,6 +9,7 @@ import { theme } from '../../theme';
 type FeedItem = {
   userId: number;
   name: string;
+  username: string | null;
   platform: string;
   problemId: string;
   problemName: string | null;
@@ -78,7 +79,7 @@ export default function Feed() {
               <Text style={styles.line}>
                 <Text style={styles.name} onPress={() => router.push({ pathname: '/user/[id]', params: { id: String(item.userId) } })}>
                   {item.name.split(' ')[0]}
-                </Text>{' '}
+                </Text>{item.username ? <Text style={styles.small}> @{item.username}</Text> : null}{' '}
                 solved {item.problemName ?? item.problemId}
               </Text>
               <Text style={styles.small} numberOfLines={1}>{[...item.tags.slice(0, 3), timeAgo(item.solvedAt, now)].join(' · ')}</Text>

@@ -93,6 +93,8 @@ pnpm exec wrangler secret put SESSION_SECRET
 | `GITHUB_TOKEN` | A [fine-grained token](https://github.com/settings/personal-access-tokens) for this repo only, with **Actions: Read and write** |
 | `VAPID_PUBLIC_KEY` | From step 2 |
 | `VAPID_PRIVATE_KEY` | From step 2 |
+| `BREVO_API_KEY` | From a free [Brevo](https://www.brevo.com) account, under SMTP & API → API keys |
+| `EMAIL_FROM` | The sender address you verified in Brevo |
 
 Then deploy again from `api/`, because `WEB_ORIGIN` changed:
 

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { REASONS } from 'shared/reasons';
 import { api } from '../lib/api';
-import { Button } from '../lib/ui';
+import { Button, ScreenHeader } from '../lib/ui';
 import { theme } from '../theme';
 
 export default function Reason() {
@@ -33,6 +33,7 @@ export default function Reason() {
 
   return (
     <View style={styles.page}>
+      <ScreenHeader title="Reason" />
       <Text style={styles.title}>What got in the way?</Text>
       <View style={styles.chips}>
         {REASONS.map(({ id, label }) => {

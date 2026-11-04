@@ -1,74 +1,82 @@
-import { exchangeCodeAsync, ResponseType, useAuthRequest, useAutoDiscovery } from 'expo-auth-session';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { api, setSession } from '../lib/api';
-import { Button } from '../lib/ui';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ApiError, api, setSession } from '../lib/api';
+import { useGoogleSignIn } from '../lib/google';
+import { Button, common } from '../lib/ui';
 import { theme } from '../theme';
 
-const CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
-const REDIRECT_URI = 'com.cpclub.tracker:/oauthredirect';
-
 export default function Login() {
-  const discovery = useAutoDiscovery('https://accounts.google.com');
-  const [request, , promptAsync] = useAuthRequest(
-    {
-      clientId: CLIENT_ID,
-      redirectUri: REDIRECT_URI,
-      scopes: ['openid', 'email', 'profile'],
-      responseType: ResponseType.Code,
-      usePKCE: true,
-    },
-    discovery,
-  );
+  const google = useGoogleSignIn();
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   async function signIn() {
     setError('');
+    setBusy(true);
     try {
-      const result = await promptAsync();
-      if (result.type !== 'success' || !discovery) return;
-      const tokens = await exchangeCodeAsync(
-        {
-          clientId: CLIENT_ID,
-          redirectUri: REDIRECT_URI,
-          code: result.params.code,
-          extraParams: { code_verifier: request?.codeVerifier ?? '' },
-        },
-        discovery,
-      );
-      const { token } = await api<{ token: string }>('/auth/google', 'POST', { idToken: tokens.idToken });
+      const { token } = await api<{ token: string }>('/auth/login', 'POST', { identifier, password });
       await setSession(token);
       router.replace('/');
+    } catch (err) {
+      if (err instanceof ApiError && err.message === 'verify') {
+        if (identifier.includes('@')) return router.replace({ pathname: '/signup', params: { verifyEmail: identifier } });
+        return setError('Sign in with your email to finish verifying it.');
+      }
+      setError(err instanceof Error ? err.message : 'Sign-in failed. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function withGoogle() {
+    setError('');
+    try {
+      if (await google.signIn()) router.replace('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-in failed. Please try again.');
     }
   }
 
   return (
-    <View style={styles.page}>
+    <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <View style={styles.brand}>
         <View style={styles.logoTile}><Text style={styles.logoMark}>&gt;_</Text></View>
-        <Text style={styles.wordmark}>grind<Text style={styles.dot}>.</Text>club</Text>
+        <Text style={styles.wordmark}>grind<Text style={styles.lime}>.</Text>club</Text>
       </View>
-      <Text style={styles.headline}>
-        Show up.{'\n'}<Text style={styles.dot}>Solve more.</Text>{'\n'}Climb the board.
-      </Text>
-      <Text style={styles.purpose}>Contest reminders, attendance and a live leaderboard for the club.</Text>
-      <Button title="Continue with Google" onPress={signIn} disabled={!request} />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-    </View>
+      <View style={styles.middle}>
+        <Text style={styles.headline}>Welcome back.{'\n'}<Text style={styles.lime}>Let's grind.</Text></Text>
+        <Text style={common.muted}>Contest reminders, attendance and a live leaderboard.</Text>
+        <Button title="Continue with Google" variant="white" onPress={withGoogle} disabled={!google.ready} />
+        <View style={common.row}><View style={styles.rule} /><Text style={common.small}>or</Text><View style={styles.rule} /></View>
+        <TextInput style={common.input} value={identifier} onChangeText={setIdentifier} placeholder="Email or username" placeholderTextColor={theme.muted} autoCapitalize="none" autoCorrect={false} autoComplete="username" />
+        <View style={styles.passwordLabel}>
+          <Pressable accessibilityRole="link" hitSlop={12} onPress={() => router.push('/forgot')}><Text style={common.link}>Forgot?</Text></Pressable>
+        </View>
+        <TextInput style={common.input} value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor={theme.muted} secureTextEntry autoComplete="current-password" />
+        {error ? <Text style={common.error}>{error}</Text> : null}
+        <View style={styles.signIn}><Button title="Sign in" onPress={signIn} disabled={busy || !identifier || !password} /></View>
+      </View>
+      <Pressable accessibilityRole="link" onPress={() => router.push('/signup')} style={styles.bottom}>
+        <Text style={common.muted}>New to the club? <Text style={common.bold}>Create your account</Text></Text>
+      </Pressable>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, justifyContent: 'center', padding: theme.gutter, gap: 20 },
+  page: { flexGrow: 1, padding: theme.gutter, paddingTop: 56, gap: 20 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoTile: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.violet, transform: [{ rotate: '-6deg' }] },
-  logoMark: { color: '#FFFFFF', fontFamily: theme.font.monoBold, fontSize: 14 },
+  logoMark: { color: theme.white, fontFamily: theme.font.monoBold, fontSize: 14 },
   wordmark: { color: theme.text, fontFamily: theme.font.display, fontSize: 22 },
-  dot: { color: theme.lime },
-  headline: { color: theme.text, fontFamily: theme.font.display, fontSize: 42, lineHeight: 46, letterSpacing: -1.4 },
-  purpose: { color: theme.muted, fontFamily: theme.font.regular, fontSize: 15 },
-  error: { color: theme.pink, fontFamily: theme.font.regular, fontSize: 14 },
+  lime: { color: theme.lime },
+  middle: { flex: 1, justifyContent: 'center', gap: 14 },
+  headline: { color: theme.text, fontFamily: theme.font.display, fontSize: 44, lineHeight: 48, letterSpacing: -1.5 },
+  rule: { flex: 1, height: 1, backgroundColor: theme.line },
+  passwordLabel: { alignItems: 'flex-end', marginBottom: -8 },
+  signIn: { marginTop: 4 },
+  bottom: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

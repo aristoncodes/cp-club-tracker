@@ -7,11 +7,11 @@ import { solvePoints } from 'shared/scoring';
 import { formatIST, istDay, solvesText, weekStrip } from 'shared/time';
 import { ApiError, api, clearSession, getSession, type Me } from '../../lib/api';
 import { registerPushToken } from '../../lib/push';
-import { Avatar, Button, StreakPill } from '../../lib/ui';
+import { AvatarButton, Button, StreakPill } from '../../lib/ui';
 import { theme } from '../../theme';
 
 type Contest = { id: number; platform: string; name: string; startAt: number; rsvp: string | null; goingCount: number; participantCount: number };
-type Destination = 'login' | 'onboarding' | null;
+type Destination = 'login' | 'signup' | null;
 type Standing = { userId: number; name: string; rank: number; points: number; solves: number; cfRating: number | null };
 type Profile = { heatmap: { day: number; count: number }[]; today: number };
 
@@ -120,11 +120,6 @@ function StatCard({ label, standing, accent }: { label: string; standing?: Stand
   );
 }
 
-function needsOnboarding({ user, handles }: Me): boolean {
-  const approved = (platform: string) => handles.some((h) => h.platform === platform && h.approved);
-  return !user.batchYear || !approved('cf') || !approved('cc');
-}
-
 export default function Home() {
   const [me, setMe] = useState<Me | null>(null);
   const [contests, setContests] = useState<Contest[]>([]);
@@ -140,7 +135,7 @@ export default function Home() {
     try {
       const meData = await api<Me>('/me');
       registerPushToken().catch(console.warn);
-      if (needsOnboarding(meData)) return setDestination('onboarding');
+      if (meData.user.onboardingStep !== 'done') return setDestination('signup');
       const [upcoming, day, week, userProfile] = await Promise.all([
         api<Contest[]>('/contests/upcoming'),
         api<Standing[]>('/leaderboard?period=day'),
@@ -196,9 +191,16 @@ export default function Home() {
         </View>
         <View style={styles.row}>
           <StreakPill streak={me.streak} />
-          <Avatar userId={me.user.id} name={me.user.name} />
+          <AvatarButton userId={me.user.id} name={me.user.name} />
         </View>
       </View>
+      {me.handles.some((h) => !h.approved) ? (
+        <Pressable accessibilityRole="button" style={styles.banner} onPress={() => router.push('/settings')}>
+          <View style={styles.bannerTile}><Text style={styles.bannerMark}>!</Text></View>
+          <Text style={styles.bannerText}><Text style={styles.bannerBold}>Waiting for approval.</Text> A coordinator checks each handle.</Text>
+          <Feather name="chevron-right" size={20} color={theme.sunText} />
+        </Pressable>
+      ) : null}
       {me.pendingReasons.map((contest) => (
         <Pressable
           key={contest.id}
@@ -264,28 +266,28 @@ const styles = StyleSheet.create({
   bannerText: { flex: 1, color: theme.sunText, fontFamily: theme.font.regular, fontSize: 14 },
   bannerBold: { fontFamily: theme.font.bold },
   contest: { gap: 12, padding: 18, borderRadius: 22, backgroundColor: theme.violet },
-  platform: { overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: '#FFFFFF', color: '#5B21B6', fontFamily: theme.font.bold, fontSize: 11, letterSpacing: 0.8 },
+  platform: { overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: theme.white, color: theme.violetText, fontFamily: theme.font.bold, fontSize: 11, letterSpacing: 0.8 },
   contestTime: { color: theme.violetPale, fontFamily: theme.font.semibold, fontSize: 13 },
-  contestName: { color: '#FFFFFF', fontFamily: theme.font.display, fontSize: 22, letterSpacing: -0.4 },
+  contestName: { color: theme.white, fontFamily: theme.font.display, fontSize: 22, letterSpacing: -0.4 },
   tiles: { flexDirection: 'row', gap: 8 },
   tile: { flex: 1, alignItems: 'center', padding: 10, borderRadius: 14, backgroundColor: theme.violetDeep },
-  tileValue: { color: '#FFFFFF', fontFamily: theme.font.monoHeavy, fontSize: 24 },
+  tileValue: { color: theme.white, fontFamily: theme.font.monoHeavy, fontSize: 24 },
   tileLabel: { color: theme.violetSoft, fontFamily: theme.font.bold, fontSize: 10, letterSpacing: 0.8 },
   inStrip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: 18, borderRadius: 999, backgroundColor: theme.lime },
   inText: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14 },
   change: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14, textDecorationLine: 'underline' },
   answered: { gap: 8 },
   choose: { gap: 10 },
-  chooseTitle: { color: '#FFFFFF', fontFamily: theme.font.bold, fontSize: 14 },
+  chooseTitle: { color: theme.white, fontFamily: theme.font.bold, fontSize: 14 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 999, borderWidth: 2, borderColor: theme.violetSoft },
   chipSelected: { backgroundColor: theme.lime, borderColor: theme.lime },
-  chipText: { color: '#FFFFFF', fontFamily: theme.font.bold, fontSize: 13 },
+  chipText: { color: theme.white, fontFamily: theme.font.bold, fontSize: 13 },
   chipTextSelected: { color: theme.ink },
   input: { height: 48, paddingHorizontal: 14, borderRadius: 16, backgroundColor: theme.card, color: theme.text, fontFamily: theme.font.regular, fontSize: 14 },
   contestError: { padding: 10, borderRadius: 12, overflow: 'hidden', backgroundColor: theme.ink, color: theme.pink, fontFamily: theme.font.regular, fontSize: 13 },
   going: { color: theme.violetPale, fontFamily: theme.font.regular, fontSize: 13 },
-  goingNumber: { color: '#FFFFFF', fontFamily: theme.font.monoHeavy },
+  goingNumber: { color: theme.white, fontFamily: theme.font.monoHeavy },
   card: { gap: 10, padding: 18, borderRadius: 20, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card },
   statLabel: { color: theme.muted, fontFamily: theme.font.bold, fontSize: 12 },
   bigStat: { color: theme.text, fontFamily: theme.font.monoHeavy, fontSize: 32, letterSpacing: -1 },
