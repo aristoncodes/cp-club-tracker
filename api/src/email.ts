@@ -1,12 +1,11 @@
 import type { Bindings } from './auth';
 
-const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
-
 export async function sendEmail(env: Bindings, to: string, subject: string, text: string): Promise<void> {
-  const response = await fetch(BREVO_URL, {
+  const response = await fetch(env.EMAIL_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'api-key': env.BREVO_API_KEY },
-    body: JSON.stringify({ sender: { name: 'grind.club', email: env.EMAIL_FROM }, to: [{ email: to }], subject, textContent: text }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret: env.EMAIL_SECRET, to, subject, text }),
   });
-  if (!response.ok) throw new Error(`Brevo returned ${response.status}`);
+  const result = response.ok ? await response.json<{ ok?: boolean }>() : null;
+  if (!result?.ok) throw new Error(`Email sender returned ${response.status}`);
 }

@@ -43,7 +43,7 @@ api/     migrations/  wrangler.toml  seed.dev.sql
          src/auth.ts       session JWT, requireUser/requireAdmin
          src/accounts.ts   /auth/* routes: Google, email + password, codes, usernames
          src/secrets.ts    password hashing, code hashing, constant-time compare
-         src/email.ts      Brevo sender
+         src/email.ts      calls the Apps Script email sender
          src/routes.ts     student routes
          src/admin.ts      admin routes
          src/ingest.ts     /ingest/* routes
@@ -296,7 +296,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 - **LeetCode:** unofficial GraphQL `recentAcSubmissionList` (about the last 20) plus `question` difficulty. Solves are never live.
 
 **GitHub secrets:** `API_URL`, `INGEST_SECRET`, `EXPO_TOKEN`.
-**Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `BREVO_API_KEY`, `EMAIL_FROM`.
+**Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `EMAIL_URL`, `EMAIL_SECRET`.
 **Worker var:** `WEB_ORIGIN` in `wrangler.toml`, used for CORS and as the VAPID subject.
 
 ## App notifications (`app/lib/push.ts`)
@@ -319,4 +319,4 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 
 - **Passwords:** PBKDF2-SHA256 through Web Crypto, a random 16-byte salt per user, stored as `pbkdf2$<iterations>$<salt>$<hash>`. Workers caps PBKDF2 at 100,000 iterations and the free plan allows 10 ms of CPU. The chosen count and how it was measured are recorded in `api/src/secrets.ts`.
 - **Codes:** HMAC-SHA256 with `SESSION_SECRET`, over email, purpose and code. Comparison is constant-time.
-- **Email:** Brevo's transactional API through `fetch`, sent from a single verified sender (`EMAIL_FROM`). Free plan, no domain needed.
+- **Email:** a small Google Apps Script web app, called through `fetch`, sends from the club's Gmail with `MailApp`. Free, no domain and no card. The limit is 100 recipients a day on a personal Gmail; past that, codes fail until the next day. The script is in `SETUP.md`.

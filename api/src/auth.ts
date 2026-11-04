@@ -12,8 +12,8 @@ export type Bindings = {
   GITHUB_REPO: string;
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;
-  BREVO_API_KEY: string;
-  EMAIL_FROM: string;
+  EMAIL_URL: string;
+  EMAIL_SECRET: string;
 };
 
 export type User = {
