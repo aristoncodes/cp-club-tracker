@@ -15,7 +15,7 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 
 1. [x] **Repo skeleton.** pnpm workspace with `shared`, `api`, `web`, `app`, `jobs`; a strict `tsconfig` in each; root scripts `typecheck` and `test`.
    - Done when: `pnpm -r typecheck` passes on empty packages.
-2. [ ] **`shared/`.** `time.ts`, `scoring.ts`, `contests.ts`, `rating-color.ts`, `types.ts`, with unit tests.
+2. [x] **`shared/`.** `time.ts`, `scoring.ts`, `contests.ts`, `rating-color.ts`, `types.ts`, with unit tests.
    - Done when: the tests in `TESTING.md → shared` pass.
 3. [ ] **Schema + Worker shell.** `schema.sql`, `wrangler.toml` (D1 binding, cron `* * * * *`), Hono app, CORS, error handler.
    - Done when: `GET /api/health` returns `{ ok: true }` locally with the schema applied.
