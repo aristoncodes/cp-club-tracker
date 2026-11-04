@@ -11,7 +11,7 @@
                           Cloudflare D1        │
                                          GitHub Actions (jobs/)
                                    CF contest list, CodeChef, AtCoder,
-                                   LeetCode, CSES, SPOJ adapters
+                                   LeetCode adapters
 ```
 
 - The **Worker** owns the database, the API and everything time-critical: reminders, RSVP pushes, Codeforces verification.
@@ -51,8 +51,8 @@ web/     src/main.tsx  src/api.ts  src/pages/*.tsx  index.css  tailwind.config.t
 app/     app/(tabs)/*.tsx  app/reason.tsx  app/onboarding.tsx  app/login.tsx
          lib/api.ts  lib/push.ts  theme.ts
 jobs/    lib.ts (fetch with UA + delay, ingest poster)
-         adapters/{cf,cc,atcoder,leetcode,cses,spoj}.ts
-         sync-contests.ts  sync-solves.ts  snapshots.ts  cc-participation.ts
+         adapters/{cf,cc,atcoder,leetcode}.ts
+         sync-contests.ts  sync-solves.ts  cc-participation.ts
          fixtures/  (saved responses for tests)
 ```
 
@@ -155,8 +155,6 @@ Rp is the Codeforces-equivalent rating of the problem. The conversion is a const
 | cc | difficulty − 200; missing → 1200 |
 | atcoder | estimated difficulty + 400, floored at 800; missing → 1200 |
 | leetcode | Easy 900, Medium 1300, Hard 1700 |
-| cses | 1400 |
-| spoj | 1200 |
 
 ## Contest rules (`shared/contests.ts`)
 
@@ -237,7 +235,6 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 |---|---|---|
 | `sync-contests.ts` | `0 */6 * * *` | CF `contest.list?gym=false` (future contests only) + CodeChef upcoming contests → apply `countsForAttendance` and parallel-round merge → `/ingest/contests` |
 | `sync-solves.ts` | `*/30 * * * *` | cc, atcoder, leetcode (and cf as a backstop) recent accepted submissions for approved handles → `/ingest/solves` |
-| `snapshots.ts` | `0 20 * * *` | cses, spoj solved lists. Diffs against the previous snapshot committed to the `snapshots` branch; new ones are posted with `solvedAt` = run time. A handle's first snapshot is only stored as the baseline, nothing is posted |
 | `cc-participation.ts` | `workflow_dispatch` (input `contest`) | Scrape the contest rankings / each handle's contest history → `/ingest/participation` |
 
 **Platform notes:**
@@ -245,7 +242,6 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 - **CodeChef:** no official API. Use the JSON endpoints the CodeChef website itself calls (contest list, recent submissions), falling back to HTML. Expect changes; keep parsing in `adapters/cc.ts` only.
 - **AtCoder:** AtCoder Problems API for submissions (`from_second`) and difficulty estimates. Be polite: one request per second.
 - **LeetCode:** unofficial GraphQL `recentAcSubmissionList` (about the last 20) plus `question` difficulty.
-- **CSES / SPOJ:** public profile pages; solved lists only, no times.
 
 **GitHub secrets:** `API_URL`, `INGEST_SECRET`.
 **Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`.

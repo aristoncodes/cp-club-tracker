@@ -30,7 +30,7 @@ Read these before writing any code, in this order:
 
 - TypeScript `strict` everywhere, ES modules, named exports, `type` over `interface`.
 - **Time:** store unix seconds UTC as `INTEGER`. Convert to IST (Asia/Kolkata, UTC+05:30, no DST) only for display and for day/week/month boundaries, using `shared/time.ts`.
-- **Platform ids:** `cf`, `cc`, `atcoder`, `leetcode`, `cses`, `spoj`. Use these strings everywhere.
+- **Platform ids:** `cf`, `cc`, `atcoder`, `leetcode`. Use these strings everywhere.
 - **SQL:** the schema lives only in `api/schema.sql`. Queries sit next to the code that uses them.
 - **Naming:** files kebab-case, React components PascalCase, functions camelCase.
 - **Errors:** the API returns `{ error: string }` with a correct HTTP status and never leaks stack traces. A failed external fetch is retried on the next scheduled run, never in a loop.
@@ -49,7 +49,7 @@ pnpm --filter api dev           # wrangler dev with local D1 (+ --test-scheduled
 pnpm --filter api deploy
 pnpm --filter web dev
 pnpm --filter app start         # Expo dev server
-pnpm --filter jobs sync-contests | sync-solves | snapshots | cc-participation
+pnpm --filter jobs sync-contests | sync-solves | cc-participation
 ```
 
 ## Repo layout

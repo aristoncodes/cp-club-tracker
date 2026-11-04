@@ -28,7 +28,6 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 - Every adapter's `parse*` runs against a saved real response in `jobs/fixtures/`. It keeps only accepted verdicts and extracts problem id, rating, tags and time correctly.
 - When a site changes, update the fixture and the parser together.
 - `sync-contests` merges a parallel Div. 1 round into its Div. 2 round (fixture with two contests sharing a start time).
-- `snapshots` diff: given old and new solved lists, only the new problems are returned.
 
 ### api
 

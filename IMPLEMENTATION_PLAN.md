@@ -50,10 +50,9 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 ## Phase 3 — Week 2
 
 18. [ ] AtCoder and LeetCode adapters in `sync-solves.ts`
-19. [ ] CSES and SPOJ adapters + `snapshots.ts` and its workflow
-20. [ ] Feed (endpoint, app tab, web page)
-21. [ ] Streaks, heatmap, top tags on profiles
-22. [ ] Web push for the installed website (iPhone users)
+19. [ ] Feed (endpoint, app tab, web page)
+20. [ ] Streaks, heatmap, top tags on profiles
+21. [ ] Web push for the installed website (iPhone users)
 
 ## Later (don't build until asked)
 
