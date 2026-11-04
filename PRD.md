@@ -58,7 +58,7 @@ The college competitive programming club (40–50 students across all years) has
 
 ### Admin attendance view (web)
 
-- Grid of students (rows) × contests (columns), filtered by date range, platform and batch year. Cells show Present / Absent + reason / Absent, no reason.
+- Grid of students (rows) × contests (columns), filtered by date range, platform and year. Cells show Present / Absent + reason / Absent, no reason.
 - Per-student attendance % and count of "said Yes, didn't show".
 - Reasons grouped by type.
 - CSV export of the current grid.
@@ -69,7 +69,7 @@ The college competitive programming club (40–50 students across all years) has
 
 - Counts every first accepted submission per problem on Codeforces, CodeChef, AtCoder and LeetCode, made after that handle was approved. Version 1 covers Codeforces, CodeChef and LeetCode; AtCoder comes in week 2. LeetCode contests don't count for attendance.
 - Each solve earns points (formula in `ARCHITECTURE.md → Scoring`). Harder problems are worth much more, and problems above your own rating get a bonus.
-- Tabs: **Today**, **This week** (Monday to Sunday, IST), **This month**. Each row shows rank, name, batch year, points, number of solves, and the hardest problem solved in the period, by Codeforces-equivalent rating. Only students with at least one solve in the period are listed. Equal points share a rank.
+- Tabs: **Today**, **This week** (Monday to Sunday, IST), **This month**. Each row shows rank, name, year (1st, 2nd, 3rd or 4th), points, number of solves, and the hardest problem solved in the period, by Codeforces-equivalent rating. Only students with at least one solve in the period are listed. Equal points share a rank.
 - **Feed (week 2):** latest solves across the club, e.g. "Aman solved 1700 · dp, greedy · 12 min ago".
 - **Profile:** linked handles, CF rating, points today/week/month, solve streak, 6-month heatmap (week 2), and top tags.
 - Admin page lists students with more than 30 solves in one day, for manual review. There is no automatic penalty.

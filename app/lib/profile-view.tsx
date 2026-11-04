@@ -1,6 +1,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { studyYearLabel } from 'shared/batch';
 import { heatmapWeeks } from 'shared/time';
 import { theme } from '../theme';
 import { api } from './api';
@@ -51,7 +52,7 @@ export function ProfileView({ id, footer }: { id: number; footer?: ReactNode }) 
     <ScrollView contentContainerStyle={styles.page}>
       <Text style={styles.title}>{profile.name}</Text>
       <Text style={styles.muted}>
-        {profile.batchYear ? `Batch ${profile.batchYear} · ` : ''}CF rating <Rating value={profile.cfRating} />
+        {[studyYearLabel(profile.batchYear, Date.now() / 1000), 'CF rating'].filter(Boolean).join(' · ')} <Rating value={profile.cfRating} />
       </Text>
       <View style={styles.grid}>
         <Stat label="TODAY" value={round(profile.stats.dayPoints)} />

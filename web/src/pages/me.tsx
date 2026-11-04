@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { batchForStudyYear, STUDY_YEARS, studyYearOf } from 'shared/batch';
 import { formatIST } from 'shared/time';
 import { api, type Me } from '../api';
 import { Button, Card, ErrorText, inputClass, platformLabel, PLATFORMS, useLoad, useMe } from '../ui';
@@ -61,20 +62,21 @@ function ReasonForm({ onSubmit }: { onSubmit: (reason: { reasonType: string; rea
 }
 
 function SetupForm({ me, onSaved }: { me: Me; onSaved: () => void }) {
-  const [batchYear, setBatchYear] = useState(me.user.batchYear ? String(me.user.batchYear) : '');
+  const now = Date.now() / 1000;
+  const [studyYear, setStudyYear] = useState(me.user.batchYear ? studyYearOf(me.user.batchYear, now) : 0);
   const [handles, setHandles] = useState<Record<string, string>>(Object.fromEntries(me.handles.map((h) => [h.platform, h.handle])));
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   async function save() {
-    if (!/^\d{4}$/.test(batchYear)) return setError('Enter your 4-digit batch year.');
+    if (!STUDY_YEARS.some((y) => y.value === studyYear)) return setError('Choose your year.');
     if (PLATFORMS.some((p) => p.required && !handles[p.id]?.trim())) return setError('Codeforces and CodeChef handles are required.');
     setError('');
     setMessage('');
     setSaving(true);
     try {
-      await api('/me', 'PUT', { name: me.user.name, batchYear: Number(batchYear) });
+      await api('/me', 'PUT', { name: me.user.name, batchYear: batchForStudyYear(studyYear, now) });
       for (const { id } of PLATFORMS) {
         if (handles[id]?.trim()) await api(`/me/handles/${id}`, 'PUT', { handle: handles[id] });
       }
@@ -91,8 +93,11 @@ function SetupForm({ me, onSaved }: { me: Me; onSaved: () => void }) {
     <Card className="flex flex-col gap-3">
       <h2 className="text-lg font-semibold">Your profile</h2>
       <label className="flex flex-col gap-1">
-        <span className="label">Batch year</span>
-        <input className={`${inputClass} num`} inputMode="numeric" maxLength={4} value={batchYear} onChange={(e) => setBatchYear(e.target.value)} />
+        <span className="label">Year</span>
+        <select className={inputClass} value={studyYear} onChange={(e) => setStudyYear(Number(e.target.value))}>
+          <option value={0}>Choose your year</option>
+          {STUDY_YEARS.map((y) => <option key={y.value} value={y.value}>{y.label}</option>)}
+        </select>
       </label>
       {PLATFORMS.map(({ id, label, required }) => {
         const saved = me.handles.find((h) => h.platform === id);

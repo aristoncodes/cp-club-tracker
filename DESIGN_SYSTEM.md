@@ -65,7 +65,7 @@ Build only these. Each is a small function in the file that uses it, unless used
 - **Button:** primary (accent background, `bg`-coloured text), secondary (`surface-2` background), danger (absent-coloured text). Height 44 web / 48 app.
 - **Card:** `surface` background, 1 px border, radius 12, padding 16.
 - **Tabs:** segmented control for Today / Week / Month. The active tab has a `surface-2` background and accent text.
-- **LeaderboardRow:** rank (mono, muted; ranks 1–3 in `text`), name + batch year, handle in rating colour, solves, hardest problem rating (rating colour), points (mono, accent, right-aligned). Your own row has a 2 px accent left border.
+- **LeaderboardRow:** rank (mono, muted; ranks 1–3 in `text`), name + year, handle in rating colour, solves, hardest problem rating (rating colour), points (mono, accent, right-aligned). Your own row has a 2 px accent left border.
 - **StatusBadge:** Present / Absent / Pending as a pill with a 12% tinted background of the status colour and full-colour text.
 - **ContestCard:** platform tag, contest name, start time in IST ("Wed 8:00 PM"), countdown, your RSVP state. Used on the home screen.
 - **ReasonForm:** reason type chips (single select) and an optional text field (required for `other`). Submit button.
@@ -78,7 +78,7 @@ Build only these. Each is a small function in the file that uses it, unless used
 ### App (Android)
 
 1. **Sign in:** app name, one-line purpose, "Continue with Google".
-2. **Onboarding:** batch year, Codeforces handle, CodeChef handle (required), others optional. Shows "Waiting for admin approval" until approved.
+2. **Onboarding:** year (1st to 4th), Codeforces handle, CodeChef handle (required), others optional. Shows "Waiting for admin approval" until approved.
 3. **Home:** pending-reason Banner (if any), next ContestCard, your rank and points today and this week as big stats, link to the leaderboard.
 4. **Leaderboard:** Tabs + LeaderboardRows, pull to refresh.
 5. **Feed (week 2).**

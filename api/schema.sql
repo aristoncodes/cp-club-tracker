@@ -2,7 +2,7 @@ CREATE TABLE users (
   id INTEGER PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
-  batch_year INTEGER,
+  batch_year INTEGER,                        -- year the student joined; shown as 1st to 4th year
   role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student','admin')),
   active INTEGER NOT NULL DEFAULT 1,
   cf_rating INTEGER,                         -- NULL = unrated

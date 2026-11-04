@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { studyYearLabel } from 'shared/batch';
 import { formatIST, timeAgo } from 'shared/time';
 import type { Period } from 'shared/types';
 import { api } from '../api';
@@ -117,7 +118,7 @@ export function Leaderboard() {
                     <Link to={`/u/${row.userId}`} className="hover:underline">
                       <Rating value={row.cfRating}>{row.cfHandle ?? row.name}</Rating>
                     </Link>
-                    <span className="ml-2 text-muted">{row.name}{row.batchYear ? ` · ${row.batchYear}` : ''}</span>
+                    <span className="ml-2 text-muted">{[row.name, studyYearLabel(row.batchYear, Date.now() / 1000)].filter(Boolean).join(' · ')}</span>
                     <div className="text-xs text-muted sm:hidden">
                       <span className="num">{row.solves}</span> solves · hardest <Rating value={row.hardest} />
                     </div>

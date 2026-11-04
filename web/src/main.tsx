@@ -15,7 +15,7 @@ import { ErrorText, useLoad, type ShellContext } from './ui';
 
 function setupNotice({ user, handles }: Me): string | null {
   const linked = (platform: string) => handles.some((h) => h.platform === platform);
-  if (!user.batchYear || !linked('cf') || !linked('cc')) return 'Finish your profile: add your batch year and your Codeforces and CodeChef handles.';
+  if (!user.batchYear || !linked('cf') || !linked('cc')) return 'Finish your profile: choose your year and add your Codeforces and CodeChef handles.';
   if (handles.some((h) => !h.approved)) {
     return user.role === 'admin'
       ? 'Your handles need approval. Approve them under Admin → Students & handles; solves count from then on.'

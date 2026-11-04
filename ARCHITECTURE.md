@@ -37,7 +37,7 @@ Ask before adding anything else.
 Target shape. Don't add files beyond this without a reason from `CLAUDE.md`.
 
 ```
-shared/  scoring.ts  contests.ts  time.ts  types.ts  rating-color.ts  cf.ts  *.test.ts
+shared/  scoring.ts  contests.ts  time.ts  types.ts  rating-color.ts  cf.ts  batch.ts  *.test.ts
 api/     schema.sql  wrangler.toml  seed.dev.sql
          src/index.ts      Hono app, mounts routes, exports fetch + scheduled
          src/auth.ts       Google token verify, session JWT, requireUser/requireAdmin
@@ -67,7 +67,7 @@ CREATE TABLE users (
   id INTEGER PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
-  batch_year INTEGER,
+  batch_year INTEGER,                        -- year the student joined; shown as 1st to 4th year
   role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student','admin')),
   active INTEGER NOT NULL DEFAULT 1,
   cf_rating INTEGER,                         -- NULL = unrated

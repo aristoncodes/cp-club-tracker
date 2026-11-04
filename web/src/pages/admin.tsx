@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { batchForStudyYear, STUDY_YEARS, studyYearLabel } from 'shared/batch';
 import { formatIST, IST_OFFSET } from 'shared/time';
 import { api } from '../api';
 import { Button, Card, ErrorText, inputClass, platformLabel, Tabs, useLoad, useMe } from '../ui';
@@ -44,8 +45,8 @@ function csvField(value: string): string {
 }
 
 function downloadCsv(contests: GridContest[], students: GridStudent[], cellOf: (userId: number, contestId: number) => Cell | undefined) {
-  const header = ['Student', 'Batch', ...contests.map((c) => c.name)];
-  const rows = students.map((s) => [s.name, String(s.batchYear ?? ''), ...contests.map((c) => describeCell(cellOf(s.id, c.id)))]);
+  const header = ['Student', 'Year', ...contests.map((c) => c.name)];
+  const rows = students.map((s) => [s.name, studyYearLabel(s.batchYear, Date.now() / 1000), ...contests.map((c) => describeCell(cellOf(s.id, c.id)))]);
   const csv = [header, ...rows].map((row) => row.map(csvField).join(',')).join('\n');
   const link = document.createElement('a');
   link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
@@ -109,7 +110,13 @@ function Attendance() {
             <option value="cc">CodeChef</option>
           </select>
         </label>
-        <label className="flex flex-col gap-1"><span className="label">Batch</span><input className={`${inputClass} num`} inputMode="numeric" maxLength={4} placeholder="All" value={batch} onChange={(e) => setBatch(e.target.value)} /></label>
+        <label className="flex flex-col gap-1">
+          <span className="label">Year</span>
+          <select className={inputClass} value={batch} onChange={(e) => setBatch(e.target.value)}>
+            <option value="">All</option>
+            {STUDY_YEARS.map((y) => <option key={y.value} value={batchForStudyYear(y.value, now)}>{y.label}</option>)}
+          </select>
+        </label>
       </div>
       {(error || actionError) && <ErrorText>{error || actionError}</ErrorText>}
       {data && (
@@ -145,7 +152,7 @@ function Attendance() {
                     <tr key={student.id}>
                       <td className="sticky left-0 z-10 border-b border-border bg-surface p-2 whitespace-nowrap">
                         <Link to={`/u/${student.id}`} className="hover:underline">{student.name}</Link>
-                        <span className="num ml-2 text-muted">{student.batchYear}</span>
+                        <span className="ml-2 text-muted">{studyYearLabel(student.batchYear, now)}</span>
                       </td>
                       <td className="num border-b border-border p-2 text-center">{percent ?? '—'}</td>
                       <td className="num border-b border-border p-2 text-center">{noShows}</td>
@@ -236,7 +243,7 @@ function Students() {
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div>
               <Link to={`/u/${user.id}`} className="font-semibold hover:underline">{user.name || user.email}</Link>
-              <span className="num ml-2 text-muted">{user.batchYear}</span>
+              <span className="ml-2 text-muted">{studyYearLabel(user.batchYear, Date.now() / 1000)}</span>
               <p className="text-muted">{user.email}</p>
             </div>
             {user.id !== me.user.id && (

@@ -1,8 +1,8 @@
 -- Local development only. Replace the push token with your own device's token.
 INSERT INTO users (id, email, name, batch_year, role, cf_rating, created_at) VALUES
-  (1, 'admin@example.com', 'Test Admin', 2026, 'admin', 1500, strftime('%s', 'now')),
-  (2, 'student1@example.com', 'Test Student One', 2027, 'student', NULL, strftime('%s', 'now')),
-  (3, 'student2@example.com', 'Test Student Two', 2028, 'student', 1200, strftime('%s', 'now'));
+  (1, 'admin@example.com', 'Test Admin', 2024, 'admin', 1500, strftime('%s', 'now')),
+  (2, 'student1@example.com', 'Test Student One', 2025, 'student', NULL, strftime('%s', 'now')),
+  (3, 'student2@example.com', 'Test Student Two', 2026, 'student', 1200, strftime('%s', 'now'));
 
 INSERT INTO handles (user_id, platform, handle, approved_at) VALUES
   (1, 'cf', 'tourist', 1),

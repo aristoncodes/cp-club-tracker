@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { studyYearLabel } from 'shared/batch';
 import { api, type Me } from '../../lib/api';
 import { Rating } from '../../lib/ui';
 import { theme } from '../../theme';
@@ -83,7 +84,7 @@ export default function Leaderboard() {
             <Text style={[styles.rank, item.rank <= 3 && styles.topRank]}>{item.rank}</Text>
             <View style={styles.who}>
               <Text style={styles.name} numberOfLines={1}>
-                {item.name} <Text style={styles.muted}>{item.batchYear}</Text>
+                {item.name} <Text style={styles.muted}>{studyYearLabel(item.batchYear, Date.now() / 1000)}</Text>
               </Text>
               <Rating value={item.cfRating}>{item.cfHandle}</Rating>
             </View>

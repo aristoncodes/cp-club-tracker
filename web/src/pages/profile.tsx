@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom';
+import { studyYearLabel } from 'shared/batch';
 import { heatmapWeeks } from 'shared/time';
 import { api } from '../api';
 import { Card, ErrorText, platformLabel, Rating, useLoad } from '../ui';
@@ -42,7 +43,7 @@ export function Profile() {
       <div>
         <h1 className="text-2xl font-bold">{profile.name}</h1>
         <p className="text-muted">
-          {profile.batchYear ? `Batch ${profile.batchYear} · ` : ''}CF rating <Rating value={profile.cfRating} />
+          {[studyYearLabel(profile.batchYear, Date.now() / 1000), 'CF rating'].filter(Boolean).join(' · ')} <Rating value={profile.cfRating} />
         </p>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
