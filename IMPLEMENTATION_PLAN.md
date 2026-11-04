@@ -38,7 +38,7 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 12. [ ] **CodeChef participation.** `cc-participation.ts`, the workflow with `workflow_dispatch`, and the Worker dispatch call.
 13. [ ] **Codeforces solves.** Cron step 4 and step 5 (ratings).
     - Done when: a new AC appears in `solves` with correct points.
-14. [ ] **CodeChef solves and the Codeforces backstop** in `sync-solves.ts` + workflow.
+14. [ ] **CodeChef and LeetCode solves and the Codeforces backstop** in `sync-solves.ts` + workflow.
 15. [ ] **Leaderboard endpoint + app Leaderboard tab + Profile (basic).**
 16. [ ] **Website.** Login, leaderboard, profile, `/me`, `/download`; admin pages Attendance (grid + CSV), Students & handles, Admins, Flags.
 17. [ ] **Ship.**
@@ -49,7 +49,7 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 
 ## Phase 3 — Week 2
 
-18. [ ] AtCoder and LeetCode adapters in `sync-solves.ts`
+18. [ ] AtCoder adapter in `sync-solves.ts`
 19. [ ] Feed (endpoint, app tab, web page)
 20. [ ] Streaks, heatmap, top tags on profiles
 21. [ ] Web push for the installed website (iPhone users)

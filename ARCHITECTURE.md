@@ -115,7 +115,7 @@ CREATE TABLE problems (
   platform TEXT NOT NULL,
   problem_id TEXT NOT NULL,                  -- cf: "1900C", cc: code, etc.
   name TEXT,
-  rating INTEGER,                            -- platform's own difficulty number
+  rating INTEGER,                            -- platform's own difficulty (leetcode: Easy/Medium/Hard)
   tags TEXT,                                 -- JSON array of strings
   url TEXT,
   PRIMARY KEY (platform, problem_id)
