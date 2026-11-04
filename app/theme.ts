@@ -2,6 +2,7 @@ export const theme = {
   ink: '#0E0E14',
   card: '#17171F',
   card2: '#20202B',
+  card3: '#262633',
   line: '#2C2C3A',
   text: '#F4F4F7',
   muted: '#9A9AAE',

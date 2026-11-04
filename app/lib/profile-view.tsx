@@ -20,7 +20,7 @@ type UserProfile = {
 };
 
 const PLATFORM_LABELS: Record<string, string> = { cf: 'Codeforces', cc: 'CodeChef', leetcode: 'LeetCode', atcoder: 'AtCoder' };
-const HEAT_OPACITY = [0, 0.3, 0.55, 0.8, 1];
+const HEAT_OPACITY = [0, 0.25, 0.5, 0.75, 1];
 const round = (points: number) => Math.round(points * 10) / 10;
 
 function Stat({ label, value }: { label: string; value: number }) {
@@ -129,6 +129,6 @@ const styles = StyleSheet.create({
   heatmap: { flexDirection: 'row', gap: 2 },
   heatWeek: { gap: 2 },
   heatBlank: { width: 10, height: 10 },
-  heatDay: { width: 10, height: 10, borderRadius: 3, backgroundColor: theme.card2, overflow: 'hidden' },
+  heatDay: { width: 10, height: 10, borderRadius: 3, backgroundColor: theme.card3, overflow: 'hidden' },
   heatFill: { flex: 1, backgroundColor: theme.lime },
 });

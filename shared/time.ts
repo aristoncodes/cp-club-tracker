@@ -52,6 +52,8 @@ export function timeAgo(ts: number, now: number): string {
 
 const HEATMAP_WEEKS = 26;
 
+export const heatLevel = (count: number) => (count === 0 ? 0 : count === 1 ? 1 : count <= 3 ? 2 : count <= 5 ? 3 : 4);
+
 // Columns of Monday-to-Sunday cells: a step from 0 to 4, or null for days after today.
 export function heatmapWeeks(counts: { day: number; count: number }[], today: number): (number | null)[][] {
   const byDay = new Map(counts.map((c) => [c.day, c.count]));
@@ -60,7 +62,7 @@ export function heatmapWeeks(counts: { day: number; count: number }[], today: nu
     Array.from({ length: 7 }, (_, weekday) => {
       const day = thisMonday - (HEATMAP_WEEKS - 1 - week) * 7 + weekday;
       if (day > today) return null;
-      return Math.min(byDay.get(day) ?? 0, 4);
+      return heatLevel(byDay.get(day) ?? 0);
     }),
   );
 }

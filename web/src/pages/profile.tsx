@@ -1,8 +1,9 @@
+import { useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { studyYearLabel } from 'shared/batch';
-import { heatmapWeeks, solvesText, weekStrip } from 'shared/time';
+import { heatLevel, istDay, solvesText, weekStrip } from 'shared/time';
 import { api } from '../api';
-import { Avatar, Card, ErrorText, platformLabel, Rating, useLoad } from '../ui';
+import { Avatar, Card, ErrorText, platformLabel, Rating, useLoad, useMe } from '../ui';
 
 type UserProfile = {
   id: number;
@@ -18,7 +19,98 @@ type UserProfile = {
 };
 
 const round = (points: number) => Math.round(points * 10) / 10;
-const HEAT_OPACITY = [0, 0.3, 0.55, 0.8, 1];
+const DAY_MS = 86_400_000;
+const HEAT_OPACITY = [0, 25, 50, 75, 100];
+
+const dateKey = (t: number) => new Date(t).toISOString().slice(0, 10);
+const shortDate = (t: number, options: Intl.DateTimeFormatOptions) => new Date(t).toLocaleDateString('en-IN', { timeZone: 'UTC', ...options });
+const countsByDate = (heatmap: UserProfile['heatmap']) => Object.fromEntries(heatmap.map((d) => [dateKey(d.day * DAY_MS), d.count]));
+const cellStyle = (count: number) => ({
+  background: count ? `color-mix(in srgb, var(--lime) ${HEAT_OPACITY[heatLevel(count)]}%, transparent)` : 'var(--card-3)',
+});
+
+function Activity({ counts, own }: { counts: Record<string, number>; own: boolean }) {
+  const grid = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (grid.current) grid.current.scrollLeft = grid.current.scrollWidth;
+  }, []);
+  const today = istDay(Date.now() / 1000) * DAY_MS;
+  const start = today - (25 * 7 + ((new Date(today).getUTCDay() + 6) % 7)) * DAY_MS;
+  const weeks = Array.from({ length: 26 }, (_, week) =>
+    Array.from({ length: 7 }, (_, day) => start + (week * 7 + day) * DAY_MS).filter((t) => t <= today),
+  );
+  const days = weeks.flat().map((t) => counts[dateKey(t)] ?? 0);
+  const total = days.reduce((sum, count) => sum + count, 0);
+  let longest = 0;
+  days.reduce((run, count) => {
+    const next = count ? run + 1 : 0;
+    longest = Math.max(longest, next);
+    return next;
+  }, 0);
+  const stats = [
+    ['Solves', String(total), 'text-lime'],
+    ['Active days', String(days.filter(Boolean).length), 'text-text'],
+    ['Longest streak', `${longest}d`, 'text-sun'],
+    ['Best day', String(Math.max(...days)), 'text-text'],
+  ];
+
+  return (
+    <section className="rounded-[22px] border border-line bg-card p-6">
+      <h2 className="display text-[17px]">Activity</h2>
+      <div className="mt-5 flex flex-wrap gap-8">
+        <div className="relative max-w-full min-w-0">
+          <div ref={grid} className={`flex gap-2 overflow-x-auto ${total ? '' : 'opacity-30'}`} role="img" aria-label={`${solvesText(total)} in the last 6 months`}>
+            <div className="mt-[22px] flex shrink-0 flex-col gap-1 text-[11px] leading-[14px] text-muted">
+              {['Mon', '', 'Wed', '', 'Fri', '', ''].map((label, index) => <span key={index} className="h-[14px]">{label}</span>)}
+            </div>
+            <div className="flex gap-1">
+              {weeks.map((week) => {
+                const firstOfMonth = week.find((t) => new Date(t).getUTCDate() === 1);
+                return (
+                  <div key={week[0]} className="flex flex-col gap-1">
+                    <span className="h-[18px] w-[14px] text-[11px] whitespace-nowrap text-muted">
+                      {firstOfMonth ? shortDate(firstOfMonth, { month: 'short' }) : ''}
+                    </span>
+                    {week.map((t) => {
+                      const count = counts[dateKey(t)] ?? 0;
+                      return (
+                        <span
+                          key={t}
+                          className="h-[14px] w-[14px] rounded"
+                          style={cellStyle(count)}
+                          title={`${solvesText(count)} · ${shortDate(t, { weekday: 'short', day: 'numeric', month: 'short' })}`}
+                        />
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {total === 0 && (
+            <p className="absolute inset-0 m-0 flex items-center justify-center text-center text-sm font-semibold">
+              {own ? 'Nothing here yet. Your first AC lights this up.' : 'Nothing here yet.'}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-4 text-xs text-muted">
+            <span>{solvesText(total)} in 6 months</span>
+            <span className="flex items-center gap-1">
+              Less {[0, 1, 2, 4, 6].map((count) => <span key={count} className="h-[12px] w-[12px] rounded-[3px]" style={cellStyle(count)} />)} More
+            </span>
+          </div>
+        </div>
+        <dl className="m-0 grid min-w-[240px] flex-1 grid-cols-2 content-start gap-3">
+          {stats.map(([label, value, color]) => (
+            <div key={label} className="rounded-2xl bg-card-2 p-4">
+              <dt className="text-xs font-bold text-muted">{label}</dt>
+              <dd className={`num m-0 text-[28px] tracking-tight ${color}`}>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  );
+}
 
 function Stat({ label, value, detail }: { label: string; value: number; detail: string }) {
   return (
@@ -32,6 +124,7 @@ function Stat({ label, value, detail }: { label: string; value: number; detail: 
 
 export function Profile() {
   const { id } = useParams();
+  const { me } = useMe();
   const { data: profile, error } = useLoad(() => api<UserProfile>(`/users/${id}`), [id]);
 
   if (error) return <ErrorText>{error}</ErrorText>;
@@ -75,20 +168,7 @@ export function Profile() {
             : <>Solve one problem today to make it <span className="num text-sun">{profile.streak + 1}</span>.</>}
         </p>
       </Card>
-      <Card>
-        <h2 className="display mb-3 text-lg">Last 6 months</h2>
-        <div className="flex gap-0.5 overflow-x-auto" role="img" aria-label="Solves per day for the last 26 weeks">
-          {heatmapWeeks(profile.heatmap, profile.today).map((week, weekIndex) => (
-            <div key={weekIndex} className="flex shrink-0 flex-col gap-0.5">
-              {week.map((step, dayIndex) => (
-                <div key={dayIndex} className="relative size-2.5 rounded-[3px] bg-card-2" style={{ visibility: step === null ? 'hidden' : undefined }}>
-                  <div className="absolute inset-0 rounded-[3px] bg-lime" style={{ opacity: HEAT_OPACITY[step ?? 0] }} />
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </Card>
+      <Activity counts={countsByDate(profile.heatmap)} own={me.user.id === profile.id} />
       <div className="grid gap-3 md:grid-cols-2">
         <Card>
           <h2 className="display mb-3 text-lg">Handles</h2>

@@ -30,6 +30,7 @@ Define these once: CSS variables in `web/src/index.css` (mapped through Tailwind
 | `ink` | `#0E0E14` | Page background; text on bright fills |
 | `card` | `#17171F` | Cards, table, inputs, segmented control track |
 | `card-2` | `#20202B` | Progress bar tracks, rating chips, inactive cells |
+| `card-3` | `#262633` | Empty activity cells |
 | `line` | `#2C2C3A` | 1 px card borders and dividers |
 | `text` | `#F4F4F7` | Primary text |
 | `muted` | `#9A9AAE` | Secondary text, labels, inactive tabs |
@@ -117,7 +118,8 @@ Build only these. Each lives in the file that uses it unless 2+ screens need it.
 - **Attendance grid (admin):** a `<table>` inside a card with horizontal scroll, sticky first column (avatar + name + year) and a rate column (lime ≥ 70%, sun ≥ 50%, pink below). Column headers: platform (CF blue / CC orange), short name, date. Cells are 24 px squares: Present is lime with ✓; absent with reason is pink with a reason letter (E exams, T travel, U unwell, C clash, F forgot, O other); no reason yet is a 2 px dashed sun outline with ?. A legend sits above the grid, and a tooltip shows the full reason.
 - **Reason breakdown:** label + count + a 10 px bar per reason type, each in its own accent.
 - **"Needs a nudge":** a violet-tint card listing students below 50%.
-- **Heatmap:** 26 × 7 squares of 10 px, 2 px gap, radius 3, in card-2, then lime at 30 / 55 / 80 / 100% opacity.
+- **Activity panel (web profile):** 26 × 7 squares of 14 px, 4 px gap, month and weekday labels, in card-3, then lime at 25 / 50 / 75 / 100% opacity for 1, 2–3, 4–5 and 6+ solves. A Less–More legend, the 6-month total and four stats: solves, active days, longest streak, best day. With no solves the grid dims behind "Nothing here yet. Your first AC lights this up." on your own profile. It scrolls inside its card on phones.
+- **Heatmap (app):** the same levels and opacities at 10 px, 2 px gap, radius 3.
 
 ## Screens
 

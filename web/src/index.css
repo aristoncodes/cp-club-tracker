@@ -4,6 +4,7 @@
   --ink: #0e0e14;
   --card: #17171f;
   --card-2: #20202b;
+  --card-3: #262633;
   --line: #2c2c3a;
   --text: #f4f4f7;
   --muted: #9a9aae;
@@ -29,6 +30,7 @@
   --color-ink: var(--ink);
   --color-card: var(--card);
   --color-card-2: var(--card-2);
+  --color-card-3: var(--card-3);
   --color-line: var(--line);
   --color-text: var(--text);
   --color-muted: var(--muted);

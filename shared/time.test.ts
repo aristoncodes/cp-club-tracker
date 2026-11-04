@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatIST, heatmapWeeks, istDay, periodStart, solveStreak, timeAgo, weekStrip } from './time';
+import { formatIST, heatLevel, heatmapWeeks, istDay, periodStart, solveStreak, timeAgo, weekStrip } from './time';
 
 const ist = (month: number, day: number, hour = 0, minute = 0) =>
   Date.UTC(2026, month - 1, day, hour, minute) / 1000 - 19800;
@@ -86,6 +86,10 @@ describe('heatmapWeeks', () => {
   it('puts today under its weekday and blanks the future', () => {
     const last = heatmapWeeks([{ day: wednesday, count: 2 }], wednesday)[25];
     expect(last).toEqual([0, 0, 2, null, null, null, null]);
+  });
+
+  it('groups solve counts into five levels', () => {
+    expect([0, 1, 2, 3, 4, 5, 6, 40].map(heatLevel)).toEqual([0, 1, 2, 2, 3, 3, 4, 4]);
   });
 
   it('caps the step at 4', () => {
