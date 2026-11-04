@@ -1,19 +1,16 @@
 import * as Notifications from 'expo-notifications';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { batchForStudyYear, STUDY_YEARS, studyYearOf } from 'shared/batch';
-import { api, getSession, setSession, type Me } from '../lib/api';
-import { useGoogleSignIn } from '../lib/google';
+import { api, getSession, type Me } from '../lib/api';
 import { registerPushToken } from '../lib/push';
 import { Button, common, Pill, platformColor, PLATFORM_NAMES } from '../lib/ui';
 import { theme } from '../theme';
 
 const REQUIRED = ['cf', 'cc'];
 const OPTIONAL = ['leetcode', 'atcoder'];
-const EMAIL_STEPS = ['account', 'verify', 'about', 'handles', 'notified'];
-const GOOGLE_STEPS = ['account', 'about', 'handles', 'notified'];
-const RESEND_SECONDS = 60;
+const STEPS = ['account', 'about', 'handles', 'notified'];
 
 function Progress({ steps, current }: { steps: string[]; current: string }) {
   const index = current === 'finished' ? steps.length : steps.indexOf(current);
@@ -25,17 +22,11 @@ function Progress({ steps, current }: { steps: string[]; current: string }) {
 }
 
 export default function Signup() {
-  const params = useLocalSearchParams<{ verifyEmail?: string }>();
-  const google = useGoogleSignIn();
   const [me, setMe] = useState<Me | null>(null);
   const [finished, setFinished] = useState(false);
   const [ready, setReady] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
   const [error, setError] = useState('');
-  const [email, setEmail] = useState(params.verifyEmail ?? '');
-  const [pendingEmail, setPendingEmail] = useState(params.verifyEmail ?? '');
-  const [password, setPassword] = useState('');
-  const [code, setCode] = useState('');
-  const [wait, setWait] = useState(RESEND_SECONDS);
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [check, setCheck] = useState<{ available: boolean; error?: string } | null>(null);
@@ -56,16 +47,11 @@ export default function Signup() {
 
   useEffect(() => {
     getSession().then(async (token) => {
+      setSignedIn(!!token);
       if (token) await load().catch((err: Error) => setError(err.message));
       setReady(true);
     });
   }, [load]);
-
-  useEffect(() => {
-    if (!pendingEmail || me || wait <= 0) return;
-    const timer = setTimeout(() => setWait(wait - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [pendingEmail, me, wait]);
 
   useEffect(() => {
     if (!username || username === me?.user.username) return setCheck(username ? { available: true } : null);
@@ -90,8 +76,8 @@ export default function Signup() {
   }
 
   if (!ready) return null;
-  const step = finished ? 'finished' : me ? me.user.onboardingStep : pendingEmail ? 'verify' : 'account';
-  const steps = me?.user.hasGoogle ? GOOGLE_STEPS : EMAIL_STEPS;
+  if (!signedIn) return <Redirect href="/login" />;
+  const step = finished ? 'finished' : (me?.user.onboardingStep ?? '');
   const field = (id: string) => (
     <View key={id} style={styles.field}>
       <Text style={[common.label, { color: platformColor(id) }]}>{PLATFORM_NAMES[id].toUpperCase()}</Text>
@@ -101,43 +87,11 @@ export default function Signup() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <Progress steps={steps} current={step} />
-
-      {step === 'account' && (
-        <>
-          <Text style={styles.title}>Create your account</Text>
-          <Button title="Sign up with Google" variant="white" disabled={!google.ready} onPress={() => run(async () => { if (await google.signIn()) await load(); })} />
-          <View style={common.row}><View style={styles.rule} /><Text style={common.small}>or with email</Text><View style={styles.rule} /></View>
-          <TextInput style={common.input} value={email} onChangeText={setEmail} placeholder="Email" placeholderTextColor={theme.muted} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
-          <TextInput style={common.input} value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor={theme.muted} secureTextEntry autoComplete="new-password" />
-          <Text style={common.small}>At least 8 characters. We'll email you a 6-digit code.</Text>
-          <Button title="Create account" disabled={!email || password.length < 8} onPress={() => run(async () => { await api('/auth/signup', 'POST', { email, password }); setPendingEmail(email); setWait(RESEND_SECONDS); })} />
-          <Pressable accessibilityRole="link" style={styles.center} onPress={() => router.replace('/login')}><Text style={common.muted}>Already a member? <Text style={common.bold}>Sign in</Text></Text></Pressable>
-        </>
-      )}
-
-      {step === 'verify' && (
-        <>
-          <Text style={styles.title}>Check your email</Text>
-          <Text style={common.muted}>We sent a 6-digit code to {pendingEmail}. It expires in 10 minutes.</Text>
-          <TextInput style={styles.code} value={code} onChangeText={(value) => setCode(value.replace(/\D/g, ''))} keyboardType="number-pad" maxLength={6} autoComplete="sms-otp" textContentType="oneTimeCode" accessibilityLabel="6-digit code" autoFocus />
-          {wait > 0
-            ? <Text style={common.muted}>Resend in <Text style={common.mono}>0:{String(wait).padStart(2, '0')}</Text></Text>
-            : <Pressable accessibilityRole="button" hitSlop={12} onPress={() => run(async () => { await api('/auth/resend', 'POST', { email: pendingEmail, purpose: 'verify' }); setWait(RESEND_SECONDS); })}><Text style={common.link}>Resend code</Text></Pressable>}
-          <View style={common.row}>
-            <Button title="Change email" variant="secondary" flex onPress={() => { setPendingEmail(''); setCode(''); }} />
-            <Button title="Verify" flex disabled={code.length !== 6} onPress={() => run(async () => {
-              const { token } = await api<{ token: string }>('/auth/verify', 'POST', { email: pendingEmail, code });
-              await setSession(token);
-              await load();
-            })} />
-          </View>
-        </>
-      )}
+      <Progress steps={STEPS} current={step} />
 
       {step === 'about' && me && (
         <>
-          <Text style={styles.eyebrow}>{me.user.hasGoogle ? 'Signed up with Google' : '✓ Email verified'}</Text>
+          <Text style={styles.eyebrow}>Signed in with Google</Text>
           <Text style={styles.title}>Welcome to the club</Text>
           <View style={styles.field}>
             <Text style={common.label}>DISPLAY NAME</Text>
@@ -151,7 +105,7 @@ export default function Signup() {
               {check?.available ? <Text style={common.link}>✓ free</Text> : null}
             </View>
             {check && !check.available ? <Text style={[common.small, { color: theme.pink }]}>{check.error ?? 'taken'}</Text> : null}
-            <Text style={common.small}>You can sign in with it, and change it once later.</Text>
+            <Text style={common.small}>You can change it once later.</Text>
           </View>
           <View style={styles.field}>
             <Text style={common.label}>YEAR</Text>
@@ -233,9 +187,6 @@ const styles = StyleSheet.create({
   segment: { flex: 1, height: 5, borderRadius: 3 },
   title: { color: theme.text, fontFamily: theme.font.display, fontSize: 30, lineHeight: 34, letterSpacing: -0.9 },
   eyebrow: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: 'hidden', backgroundColor: theme.violetTint, color: theme.violetSoft, fontFamily: theme.font.bold, fontSize: 12 },
-  rule: { flex: 1, height: 1, backgroundColor: theme.line },
-  center: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  code: { height: 72, borderRadius: 14, borderWidth: 1, borderColor: theme.lime, backgroundColor: theme.card, color: theme.text, fontFamily: theme.font.monoHeavy, fontSize: 32, letterSpacing: 12, textAlign: 'center' },
   field: { gap: 6 },
   usernameInput: { flex: 1, color: theme.text, fontFamily: theme.font.monoBold, fontSize: 16, height: 48 },
   years: { flexDirection: 'row', gap: 8 },

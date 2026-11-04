@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { canAdvance, codeUsable, isLocked, normalizeUsername, resendBlocked, usernameError } from './accounts';
+import { canAdvance, normalizeUsername, usernameError } from './accounts';
 
-const NOW = 1_000_000;
 const COMPLETE = { hasUsername: true, hasBatch: true, hasRequiredHandles: true };
 
 describe('usernameError', () => {
@@ -23,40 +22,6 @@ describe('usernameError', () => {
   });
 });
 
-describe('code rules', () => {
-  it('expires', () => {
-    expect(codeUsable({ expires_at: NOW + 1, attempts: 0 }, NOW)).toBe(true);
-    expect(codeUsable({ expires_at: NOW, attempts: 0 }, NOW)).toBe(false);
-    expect(codeUsable(null, NOW)).toBe(false);
-  });
-
-  it('allows five attempts', () => {
-    expect(codeUsable({ expires_at: NOW + 1, attempts: 4 }, NOW)).toBe(true);
-    expect(codeUsable({ expires_at: NOW + 1, attempts: 5 }, NOW)).toBe(false);
-  });
-
-  it('waits 60 s between sends', () => {
-    expect(resendBlocked([NOW - 59], NOW)).toBe(true);
-    expect(resendBlocked([NOW - 60], NOW)).toBe(false);
-  });
-
-  it('allows five sends an hour', () => {
-    const four = [1000, 900, 800, 700].map((ago) => NOW - ago);
-    expect(resendBlocked(four, NOW)).toBe(false);
-    expect(resendBlocked([...four, NOW - 600], NOW)).toBe(true);
-    expect(resendBlocked([...four, NOW - 3600], NOW)).toBe(false);
-  });
-});
-
-describe('lockout', () => {
-  it('holds only until the time passes', () => {
-    expect(isLocked({ locked_until: NOW + 1 }, NOW)).toBe(true);
-    expect(isLocked({ locked_until: NOW }, NOW)).toBe(false);
-    expect(isLocked({ locked_until: null }, NOW)).toBe(false);
-    expect(isLocked(null, NOW)).toBe(false);
-  });
-});
-
 describe('canAdvance', () => {
   it('moves one step forward only', () => {
     expect(canAdvance('about', 'handles', COMPLETE)).toBe(true);
@@ -65,10 +30,6 @@ describe('canAdvance', () => {
     expect(canAdvance('about', 'done', COMPLETE)).toBe(false);
     expect(canAdvance('handles', 'about', COMPLETE)).toBe(false);
     expect(canAdvance('done', 'done', COMPLETE)).toBe(false);
-  });
-
-  it("can't leave verify without a verified email", () => {
-    expect(canAdvance('verify', 'about', COMPLETE)).toBe(false);
   });
 
   it('needs a username and year, then both required handles', () => {

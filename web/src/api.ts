@@ -11,8 +11,6 @@ export type User = {
   batchYear: number | null;
   role: string;
   onboardingStep: string;
-  hasPassword: number;
-  hasGoogle: number;
   cfRating: number | null;
   notifyHour: number;
   notifyRsvp: number;
@@ -77,7 +75,7 @@ export async function api<T>(path: string, method = 'GET', body?: unknown): Prom
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const json = await response.json();
-  if (response.status === 401 && getSession() && !path.startsWith('/auth/')) {
+  if (response.status === 401 && getSession()) {
     setSession(null);
     window.location.assign('/login');
   }

@@ -41,9 +41,7 @@ shared/  scoring.ts  contests.ts  time.ts  types.ts  rating-color.ts  cf.ts  bat
 api/     migrations/  wrangler.toml  seed.dev.sql
          src/index.ts      Hono app, mounts routes, exports fetch + scheduled
          src/auth.ts       session JWT, requireUser/requireAdmin
-         src/accounts.ts   /auth/* routes: Google, email + password, codes, usernames
-         src/secrets.ts    password hashing, code hashing, constant-time compare
-         src/email.ts      calls the Apps Script email sender
+         src/accounts.ts   /auth/* routes: Google sign-in, username rules, onboarding rules
          src/routes.ts     student routes
          src/admin.ts      admin routes
          src/ingest.ts     /ingest/* routes
@@ -79,10 +77,7 @@ CREATE TABLE users (
   created_at INTEGER NOT NULL,
   username TEXT,                             -- lowercase; unique index, case-insensitive
   username_changes INTEGER NOT NULL DEFAULT 0,
-  password_hash TEXT,                        -- pbkdf2$<iterations>$<salt>$<hash>; NULL = Google only
-  email_verified INTEGER NOT NULL DEFAULT 0,
-  google_sub TEXT,                           -- unique index
-  onboarding_step TEXT NOT NULL DEFAULT 'about', -- verify, about, handles, notified, done
+  onboarding_step TEXT NOT NULL DEFAULT 'about', -- about, handles, notified, done
   notify_hour INTEGER NOT NULL DEFAULT 1,
   notify_rsvp INTEGER NOT NULL DEFAULT 1,
   notify_result INTEGER NOT NULL DEFAULT 1,
@@ -129,21 +124,6 @@ CREATE TABLE attendance (
   reason_type TEXT CHECK (reason_type IN ('exams','travel','illness','clash','forgot','other')),
   reason_text TEXT,
   PRIMARY KEY (contest_id, user_id)
-);
-
-CREATE TABLE auth_codes (                    -- one row per send; the newest row is the live code
-  email TEXT NOT NULL,
-  purpose TEXT NOT NULL CHECK (purpose IN ('verify','reset')),
-  code_hash TEXT NOT NULL,                   -- HMAC of email, purpose and code; the code is never stored
-  expires_at INTEGER NOT NULL,
-  attempts INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL
-);
-
-CREATE TABLE login_failures (
-  identifier TEXT PRIMARY KEY,               -- lowercase email or username
-  failures INTEGER NOT NULL,
-  locked_until INTEGER
 );
 
 CREATE TABLE problems (
@@ -239,15 +219,9 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 
 | Method | Path | Role | Notes |
 |---|---|---|---|
-| POST | /auth/google | none | `{ idToken }`. Verified with `jose` against Google's keys (audience = web + Android client ids). Matches on `google_sub`, then email; links an existing account and deletes the password if that email was never verified. Role `admin` if the email is in `ADMIN_EMAILS`. Returns `{ token, user }` |
-| POST | /auth/signup | none | `{ email, password }`, password ≥ 8. Always `{ ok: true }`. Creates the account at step `verify` and emails a code; if the email is taken, sends nothing |
-| POST | /auth/verify | none | `{ email, code }`. Returns `{ token, user }`. 400 with one generic error on a wrong or expired code; 5 attempts per code |
-| POST | /auth/resend | none | `{ email, purpose }`. Always `{ ok: true }`. Sends only after 60 s and at most 5 per email per hour |
-| POST | /auth/login | none | `{ identifier, password }`; identifier is an email if it contains `@`. Returns `{ token, user }`. 401 with one generic error; 429 after 5 failures, for 15 minutes; 403 `{ error: 'verify' }` only if the password was right and the email isn't verified |
-| POST | /auth/forgot | none | `{ email }`. Always `{ ok: true }`; emails a reset code if the account exists |
-| POST | /auth/reset | none | `{ email, code, password }`. Sets the password, marks the email verified, returns `{ token, user }` |
+| POST | /auth/google | none | `{ idToken }`. Verified with `jose` against Google's keys (audience = web + Android client ids). Creates the user on first sign-in; role `admin` if the email is in `ADMIN_EMAILS`. Returns `{ token, user }` |
 | GET | /auth/username-available?u= | none | `{ available, error? }`: rules, reserved list and uniqueness |
-| GET | /me | student | User (including `username`, `usernameChangesLeft`, `onboardingStep`, `hasPassword`, `hasGoogle`, notification preferences), handles with approval state, contests with pending reasons, solve streak |
+| GET | /me | student | User (including `username`, `usernameChangesLeft`, `onboardingStep`, notification preferences), handles with approval state, contests with pending reasons, solve streak |
 | PUT | /me | student | `{ name, batchYear, username? }`. `username` only during onboarding, and it doesn't use up the one change |
 | POST | /me/onboarding | student | `{ step }`. Moves forward only, in order; `notified` needs Codeforces and CodeChef handles |
 | PATCH | /me/username | student | `{ username }`. 409 if taken, 403 if the one change is used |
@@ -296,7 +270,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 - **LeetCode:** unofficial GraphQL `recentAcSubmissionList` (about the last 20) plus `question` difficulty. Solves are never live.
 
 **GitHub secrets:** `API_URL`, `INGEST_SECRET`, `EXPO_TOKEN`.
-**Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `EMAIL_URL`, `EMAIL_SECRET`.
+**Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`.
 **Worker var:** `WEB_ORIGIN` in `wrangler.toml`, used for CORS and as the VAPID subject.
 
 ## App notifications (`app/lib/push.ts`)
@@ -314,9 +288,3 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 
 - **Android:** the `build-apk` workflow runs the EAS `preview` profile locally on GitHub Actions, avoiding Expo's free queue, and publishes the APK as a GitHub Release. The website's `/download` links to the latest release. JS updates go over the air via `expo-updates` (EAS Update).
 - **Web:** `vite build`, deployed as a static-assets Worker (`web/wrangler.toml`), because new Cloudflare Pages projects are now Workers. The API Worker has its own `workers.dev` domain, with CORS for the website's origin. Don't run `wrangler pages project create` from `api/`: it deploys that folder as a second Worker, cron included.
-
-## Accounts
-
-- **Passwords:** PBKDF2-SHA256 through Web Crypto, a random 16-byte salt per user, stored as `pbkdf2$<iterations>$<salt>$<hash>`. Workers caps PBKDF2 at 100,000 iterations and the free plan allows 10 ms of CPU. The chosen count and how it was measured are recorded in `api/src/secrets.ts`.
-- **Codes:** HMAC-SHA256 with `SESSION_SECRET`, over email, purpose and code. Comparison is constant-time.
-- **Email:** a small Google Apps Script web app, called through `fetch`, sends from the club's Gmail with `MailApp`. Free, no domain and no card. The limit is 100 recipients a day on a personal Gmail; past that, codes fail until the next day. The script is in `SETUP.md`.

@@ -8,7 +8,6 @@ import { Admin } from './pages/admin';
 import { Contests } from './pages/contests';
 import { Download } from './pages/download';
 import { Feed } from './pages/feed';
-import { Forgot } from './pages/forgot';
 import { Home } from './pages/home';
 import { Leaderboard } from './pages/leaderboard';
 import { Login } from './pages/login';
@@ -112,7 +111,6 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/forgot" element={<Forgot />} />
           <Route path="/download" element={<Download />} />
           <Route element={<Shell />}>
             <Route path="/" element={<Home />} />

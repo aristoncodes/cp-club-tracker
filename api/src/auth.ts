@@ -12,8 +12,6 @@ export type Bindings = {
   GITHUB_REPO: string;
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;
-  EMAIL_URL: string;
-  EMAIL_SECRET: string;
 };
 
 export type User = {
@@ -26,8 +24,6 @@ export type User = {
   role: 'student' | 'admin';
   active: number;
   onboardingStep: string;
-  hasPassword: number;
-  hasGoogle: number;
   cfRating: number | null;
   notifyHour: number;
   notifyRsvp: number;
@@ -38,7 +34,7 @@ export type User = {
 export type AppEnv = { Bindings: Bindings; Variables: { user: User } };
 
 export const USER_COLUMNS = `id, email, name, username, 1 - username_changes AS usernameChangesLeft, batch_year AS batchYear,
-  role, active, onboarding_step AS onboardingStep, password_hash IS NOT NULL AS hasPassword, google_sub IS NOT NULL AS hasGoogle,
+  role, active, onboarding_step AS onboardingStep,
   cf_rating AS cfRating, notify_hour AS notifyHour, notify_rsvp AS notifyRsvp, notify_result AS notifyResult, notify_streak AS notifyStreak`;
 const SESSION_DAYS = 30;
 

@@ -13,8 +13,6 @@ export type User = {
   usernameChangesLeft: number;
   batchYear: number | null;
   onboardingStep: string;
-  hasPassword: number;
-  hasGoogle: number;
   cfRating: number | null;
   notifyHour: number;
   notifyRsvp: number;

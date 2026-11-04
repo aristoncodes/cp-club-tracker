@@ -1,37 +1,25 @@
-import { useState, type FormEvent } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
+import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { api, getSession, setSession, type User } from '../api';
-import { Button, ErrorText, GoogleButton, inputClass, Logo, PasswordInput } from '../ui';
+import { api, getSession, setSession } from '../api';
+import { ErrorText, Logo } from '../ui';
 
 const EXAMPLE_ROWS = ['A', 'B', 'C', 'D'];
 
 export function Login() {
   const navigate = useNavigate();
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
 
   if (getSession()) return <Navigate to="/" replace />;
 
-  function enter({ token }: { token: string }) {
-    setSession(token);
-    navigate('/', { replace: true });
-  }
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
+  async function signIn(idToken?: string) {
     setError('');
-    setBusy(true);
     try {
-      enter(await api<{ token: string; user: User }>('/auth/login', 'POST', { identifier, password }));
+      const { token } = await api<{ token: string }>('/auth/google', 'POST', { idToken });
+      setSession(token);
+      navigate('/', { replace: true });
     } catch (err) {
-      const message = (err as Error).message;
-      if (message !== 'verify') return setError(message);
-      if (identifier.includes('@')) return navigate('/signup', { state: { verifyEmail: identifier } });
-      setError('Sign in with your email to finish verifying it.');
-    } finally {
-      setBusy(false);
+      setError((err as Error).message);
     }
   }
 
@@ -42,19 +30,16 @@ export function Login() {
         <h1 className="display text-[44px] leading-[1.05] tracking-[-0.035em] sm:text-[56px]">
           Welcome back.<br /><span className="text-lime">Let's grind.</span>
         </h1>
-        <p className="text-base text-muted">Contest reminders, attendance and a live leaderboard for the club.</p>
-        <GoogleButton text="continue_with" onDone={enter} onError={setError} />
-        <div className="flex items-center gap-3 text-xs text-muted"><i className="h-px flex-1 bg-line" />or sign in with email or username<i className="h-px flex-1 bg-line" /></div>
-        <form onSubmit={submit} className="flex flex-col gap-3">
-          <input aria-label="Email or username" placeholder="Email or username" autoComplete="username" autoCapitalize="none" className={`${inputClass} h-12 rounded-[14px]`} value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
-          <div className="flex flex-col gap-1">
-            <Link to="/forgot" className="self-end text-xs font-bold text-lime hover:underline">Forgot password?</Link>
-            <PasswordInput value={password} onChange={setPassword} autoComplete="current-password" />
-          </div>
-          {error && <ErrorText>{error}</ErrorText>}
-          <Button type="submit" disabled={busy || !identifier || !password}>Sign in</Button>
-        </form>
-        <p>New to the club? <Link to="/signup" className="font-bold text-lime hover:underline">Create your account →</Link></p>
+        <p className="text-base text-muted">Contest reminders, attendance and a live leaderboard for the club. New here? The same button gets you started.</p>
+        <GoogleLogin
+          shape="pill"
+          size="large"
+          theme="outline"
+          text="continue_with"
+          onSuccess={({ credential }) => signIn(credential)}
+          onError={() => setError('Google sign-in failed. Please try again.')}
+        />
+        {error && <ErrorText>{error}</ErrorText>}
         <p className="text-xs text-muted">
           <Link to="/download" className="hover:underline">Get the Android app</Link>. On iPhone, open this site in Safari → Share → Add to Home Screen.
         </p>

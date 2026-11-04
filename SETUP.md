@@ -93,27 +93,6 @@ pnpm exec wrangler secret put SESSION_SECRET
 | `GITHUB_TOKEN` | A [fine-grained token](https://github.com/settings/personal-access-tokens) for this repo only, with **Actions: Read and write** |
 | `VAPID_PUBLIC_KEY` | From step 2 |
 | `VAPID_PRIVATE_KEY` | From step 2 |
-| `EMAIL_URL` | The Apps Script web app URL (see below) |
-| `EMAIL_SECRET` | The secret you put in that script |
-
-**Email sender.** Sign-in codes are sent from your Gmail by a small Google Apps Script. It's free, with a limit of 100 recipients a day.
-
-1. Run `openssl rand -hex 32` and keep the result. This is `EMAIL_SECRET`.
-2. Signed in to the Gmail that should send the codes, open [script.google.com](https://script.google.com) and create a new project.
-3. Replace everything in the editor with this, putting your secret in the first line:
-   ```js
-   const SECRET = 'PASTE_YOUR_SECRET_HERE';
-
-   function doPost(e) {
-     const { secret, to, subject, text } = JSON.parse(e.postData.contents);
-     const ok = secret === SECRET;
-     if (ok) MailApp.sendEmail({ to, subject, body: text, name: 'grind.club' });
-     return ContentService.createTextOutput(JSON.stringify({ ok })).setMimeType(ContentService.MimeType.JSON);
-   }
-   ```
-4. Click **Deploy → New deployment → Web app**. Set **Execute as: Me** and **Who has access: Anyone**, then **Deploy**.
-5. Allow the permissions it asks for. Google warns that the app is unverified, because it's yours: choose **Advanced → Go to project**.
-6. Copy the **Web app URL**. This is `EMAIL_URL`.
 
 Then deploy again from `api/`, because `WEB_ORIGIN` changed:
 

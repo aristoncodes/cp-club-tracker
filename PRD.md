@@ -23,16 +23,10 @@ The college competitive programming club (40–50 students across all years) has
 
 ## Accounts
 
-- **Sign in:** Google, or an email or username with a password. Any bad combination gets one generic error. Five failures for an identifier lock it for 15 minutes.
-- **Sign up with Google:** Account → About you → Handles → Get notified → Done. Google emails count as verified.
-- **Sign up with email:** Account (email + password of at least 8 characters) → Verify email → About you → Handles → Get notified → Done. The account can't be used until the email is verified.
-- **Email codes:** 6 digits, stored hashed, expire in 10 minutes, at most 5 attempts per code, resend after 60 s, at most 5 sends per email per hour.
-- **Forgot password:** email code → new password. The same flow lets a Google-only user set a password.
-- **Linking:** Google sign-in with an email that already has a password account links the two. If that email was never verified, its password is deleted, so nobody can sign up with someone else's email and wait.
+- **Sign in:** Google only. The same button signs up new members, who then go through About you → Handles → Get notified → Done.
 - **Username:** required in "About you". Lowercase letters, numbers, `_` and `.`, 3–20 characters, unique, with a short reserved list. Changeable once by the user; after that only an admin can change it.
 - **Year:** chosen as 1st to 4th year; the joining year is stored, so everyone moves up on 1 August.
 - **Onboarding is resumable:** the API returns the current step and clients route there. Existing Google users get "About you" next time they open the app.
-- Errors never reveal whether an email or username exists, except the dedicated username check.
 
 ## Platforms
 
@@ -101,7 +95,7 @@ The college competitive programming club (40–50 students across all years) has
 
 ## Out of scope
 
-Duels, an in-app problem set, an upsolve tracker, iOS app, Play Store listing, chat, comments, email notifications (email is for sign-in codes only), and automatic cheating detection.
+Duels, an in-app problem set, an upsolve tracker, iOS app, Play Store listing, chat, comments, email notifications, password sign-in, and automatic cheating detection.
 
 ## Constraints
 

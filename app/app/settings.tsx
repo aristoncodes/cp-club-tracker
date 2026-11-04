@@ -2,8 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { batchForStudyYear, STUDY_YEARS, studyYearOf } from 'shared/batch';
-import { api, clearSession, setSession, type Me } from '../lib/api';
-import { useGoogleSignIn } from '../lib/google';
+import { api, clearSession, type Me } from '../lib/api';
 import { Button, common, Pill, platformColor, PLATFORM_NAMES, ScreenHeader, Toggle } from '../lib/ui';
 import { theme } from '../theme';
 
@@ -117,15 +116,11 @@ function UsernameRow({ me, onChange }: { me: Me; onChange: () => void }) {
 }
 
 export default function Settings() {
-  const google = useGoogleSignIn();
   const [me, setMe] = useState<Me | null>(null);
   const [name, setName] = useState('');
   const [year, setYear] = useState(0);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [passwordSent, setPasswordSent] = useState(false);
-  const [code, setCode] = useState('');
-  const [password, setPassword] = useState('');
 
   const load = useCallback(async () => {
     const data = await api<Me>('/me');
@@ -141,7 +136,6 @@ export default function Settings() {
   );
 
   if (!me) return error ? <Text style={[common.error, styles.page]}>{error}</Text> : null;
-  const passwordLabel = me.user.hasPassword ? 'Change password' : 'Set a password';
 
   async function run(work: () => Promise<void>) {
     setError('');
@@ -203,40 +197,6 @@ export default function Settings() {
         })} />
       </View>
 
-      <Text style={common.label}>SIGN-IN</Text>
-      <View style={common.card}>
-        <View style={common.between}>
-          <View style={styles.flex}>
-            <Text style={common.bold}>Google</Text>
-            <Text style={common.small} numberOfLines={1}>{me.user.email}</Text>
-          </View>
-          {me.user.hasGoogle
-            ? <Pill tone="lime" label="Connected" />
-            : <Pressable accessibilityRole="button" hitSlop={12} disabled={!google.ready} onPress={() => run(async () => { if (await google.signIn()) await load(); })}><Text style={common.link}>Connect</Text></Pressable>}
-        </View>
-        <View style={styles.block}>
-          <Text style={common.bold}>Email and password</Text>
-          <Text style={common.small}>Sign in with your email or @username</Text>
-          {passwordSent ? (
-            <>
-              <Text style={common.small}>We sent a 6-digit code to {me.user.email}.</Text>
-              <TextInput style={[common.input, common.mono]} value={code} onChangeText={(v) => setCode(v.replace(/\D/g, ''))} placeholder="6-digit code" placeholderTextColor={theme.muted} keyboardType="number-pad" maxLength={6} />
-              <TextInput style={common.input} value={password} onChangeText={setPassword} placeholder="New password" placeholderTextColor={theme.muted} secureTextEntry autoComplete="new-password" />
-              <Button title={passwordLabel} disabled={code.length !== 6 || password.length < 8} onPress={() => run(async () => {
-                const { token } = await api<{ token: string }>('/auth/reset', 'POST', { email: me.user.email, code, password });
-                await setSession(token);
-                setPasswordSent(false);
-                setCode('');
-                setPassword('');
-                setMessage('Saved.');
-                await load();
-              })} />
-            </>
-          ) : (
-            <Button title={passwordLabel} variant="secondary" onPress={() => run(async () => { await api('/auth/forgot', 'POST', { email: me.user.email }); setPasswordSent(true); })} />
-          )}
-        </View>
-      </View>
       {error ? <Text style={common.error}>{error}</Text> : null}
       <Button title="Sign out" variant="danger" onPress={async () => { await clearSession(); router.replace('/login'); }} />
     </ScrollView>

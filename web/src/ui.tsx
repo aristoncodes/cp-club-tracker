@@ -1,10 +1,9 @@
-import { GoogleLogin } from '@react-oauth/google';
 import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { ratingColor } from 'shared/rating-color';
 import { REASONS } from 'shared/reasons';
 import { formatIST } from 'shared/time';
-import { api, type Contest, type Me, type User } from './api';
+import type { Contest, Me } from './api';
 
 export type ShellContext = { me: Me; reload: () => void };
 
@@ -210,27 +209,4 @@ export function CellMark({ status, reasonType }: { status: string | null | undef
   if (status === 'present') return <span className={`${base} bg-lime`}>✓</span>;
   if (!reasonType) return <span className="num flex size-6 shrink-0 items-center justify-center rounded-[7px] border-2 border-dashed border-sun text-xs text-sun">?</span>;
   return <span className={`${base} bg-pink`}>{REASONS.find((r) => r.id === reasonType)?.letter ?? 'O'}</span>;
-}
-
-export function GoogleButton({ text, onDone, onError }: { text: 'continue_with' | 'signup_with'; onDone: (result: { token: string; user: User }) => void; onError: (message: string) => void }) {
-  return (
-    <GoogleLogin
-      shape="pill"
-      size="large"
-      theme="outline"
-      text={text}
-      onSuccess={async ({ credential }) => {
-        try {
-          onDone(await api<{ token: string; user: User }>('/auth/google', 'POST', { idToken: credential }));
-        } catch (err) {
-          onError((err as Error).message);
-        }
-      }}
-      onError={() => onError('Google sign-in failed. Please try again.')}
-    />
-  );
-}
-
-export function PasswordInput({ value, onChange, label = 'Password', autoComplete }: { value: string; onChange: (value: string) => void; label?: string; autoComplete: string }) {
-  return <input type="password" aria-label={label} placeholder={label} autoComplete={autoComplete} className={`${inputClass} h-12 rounded-[14px]`} value={value} onChange={(e) => onChange(e.target.value)} />;
 }

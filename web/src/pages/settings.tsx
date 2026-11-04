@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { batchForStudyYear, STUDY_YEARS, studyYearOf } from 'shared/batch';
 import { api, setSession, type Me } from '../api';
-import { Avatar, Button, Card, ErrorText, GoogleButton, inputClass, PasswordInput, Pill, PLATFORMS, Toggle, useMe } from '../ui';
+import { Avatar, Button, Card, ErrorText, inputClass, Pill, PLATFORMS, Toggle, useMe } from '../ui';
 
 const TILE_COLORS: Record<string, string> = { cf: 'bg-cf-blue', cc: 'bg-orange', atcoder: 'bg-text', leetcode: 'bg-sun' };
 const TILE_CODES: Record<string, string> = { cf: 'CF', cc: 'CC', atcoder: 'AC', leetcode: 'LC' };
@@ -169,43 +169,6 @@ function AboutCard({ me, onChange }: { me: Me; onChange: () => void }) {
   );
 }
 
-function PasswordFlow({ email, hasPassword, onDone }: { email: string; hasPassword: boolean; onDone: () => void }) {
-  const [sent, setSent] = useState(false);
-  const [code, setCode] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const label = hasPassword ? 'Change password' : 'Set a password';
-  if (!sent) {
-    return <Button variant="secondary" onClick={async () => { await api('/auth/forgot', 'POST', { email }); setSent(true); }}>{label}</Button>;
-  }
-  return (
-    <div className="flex w-full flex-col gap-2">
-      <p className="text-sm text-muted">We sent a 6-digit code to {email}.</p>
-      <input aria-label="6-digit code" placeholder="6-digit code" inputMode="numeric" maxLength={6} className={`${inputClass} num`} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
-      <PasswordInput label="New password" autoComplete="new-password" value={password} onChange={setPassword} />
-      {error && <ErrorText>{error}</ErrorText>}
-      <div>
-        <Button
-          disabled={code.length !== 6 || password.length < 8}
-          onClick={async () => {
-            setError('');
-            try {
-              const { token } = await api<{ token: string }>('/auth/reset', 'POST', { email, code, password });
-              setSession(token);
-              setSent(false);
-              onDone();
-            } catch (err) {
-              setError((err as Error).message);
-            }
-          }}
-        >
-          {label}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 function PushToggle() {
   const supported = 'serviceWorker' in navigator && 'PushManager' in window;
   const [on, setOn] = useState(false);
@@ -305,23 +268,6 @@ export function Settings() {
         {error && <ErrorText>{error}</ErrorText>}
       </Card>
       <AboutCard me={me} onChange={reload} />
-      <Card className="flex flex-col gap-3">
-        <h2 className="display text-xl">Sign-in methods</h2>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-bold">Google</p>
-            <p className="truncate text-xs text-muted">{me.user.email}</p>
-          </div>
-          {me.user.hasGoogle ? <Pill tone="lime">Connected</Pill> : <GoogleButton text="continue_with" onDone={reload} onError={setError} />}
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
-          <div className="min-w-0">
-            <p className="font-bold">Email and password</p>
-            <p className="text-xs text-muted">Sign in with your email or @username</p>
-          </div>
-          <PasswordFlow email={me.user.email} hasPassword={!!me.user.hasPassword} onDone={reload} />
-        </div>
-      </Card>
       <section className="flex flex-col items-start gap-3 rounded-[22px] bg-violet p-6 text-white">
         <h2 className="display text-xl">Get the app</h2>
         <p className="text-violet-pale">Contest reminders and one-tap RSVP on Android.</p>
