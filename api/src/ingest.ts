@@ -1,18 +1,7 @@
 import { Hono } from 'hono';
 import { problemRp, solvePoints } from 'shared/scoring';
-import type { Platform } from 'shared/types';
+import type { IngestContest, Platform } from 'shared/types';
 import type { AppEnv } from './auth';
-
-type IngestContest = {
-  platform: string;
-  externalId: string;
-  altExternalId?: string;
-  name: string;
-  url: string;
-  startAt: number;
-  endAt: number;
-  counts: boolean;
-};
 
 type IngestSolve = {
   platform: Platform;

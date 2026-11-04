@@ -23,7 +23,7 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
    - Done when: a real Google ID token signs in, and an admin email gets `role: 'admin'`.
 5. [x] **Profile + handles.** `/me`, `PUT /me`, `PUT /me/handles/:platform`, `/me/push-token`, admin approve endpoint.
 6. [x] **Ingest.** `/ingest/contests`, `/ingest/solves`, `/ingest/participation`, `/ingest/handles`, protected by the secret.
-7. [ ] **Contest sync job.** `jobs/lib.ts`, `adapters/cf.ts` (contest list), `adapters/cc.ts` (contest list), `sync-contests.ts`, and the workflow.
+7. [x] **Contest sync job.** `jobs/lib.ts`, `adapters/cf.ts` (contest list), `adapters/cc.ts` (contest list), `sync-contests.ts`, and the workflow.
    - Done when: running it locally against `wrangler dev` fills `contests` with the correct `counts` and merged parallel rounds.
 8. [ ] **RSVP + reason endpoints and `push.ts`.**
 9. [ ] **Cron steps 1–2** (reminder, RSVP push).

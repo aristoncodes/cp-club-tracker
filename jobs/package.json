@@ -3,6 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "test": "vitest run",
+    "sync-contests": "tsx --env-file-if-exists=.env sync-contests.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "shared": "workspace:*"
   }
 }

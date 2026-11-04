@@ -1,0 +1,105 @@
+{
+  "status": "OK",
+  "result": [
+    {
+      "id": 2282,
+      "name": "Kotlin Heroes: Episode 15",
+      "type": "ICPC",
+      "phase": "BEFORE",
+      "frozen": false,
+      "durationSeconds": 9000,
+      "startTimeSeconds": 1796740500,
+      "relativeTimeSeconds": -2935714
+    },
+    {
+      "id": 2286,
+      "name": "Kotlin Heroes: Practice 15",
+      "type": "ICPC",
+      "phase": "BEFORE",
+      "frozen": false,
+      "durationSeconds": 604800,
+      "startTimeSeconds": 1796135400,
+      "relativeTimeSeconds": -2330614
+    },
+    {
+      "id": 2287,
+      "name": "Codeforces Round (Div. 1)",
+      "type": "CF",
+      "phase": "BEFORE",
+      "frozen": false,
+      "durationSeconds": 7200,
+      "startTimeSeconds": 1795271700,
+      "relativeTimeSeconds": -1466914
+    },
+    {
+      "id": 2288,
+      "name": "Codeforces Round (Div. 2)",
+      "type": "CF",
+      "phase": "BEFORE",
+      "frozen": false,
+      "durationSeconds": 7200,
+      "startTimeSeconds": 1795271700,
+      "relativeTimeSeconds": -1466914
+    },
+    {
+      "id": 2285,
+      "name": "Codeforces Round (Div. 2)",
+      "type": "CF",
+      "phase": "BEFORE",
+      "frozen": false,
+      "durationSeconds": 7200,
+      "startTimeSeconds": 1794753300,
+      "relativeTimeSeconds": -948514
+    },
+    {
+      "id": 2279,
+      "name": "Codeforces Round 1133 (Div. 1)",
+      "type": "CF",
+      "phase": "BEFORE",
+      "frozen": false,
+      "durationSeconds": 9000,
+      "startTimeSeconds": 1794062100,
+      "relativeTimeSeconds": -257314
+    },
+    {
+      "id": 2280,
+      "name": "Codeforces Round 1133 (Div. 2)",
+      "type": "CF",
+      "phase": "BEFORE",
+      "frozen": false,
+      "durationSeconds": 9000,
+      "startTimeSeconds": 1794062100,
+      "relativeTimeSeconds": -257314
+    },
+    {
+      "id": 2284,
+      "name": "Codeforces Round 1132 (Div. 2)",
+      "type": "CF",
+      "phase": "BEFORE",
+      "frozen": false,
+      "durationSeconds": 8100,
+      "startTimeSeconds": 1793975700,
+      "relativeTimeSeconds": -170914
+    },
+    {
+      "id": 2283,
+      "name": "Educational Codeforces Round 196 (Rated for Div. 2)",
+      "type": "ICPC",
+      "phase": "CODING",
+      "frozen": false,
+      "durationSeconds": 7200,
+      "startTimeSeconds": 1793803500,
+      "relativeTimeSeconds": 1285
+    },
+    {
+      "id": 2278,
+      "name": "Codeforces Round 1131 (Div. 3)",
+      "type": "ICPC",
+      "phase": "FINISHED",
+      "frozen": false,
+      "durationSeconds": 8100,
+      "startTimeSeconds": 1793457300,
+      "relativeTimeSeconds": 347486
+    }
+  ]
+}
