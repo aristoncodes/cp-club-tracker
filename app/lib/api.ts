@@ -12,6 +12,7 @@ export type User = {
   username: string | null;
   usernameChangesLeft: number;
   batchYear: number | null;
+  role: string;
   onboardingStep: string;
   cfRating: number | null;
   notifyHour: number;

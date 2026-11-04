@@ -9,6 +9,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
+        sceneStyle: { backgroundColor: theme.ink },
         tabBarActiveTintColor: theme.lime,
         tabBarInactiveTintColor: theme.muted,
         tabBarStyle: { backgroundColor: theme.ink, borderTopColor: theme.line, borderTopWidth: 1 },

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { CHALLENGE_MIN_RATING, CHALLENGE_TARGET } from 'shared/scoring';
 import { IST_OFFSET, istDay, periodStart, solveStreak } from 'shared/time';
 import type { Period } from 'shared/types';
-import { canAdvance, normalizeUsername, usernameError } from './accounts';
+import { canFinishOnboarding, normalizeUsername, usernameError } from './accounts';
 import { requireUser, type AppEnv } from './auth';
 
 const PLATFORMS = ['cf', 'cc', 'atcoder', 'leetcode'];
@@ -118,17 +118,17 @@ studentRoutes.put('/me', async (c) => {
 
 studentRoutes.post('/me/onboarding', async (c) => {
   const user = c.get('user');
-  const { step } = await c.req.json<{ step?: string }>();
   const required = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM handles WHERE user_id = ? AND platform IN ('cf', 'cc')`)
     .bind(user.id)
     .first<{ n: number }>();
-  const allowed = canAdvance(user.onboardingStep, String(step), {
+  const allowed = canFinishOnboarding({
     hasUsername: !!user.username,
     hasBatch: !!user.batchYear,
     hasRequiredHandles: required?.n === 2,
+    isAdmin: user.role === 'admin',
   });
-  if (!allowed) return c.json({ error: 'Finish this step first' }, 400);
-  await c.env.DB.prepare('UPDATE users SET onboarding_step = ? WHERE id = ?').bind(step, user.id).run();
+  if (!allowed) return c.json({ error: 'Add your username, year and handles first' }, 400);
+  await c.env.DB.prepare(`UPDATE users SET onboarding_step = 'done' WHERE id = ?`).bind(user.id).run();
   return c.json({ ok: true });
 });
 

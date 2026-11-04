@@ -23,10 +23,11 @@ The college competitive programming club (40–50 students across all years) has
 
 ## Accounts
 
-- **Sign in:** Google only. The same button signs up new members, who then go through About you → Handles → Get notified → Done.
-- **Username:** required in "About you". Lowercase letters, numbers, `_` and `.`, 3–20 characters, unique, with a short reserved list. Changeable once by the user; after that only an admin can change it.
+- **Sign in:** Google only. The same button signs up new members, who then fill in one page (name, username, year, handles) and go straight to Home.
+- **Approval never blocks the app.** Until a coordinator approves their handles, members can use everything; they just aren't tracked or on the leaderboard. Admins may leave handles empty.
+- **Username:** required on that page. Lowercase letters, numbers, `_` and `.`, 3–20 characters, unique, with a short reserved list. Changeable once by the user; after that only an admin can change it.
 - **Year:** chosen as 1st to 4th year; the joining year is stored, so everyone moves up on 1 August.
-- **Onboarding is resumable:** the API returns the current step and clients route there. Existing Google users get "About you" next time they open the app.
+- **Onboarding is resumable:** the API says whether it's finished and clients route there until it is. Existing users see that page once, to pick a username.
 
 ## Platforms
 
@@ -89,7 +90,7 @@ The college competitive programming club (40–50 students across all years) has
 
 ## Handles
 
-- Each student must link a Codeforces and a CodeChef handle to finish onboarding. Other platforms are optional.
+- Each student must link a Codeforces and a CodeChef handle to finish onboarding; admins may skip this. Other platforms are optional.
 - An admin approves each handle once; it stays approved for good. Only linking a different handle needs a new approval. Unapproved handles are not tracked.
 - One handle per platform per student. A handle can't be linked by two students.
 

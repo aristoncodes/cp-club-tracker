@@ -31,14 +31,17 @@ export function Login() {
           Welcome back.<br /><span className="text-lime">Let's grind.</span>
         </h1>
         <p className="text-base text-muted">Contest reminders, attendance and a live leaderboard for the club. New here? The same button gets you started.</p>
-        <GoogleLogin
-          shape="pill"
-          size="large"
-          theme="outline"
-          text="continue_with"
-          onSuccess={({ credential }) => signIn(credential)}
-          onError={() => setError('Google sign-in failed. Please try again.')}
-        />
+        {/* Google's frame paints a white box unless its page area uses a light colour scheme. */}
+        <div className="self-start [color-scheme:light]">
+          <GoogleLogin
+            shape="pill"
+            size="large"
+            theme="outline"
+            text="continue_with"
+            onSuccess={({ credential }) => signIn(credential)}
+            onError={() => setError('Google sign-in failed. Please try again.')}
+          />
+        </div>
         {error && <ErrorText>{error}</ErrorText>}
         <p className="text-xs text-muted">
           <Link to="/download" className="hover:underline">Get the Android app</Link>. On iPhone, open this site in Safari → Share → Add to Home Screen.

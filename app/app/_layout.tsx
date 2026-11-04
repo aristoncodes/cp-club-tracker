@@ -5,7 +5,7 @@ import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { router, Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { Linking } from 'react-native';
+import { Linking, StatusBar } from 'react-native';
 import { handleRsvpAction, isRsvpAction, setupNotifications } from '../lib/push';
 import { theme } from '../theme';
 
@@ -42,5 +42,10 @@ export default function RootLayout() {
   }, [response, fontsLoaded]);
 
   if (!fontsLoaded) return null;
-  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.ink } }} />;
+  return (
+    <>
+      <StatusBar barStyle="light-content" />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.ink } }} />
+    </>
+  );
 }

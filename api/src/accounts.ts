@@ -4,7 +4,6 @@ import { signSession, USER_COLUMNS, type AppEnv, type User } from './auth';
 
 const USERNAME = /^[a-z0-9_.]{3,20}$/;
 const RESERVED_USERNAMES = ['admin', 'root', 'support', 'grind', 'club', 'api', 'me', 'settings'];
-const STEPS = ['about', 'handles', 'notified', 'done'];
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 
 export function usernameError(username: string): string | null {
@@ -15,15 +14,8 @@ export function usernameError(username: string): string | null {
 
 export const normalizeUsername = (value: unknown) => String(value ?? '').trim().toLowerCase();
 
-export function canAdvance(
-  current: string,
-  target: string,
-  profile: { hasUsername: boolean; hasBatch: boolean; hasRequiredHandles: boolean },
-): boolean {
-  if (STEPS.indexOf(target) !== STEPS.indexOf(current) + 1 || target === 'about') return false;
-  if (target === 'handles') return profile.hasUsername && profile.hasBatch;
-  if (target === 'notified') return profile.hasRequiredHandles;
-  return true;
+export function canFinishOnboarding(profile: { hasUsername: boolean; hasBatch: boolean; hasRequiredHandles: boolean; isAdmin: boolean }): boolean {
+  return profile.hasUsername && profile.hasBatch && (profile.hasRequiredHandles || profile.isAdmin);
 }
 
 export const accountRoutes = new Hono<AppEnv>();

@@ -41,7 +41,7 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 ### accounts (api)
 
 - **Username:** valid and invalid forms, reserved names, case-insensitive uniqueness. The second user change gets 403; an admin can still change it.
-- **Onboarding:** steps only move forward, in order; `notified` needs both required handles.
+- **Onboarding:** finishing needs a username, a year and both required handles; admins may skip handles.
 - **Streak reminder:** targets only `notify_streak = 1`, streak ≥ 1, no solve today.
 - **Leaderboard extras:** climbers and year totals on a small fixture; history at 0 points is excluded.
 - **Privacy:** another student's `/users/:id` has no attendance; an admin's does.

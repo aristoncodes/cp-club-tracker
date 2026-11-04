@@ -77,7 +77,7 @@ CREATE TABLE users (
   created_at INTEGER NOT NULL,
   username TEXT,                             -- lowercase; unique index, case-insensitive
   username_changes INTEGER NOT NULL DEFAULT 0,
-  onboarding_step TEXT NOT NULL DEFAULT 'about', -- about, handles, notified, done
+  onboarding_step TEXT NOT NULL DEFAULT 'about', -- 'done' once the onboarding page is finished
   notify_hour INTEGER NOT NULL DEFAULT 1,
   notify_rsvp INTEGER NOT NULL DEFAULT 1,
   notify_result INTEGER NOT NULL DEFAULT 1,
@@ -223,7 +223,7 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | GET | /auth/username-available?u= | none | `{ available, error? }`: rules, reserved list and uniqueness |
 | GET | /me | student | User (including `username`, `usernameChangesLeft`, `onboardingStep`, notification preferences), handles with approval state, contests with pending reasons, solve streak |
 | PUT | /me | student | `{ name, batchYear, username? }`. `username` only during onboarding, and it doesn't use up the one change |
-| POST | /me/onboarding | student | `{ step }`. Moves forward only, in order; `notified` needs Codeforces and CodeChef handles |
+| POST | /me/onboarding | student | Marks onboarding done. Needs a username, a year and Codeforces and CodeChef handles (admins may skip handles) |
 | PATCH | /me/username | student | `{ username }`. 409 if taken, 403 if the one change is used |
 | PATCH | /me/notifications | student | Any of `{ notifyHour, notifyRsvp, notifyResult, notifyStreak }` |
 | PUT | /me/handles/:platform | student | `{ handle }`. Clears `approved_at` only if the handle is different from the current one. 409 if the handle is taken |

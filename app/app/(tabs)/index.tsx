@@ -134,8 +134,8 @@ export default function Home() {
     if (!(await getSession())) return setDestination('login');
     try {
       const meData = await api<Me>('/me');
-      registerPushToken().catch(console.warn);
       if (meData.user.onboardingStep !== 'done') return setDestination('signup');
+      registerPushToken().catch(console.warn);
       const [upcoming, day, week, userProfile] = await Promise.all([
         api<Contest[]>('/contests/upcoming'),
         api<Standing[]>('/leaderboard?period=day'),
