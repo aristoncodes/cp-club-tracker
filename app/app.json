@@ -11,7 +11,8 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0B0D10",
     "android": {
-      "package": "com.cpclub.tracker"
+      "package": "com.cpclub.tracker",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-router",

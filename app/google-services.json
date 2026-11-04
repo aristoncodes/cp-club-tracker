@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1081956722232",
+    "project_id": "cp-club-tracker-b7f78",
+    "storage_bucket": "cp-club-tracker-b7f78.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1081956722232:android:6eb4e75485584e4363a8cd",
+        "android_client_info": {
+          "package_name": "com.cpclub.tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAp9oeTDBy4nbcqAMl4OEt1j30YoSW9Z_0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

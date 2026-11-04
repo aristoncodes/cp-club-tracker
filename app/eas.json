@@ -9,7 +9,8 @@
         "EXPO_PUBLIC_API_URL": "https://cp-tracker-api.aristoncodes247.workers.dev",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "881697740478-l4u86jn25plbiab0dif2mt1ojlbh0jtp.apps.googleusercontent.com"
       },
-      "channel": "preview"
+      "channel": "preview",
+      "pnpm": "12.16.1"
     }
   }
 }
