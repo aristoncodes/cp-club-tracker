@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { contestAction, isRatingRefreshTick, isSolveSyncTick } from './cron';
+import { withRanks } from './routes';
 
 const START = 2_000_000_000;
 const END = START + 7200;
@@ -87,5 +88,16 @@ describe('scheduled ticks', () => {
     expect(isRatingRefreshTick(midnightIst + 59)).toBe(true);
     expect(isRatingRefreshTick(midnightIst + 60)).toBe(false);
     expect(isRatingRefreshTick(midnightIst - 1)).toBe(false);
+  });
+});
+
+describe('withRanks', () => {
+  it('shares a rank on equal points and rounds to one decimal', () => {
+    const ranked = withRanks([{ points: 30.04 }, { points: 30.01 }, { points: 12 }]);
+    expect(ranked).toEqual([
+      { points: 30, rank: 1 },
+      { points: 30, rank: 1 },
+      { points: 12, rank: 3 },
+    ]);
   });
 });

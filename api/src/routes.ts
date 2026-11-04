@@ -1,8 +1,14 @@
 import { Hono } from 'hono';
+import { IST_OFFSET, istDay, periodStart, solveStreak } from 'shared/time';
+import type { Period } from 'shared/types';
 import { requireUser, type AppEnv } from './auth';
 
 const PLATFORMS = ['cf', 'cc', 'atcoder', 'leetcode'];
 const REASON_TYPES = ['exams', 'travel', 'illness', 'clash', 'forgot', 'other'];
+const PERIODS = ['day', 'week', 'month'];
+const FEED_SIZE = 30;
+const HEATMAP_DAYS = 183;
+const TOP_TAGS = 5;
 
 type ReasonBody = { reasonType?: string; reasonText?: string };
 
@@ -10,6 +16,11 @@ function reasonError({ reasonType, reasonText }: ReasonBody): string | null {
   if (!reasonType || !REASON_TYPES.includes(reasonType)) return 'A valid reason type is required';
   if (reasonType === 'other' && !reasonText?.trim()) return 'Please say a little about the reason';
   return null;
+}
+
+export function withRanks<T extends { points: number }>(rows: T[]): (T & { rank: number })[] {
+  const rounded = rows.map((row) => ({ ...row, points: Math.round(row.points * 10) / 10 }));
+  return rounded.map((row) => ({ ...row, rank: rounded.findIndex((r) => r.points === row.points) + 1 }));
 }
 
 export const studentRoutes = new Hono<AppEnv>();
@@ -138,4 +149,90 @@ studentRoutes.post('/contests/:id/reason', async (c) => {
     .run();
   if (!result.meta.changes) return c.json({ error: 'You were not marked absent for this contest' }, 409);
   return c.json({ ok: true });
+});
+
+studentRoutes.get('/leaderboard', async (c) => {
+  const period = c.req.query('period') ?? 'day';
+  if (!PERIODS.includes(period)) return c.json({ error: 'period must be day, week or month' }, 400);
+  const { results } = await c.env.DB.prepare(
+    `SELECT u.id AS userId, u.name, u.batch_year AS batchYear, u.cf_rating AS cfRating, h.handle AS cfHandle,
+            SUM(s.points) AS points, COUNT(*) AS solves, MAX(s.rp) AS hardest
+     FROM solves s
+     JOIN users u ON u.id = s.user_id
+     LEFT JOIN handles h ON h.user_id = u.id AND h.platform = 'cf'
+     WHERE s.solved_at >= ? AND u.active = 1
+     GROUP BY u.id
+     ORDER BY points DESC`,
+  )
+    .bind(periodStart(period as Period, Math.floor(Date.now() / 1000)))
+    .all<{ points: number }>();
+  return c.json(withRanks(results));
+});
+
+studentRoutes.get('/feed', async (c) => {
+  const before = Number(c.req.query('before')) || Math.floor(Date.now() / 1000) + 1;
+  const { results } = await c.env.DB.prepare(
+    `SELECT s.user_id AS userId, u.name, s.platform, s.problem_id AS problemId, p.name AS problemName, p.url,
+            p.tags, s.rp, s.points, s.live, s.solved_at AS solvedAt
+     FROM solves s
+     JOIN users u ON u.id = s.user_id
+     LEFT JOIN problems p ON p.platform = s.platform AND p.problem_id = s.problem_id
+     WHERE s.solved_at < ? AND u.active = 1
+     ORDER BY s.solved_at DESC LIMIT ?`,
+  )
+    .bind(before, FEED_SIZE)
+    .all<{ tags: string | null }>();
+  return c.json(results.map((row) => ({ ...row, tags: row.tags ? JSON.parse(row.tags) : [] })));
+});
+
+studentRoutes.get('/users/:id', async (c) => {
+  const id = Number(c.req.param('id'));
+  const db = c.env.DB;
+  const now = Math.floor(Date.now() / 1000);
+  const today = istDay(now);
+  const profile = await db
+    .prepare('SELECT id, name, batch_year AS batchYear, cf_rating AS cfRating FROM users WHERE id = ? AND active = 1')
+    .bind(id)
+    .first();
+  if (!profile) return c.json({ error: 'Student not found' }, 404);
+
+  const [handles, stats, days, tags] = await db.batch([
+    db.prepare('SELECT platform, handle FROM handles WHERE user_id = ? AND approved_at IS NOT NULL').bind(id),
+    db
+      .prepare(
+        `SELECT
+           COALESCE(SUM(CASE WHEN solved_at >= ?1 THEN points END), 0) AS dayPoints,
+           COUNT(CASE WHEN solved_at >= ?1 THEN 1 END) AS daySolves,
+           COALESCE(SUM(CASE WHEN solved_at >= ?2 THEN points END), 0) AS weekPoints,
+           COUNT(CASE WHEN solved_at >= ?2 THEN 1 END) AS weekSolves,
+           COALESCE(SUM(CASE WHEN solved_at >= ?3 THEN points END), 0) AS monthPoints,
+           COUNT(CASE WHEN solved_at >= ?3 THEN 1 END) AS monthSolves
+         FROM solves WHERE user_id = ?4`,
+      )
+      .bind(periodStart('day', now), periodStart('week', now), periodStart('month', now), id),
+    db
+      .prepare(
+        `SELECT (solved_at + ${IST_OFFSET}) / 86400 AS day, COUNT(*) AS count
+         FROM solves WHERE user_id = ? AND solved_at >= ? GROUP BY day`,
+      )
+      .bind(id, now - HEATMAP_DAYS * 86400),
+    db
+      .prepare(
+        `SELECT t.value AS tag, COUNT(*) AS count
+         FROM solves s JOIN problems p ON p.platform = s.platform AND p.problem_id = s.problem_id, json_each(p.tags) t
+         WHERE s.user_id = ? AND p.tags IS NOT NULL
+         GROUP BY t.value ORDER BY count DESC LIMIT ${TOP_TAGS}`,
+      )
+      .bind(id),
+  ]);
+  const heatmap = days.results as { day: number; count: number }[];
+  return c.json({
+    ...profile,
+    handles: handles.results,
+    stats: stats.results[0],
+    streak: solveStreak(heatmap.map((d) => d.day), today),
+    topTags: tags.results,
+    heatmap,
+    today,
+  });
 });

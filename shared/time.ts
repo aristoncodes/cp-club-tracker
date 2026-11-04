@@ -1,6 +1,6 @@
 import type { Period } from './types';
 
-const IST_OFFSET = 19800;
+export const IST_OFFSET = 19800;
 const DAY = 86400;
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -24,4 +24,43 @@ export function formatIST(ts: number): string {
   const minute = String(d.getUTCMinutes()).padStart(2, '0');
   const suffix = d.getUTCHours() < 12 ? 'AM' : 'PM';
   return `${WEEKDAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} · ${hour}:${minute} ${suffix}`;
+}
+
+export function istDay(ts: number): number {
+  return Math.floor((ts + IST_OFFSET) / DAY);
+}
+
+export function solveStreak(solveDays: number[], today: number): number {
+  const days = new Set(solveDays);
+  let day = days.has(today) ? today : today - 1;
+  let streak = 0;
+  while (days.has(day)) {
+    streak += 1;
+    day -= 1;
+  }
+  return streak;
+}
+
+export function timeAgo(ts: number, now: number): string {
+  const minutes = Math.floor((now - ts) / 60);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  return `${Math.floor(hours / 24)} d ago`;
+}
+
+const HEATMAP_WEEKS = 26;
+
+// Columns of Monday-to-Sunday cells: a step from 0 to 4, or null for days after today.
+export function heatmapWeeks(counts: { day: number; count: number }[], today: number): (number | null)[][] {
+  const byDay = new Map(counts.map((c) => [c.day, c.count]));
+  const thisMonday = today - ((today + 3) % 7);
+  return Array.from({ length: HEATMAP_WEEKS }, (_, week) =>
+    Array.from({ length: 7 }, (_, weekday) => {
+      const day = thisMonday - (HEATMAP_WEEKS - 1 - week) * 7 + weekday;
+      if (day > today) return null;
+      return Math.min(byDay.get(day) ?? 0, 4);
+    }),
+  );
 }

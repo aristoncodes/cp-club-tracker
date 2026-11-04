@@ -7,8 +7,7 @@
     "test": "vitest run",
     "db:local": "rm -rf .wrangler/state && wrangler d1 execute cp-tracker --local --file schema.sql",
     "db:seed": "wrangler d1 execute cp-tracker --local --file seed.dev.sql",
-    "dev": "wrangler dev --test-scheduled",
-    "deploy": "wrangler deploy"
+    "dev": "wrangler dev --test-scheduled"
   },
   "dependencies": {
     "hono": "^4.13.16",
@@ -16,6 +15,7 @@
     "shared": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "vitest": "^5.1.0",
     "wrangler": "^4.157.0"
   }

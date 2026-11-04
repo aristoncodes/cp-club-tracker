@@ -55,7 +55,7 @@ ingestRoutes.post('/participation', async (c) => {
   if (contest.stage === 4) return c.json({ ok: true });
 
   if (brokenHandles.length) await c.env.DB.batch(brokenHandles.map((h) => markHandleBroken(c.env.DB, platform, h)));
-  await finishContest(c.env.DB, contest, presentHandles);
+  await finishContest(c.env, contest, presentHandles);
   return c.json({ ok: true });
 });
 

@@ -1,5 +1,6 @@
 import { problemRp, solvePoints } from 'shared/scoring';
 import type { IngestSolve } from 'shared/types';
+import type { Bindings } from './auth';
 import { sendPushes, type PushMessage } from './push';
 
 export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promise<void> {
@@ -52,10 +53,11 @@ export function createAttendanceRows(db: D1Database, contest: { id: number; plat
 }
 
 export async function finishContest(
-  db: D1Database,
+  env: Bindings,
   contest: { id: number; platform: string; name: string },
   presentHandles: string[],
 ): Promise<void> {
+  const db = env.DB;
   await db.batch([
     createAttendanceRows(db, contest),
     db
@@ -82,7 +84,7 @@ export async function finishContest(
     if (r.reasonType) return [];
     return [{ to: r.token, body: `You missed ${contest.name}. Why?`, data: { contestId: contest.id, screen: 'reason' } }];
   });
-  await sendPushes(db, messages);
+  await sendPushes(env, messages);
 
   await db.prepare('UPDATE contests SET stage = 4 WHERE id = ?').bind(contest.id).run();
 }

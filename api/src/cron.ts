@@ -111,7 +111,7 @@ async function advanceContest(env: Bindings, contest: ContestRow, now: number): 
       body: `${contest.name} starts at ${startsAt} — in 1 hour.`,
       data: { url: contest.url },
     }));
-    await sendPushes(db, messages);
+    await sendPushes(env, messages);
     await setStage(db, contest, 1);
     return;
   }
@@ -125,7 +125,7 @@ async function advanceContest(env: Bindings, contest: ContestRow, now: number): 
       categoryId: 'rsvp',
       data: { contestId: contest.id },
     }));
-    await sendPushes(db, messages);
+    await sendPushes(env, messages);
   }
   await setStage(db, contest, 2);
 }

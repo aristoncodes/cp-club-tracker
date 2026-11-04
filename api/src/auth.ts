@@ -11,6 +11,8 @@ export type Bindings = {
   GOOGLE_CLIENT_IDS: string;
   GITHUB_TOKEN: string;
   GITHUB_REPO: string;
+  VAPID_PUBLIC_KEY: string;
+  VAPID_PRIVATE_KEY: string;
 };
 
 type User = {
