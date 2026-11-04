@@ -11,4 +11,4 @@ crons = ["* * * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "cp-tracker"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "aa6fbf4a-23a0-4964-bc37-b3d4893dfea6"
