@@ -11,6 +11,7 @@ const SWITCHES = [
   { key: 'notifyRsvp', title: '5 min RSVP', detail: 'Tell us if you are giving it.' },
   { key: 'notifyResult', title: 'After contest', detail: 'Your attendance result.' },
   { key: 'notifyStreak', title: 'Streak about to break', detail: "At 9 PM, if you haven't solved today." },
+  { key: 'notifyMeals', title: 'Meal-time nudges', detail: 'At 9 AM, 1 PM, 5 PM and 9 PM.' },
 ] as const;
 
 function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[number]; me: Me; onChange: () => void }) {
@@ -215,6 +216,7 @@ export function Settings() {
     notifyRsvp: !!me.user.notifyRsvp,
     notifyResult: !!me.user.notifyResult,
     notifyStreak: !!me.user.notifyStreak,
+    notifyMeals: !!me.user.notifyMeals,
   });
 
   return (

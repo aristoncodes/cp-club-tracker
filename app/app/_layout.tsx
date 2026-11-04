@@ -4,8 +4,9 @@ import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { router, Stack } from 'expo-router';
+import { reloadAsync, useUpdates } from 'expo-updates';
 import { useEffect } from 'react';
-import { Linking, StatusBar } from 'react-native';
+import { Linking, Pressable, StatusBar, StyleSheet, Text } from 'react-native';
 import { handleRsvpAction, isRsvpAction, setupNotifications } from '../lib/push';
 import { theme } from '../theme';
 
@@ -21,6 +22,7 @@ export default function RootLayout() {
     SpaceGrotesk_700Bold,
   });
   const response = Notifications.useLastNotificationResponse();
+  const { isUpdatePending } = useUpdates();
 
   useEffect(() => {
     setupNotifications().catch(console.warn);
@@ -46,6 +48,16 @@ export default function RootLayout() {
     <>
       <StatusBar barStyle="light-content" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.ink } }} />
+      {isUpdatePending && (
+        <Pressable accessibilityRole="button" onPress={() => reloadAsync().catch(console.warn)} style={styles.update}>
+          <Text style={styles.updateText}>Update available, tap to restart</Text>
+        </Pressable>
+      )}
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  update: { position: 'absolute', left: theme.gutter, right: theme.gutter, bottom: 96, minHeight: 48, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.lime },
+  updateText: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14 },
+});

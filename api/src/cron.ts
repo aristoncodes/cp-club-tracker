@@ -2,6 +2,7 @@ import { brokenHandle, cfSolves } from 'shared/cf';
 import { IST_OFFSET, formatIST, istDay } from 'shared/time';
 import { CfError, fetchRatingHistory, fetchUserInfo, fetchUserStatus } from './cf';
 import type { Bindings } from './auth';
+import { mealAt, mealPush, type Meal } from './meal-pushes';
 import { sendPushes, type PushMessage } from './push';
 import { createAttendanceRows, insertSolves, markHandleBroken } from './records';
 
@@ -233,6 +234,32 @@ async function sendStreakReminders(env: Bindings, now: number): Promise<void> {
   );
 }
 
+export function mealRecipientsQuery(db: D1Database, now: number): D1PreparedStatement {
+  return db
+    .prepare(
+      `SELECT p.token, EXISTS (SELECT 1 FROM solves s WHERE s.user_id = u.id AND (s.solved_at + ${IST_OFFSET}) / ${DAY} = ?1) AS solvedToday
+       FROM push_tokens p JOIN users u ON u.id = p.user_id
+       WHERE u.active = 1 AND u.notify_meals = 1`,
+    )
+    .bind(istDay(now));
+}
+
+// The 9 PM streak reminder replaces dinner's line for the people it goes to, so nobody gets two at once.
+async function sendMealPushes(env: Bindings, meal: Meal, now: number): Promise<void> {
+  const today = istDay(now);
+  const { results } = await mealRecipientsQuery(env.DB, now).all<{ token: string; solvedToday: number }>();
+  const peers = await env.DB.prepare(`SELECT COUNT(DISTINCT s.user_id) AS n FROM solves s JOIN users u ON u.id = s.user_id WHERE u.active = 1 AND (s.solved_at + ${IST_OFFSET}) / ${DAY} = ?`)
+    .bind(today)
+    .first<{ n: number }>();
+  const streak = meal === 'dinner' ? (await streakReminderQuery(env.DB, now).all<{ token: string }>()).results.map((r) => r.token) : [];
+  await sendPushes(
+    env,
+    results
+      .filter((r) => !streak.includes(r.token))
+      .map((r) => ({ to: r.token, ...mealPush(meal, today, !!r.solvedToday, peers?.n ?? 0), data: { screen: 'home' } })),
+  );
+}
+
 async function attempt(label: string, work: () => Promise<void>): Promise<void> {
   try {
     await work();
@@ -252,6 +279,8 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
     await attempt(`contest ${contest.id}`, () => advanceContest(env, contest, now));
   }
   if (isStreakReminderTick(now)) await attempt('streak reminder', () => sendStreakReminders(env, now));
+  const meal = mealAt(now);
+  if (meal) await attempt('meal push', () => sendMealPushes(env, meal, now));
   if (isSolveJobTick(now)) await attempt('solve job', () => dispatchWorkflow(env, 'sync-solves.yml'));
   if (isContestJobTick(now)) await attempt('contest job', () => dispatchWorkflow(env, 'sync-contests.yml'));
   if (isRatingRefreshTick(now)) {

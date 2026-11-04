@@ -6,6 +6,7 @@ const BATCH_SIZE = 100;
 
 export type PushMessage = {
   to: string;
+  title?: string;
   body: string;
   data?: Record<string, unknown>;
   categoryId?: string;
@@ -43,7 +44,7 @@ async function sendExpo(db: D1Database, messages: PushMessage[]): Promise<void> 
 async function sendWeb(env: Bindings, messages: PushMessage[]): Promise<void> {
   const dead: string[] = [];
   for (const message of messages) {
-    const payload = JSON.stringify({ body: message.body, data: message.data ?? {} });
+    const payload = JSON.stringify({ title: message.title, body: message.body, data: message.data ?? {} });
     try {
       if (await sendWebPush(env, message.to, payload)) dead.push(message.to);
     } catch (err) {

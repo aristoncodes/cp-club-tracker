@@ -82,6 +82,7 @@ CREATE TABLE users (
   notify_rsvp INTEGER NOT NULL DEFAULT 1,
   notify_result INTEGER NOT NULL DEFAULT 1,
   notify_streak INTEGER NOT NULL DEFAULT 0,
+  notify_meals INTEGER NOT NULL DEFAULT 1,
   cf_rating_history TEXT                     -- JSON [{ at, rating, contestId, delta }], refreshed with solve sync
 );
 
@@ -201,9 +202,10 @@ The contest steps make no Codeforces calls. Other Codeforces calls in a run are 
    `cf_rating_history` refreshes from `user.rating` once an hour per handle.
 5. **Daily at 18:30 UTC (00:00 IST):** refresh `cf_rating` for all students with one `user.info?handles=…` call.
 6. **Daily at 15:30 UTC (21:00 IST):** streak reminder to users with `notify_streak = 1`, a streak of at least 1 and no solve today.
+   **At 03:30, 07:30, 11:30 and 15:30 UTC (9 AM, 1 PM, 5 PM, 9 PM IST):** meal-time push to users with `notify_meals = 1`, lines from `api/src/meal-pushes.ts`, chosen by IST day number. People the 15:30 streak reminder goes to skip dinner's line.
 7. **GitHub jobs:** because GitHub's own schedules proved unreliable, the Worker dispatches `sync-solves.yml` every 5 minutes (the workflow's concurrency group keeps at most one run and one queued) and `sync-contests.yml` every 6 hours.
 
-Every push checks its own preference column: reminder `notify_hour`, RSVP `notify_rsvp`, results `notify_result`, streak `notify_streak`.
+Every push checks its own preference column: reminder `notify_hour`, RSVP `notify_rsvp`, results `notify_result`, streak `notify_streak`, meal-time `notify_meals`.
 
 **Result pushes:**
 - present → "Marked present for X".

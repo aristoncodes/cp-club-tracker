@@ -163,6 +163,7 @@ The web is a fluid page: max width 1200 (880 for Settings), the sidebar wraps un
 ### App (Android)
 
 - **Sign in:** logo top left. In the middle, the display headline (44) "Welcome back. Let's grind.", a sub-line, and a white "Continue with Google" pill.
+- **Update banner:** when an over-the-air update has downloaded, every screen shows a `lime` pill above the tab bar, "Update available, tap to restart"; tapping restarts into the update.
 - **Onboarding:** one screen with the same fields as web `/signup`. Username: "@" prefix and "✓ free". Year: a 4-column grid of 48 px tiles. **Continue** goes to Home, which asks for notification permission.
 - **Home (tab):** date + greeting with streak pill and avatar button; pending banner; next-contest card with inline RSVP; two stat cards; streak card; chase card linking to Board.
 - **Board (tab):** title + avatar button, full-width segmented tabs, 2-1-3 podium, rows, pinned `lime` "You" bar. Tapping a row opens that student's Profile.

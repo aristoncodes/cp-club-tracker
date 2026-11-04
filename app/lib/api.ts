@@ -19,6 +19,7 @@ export type User = {
   notifyRsvp: number;
   notifyResult: number;
   notifyStreak: number;
+  notifyMeals: number;
 };
 
 export type Me = {

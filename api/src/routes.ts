@@ -21,6 +21,7 @@ const NOTIFY_COLUMNS: Record<string, string> = {
   notifyRsvp: 'notify_rsvp',
   notifyResult: 'notify_result',
   notifyStreak: 'notify_streak',
+  notifyMeals: 'notify_meals',
 };
 
 type ReasonBody = { reasonType?: string; reasonText?: string };
