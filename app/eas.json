@@ -6,7 +6,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "REPLACE_WITH_API_URL",
+        "EXPO_PUBLIC_API_URL": "https://cp-tracker-api.aristoncodes247.workers.dev",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "REPLACE_WITH_ANDROID_CLIENT_ID"
       },
       "channel": "preview"

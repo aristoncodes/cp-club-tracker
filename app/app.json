@@ -25,6 +25,21 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "9136a425-3c99-4b28-b939-5358a9315f2e"
+      }
+    },
+    "owner": "aristoncodes",
+    "updates": {
+      "url": "https://u.expo.dev/9136a425-3c99-4b28-b939-5358a9315f2e"
+    },
+    "ios": {}
   }
 }
