@@ -27,7 +27,7 @@ Everything runs on free tiers. Cloudflare Workers Free gives 100k requests/day, 
 | `shared` | `vitest` (dev) |
 | `api` | `hono`, `jose`, `wrangler` (dev), `vitest` (dev), `@types/node` (dev) |
 | `web` | `react`, `react-dom`, `react-router-dom`, `vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/vite`, `@react-oauth/google`, `@types/react` (dev), `@types/react-dom` (dev) |
-| `app` | `react`, `react-native`, `expo`, `expo-router`, `expo-notifications`, `expo-task-manager`, `expo-device`, `expo-auth-session`, `expo-secure-store`, `expo-updates`, `expo-font`, `expo-constants`, `expo-linking`, `react-native-screens`, `react-native-safe-area-context`, `@expo/metro-runtime`, `@expo/log-box`, `@expo-google-fonts/inter`, `@expo-google-fonts/space-grotesk`, `@expo-google-fonts/jetbrains-mono`, `@expo/vector-icons`, `@types/react` (dev) |
+| `app` | `react`, `react-native`, `expo`, `expo-router`, `expo-notifications`, `expo-task-manager`, `expo-device`, `expo-auth-session`, `expo-secure-store`, `expo-updates`, `expo-font`, `expo-constants`, `expo-linking`, `react-native-screens`, `react-native-safe-area-context`, `@expo/metro-runtime`, `@expo/log-box`, `react-native-svg`, `@expo-google-fonts/inter`, `@expo-google-fonts/space-grotesk`, `@expo-google-fonts/jetbrains-mono`, `@expo/vector-icons`, `@types/react` (dev) |
 | `jobs` | `cheerio`, `tsx`, `@types/node` (dev), `vitest` (dev) |
 
 Ask before adding anything else.
@@ -38,9 +38,12 @@ Target shape. Don't add files beyond this without a reason from `CLAUDE.md`.
 
 ```
 shared/  scoring.ts  contests.ts  time.ts  types.ts  rating-color.ts  cf.ts  batch.ts  reasons.ts  *.test.ts
-api/     schema.sql  wrangler.toml  seed.dev.sql
+api/     migrations/  wrangler.toml  seed.dev.sql
          src/index.ts      Hono app, mounts routes, exports fetch + scheduled
-         src/auth.ts       Google token verify, session JWT, requireUser/requireAdmin
+         src/auth.ts       session JWT, requireUser/requireAdmin
+         src/accounts.ts   /auth/* routes: Google, email + password, codes, usernames
+         src/secrets.ts    password hashing, code hashing, constant-time compare
+         src/email.ts      Brevo sender
          src/routes.ts     student routes
          src/admin.ts      admin routes
          src/ingest.ts     /ingest/* routes
@@ -60,7 +63,9 @@ jobs/    lib.ts (fetch with UA + delay, ingest poster)
          fixtures/  (saved responses for tests)
 ```
 
-## Data model (`api/schema.sql`)
+## Data model (`api/migrations/`)
+
+`0000_baseline.sql` is the schema that production already has, with `IF NOT EXISTS`, so it does nothing there. Every change is a new file, applied with `wrangler d1 migrations apply`.
 
 ```sql
 CREATE TABLE users (
@@ -71,7 +76,18 @@ CREATE TABLE users (
   role TEXT NOT NULL DEFAULT 'student' CHECK (role IN ('student','admin')),
   active INTEGER NOT NULL DEFAULT 1,
   cf_rating INTEGER,                         -- NULL = unrated
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  username TEXT,                             -- lowercase; unique index, case-insensitive
+  username_changes INTEGER NOT NULL DEFAULT 0,
+  password_hash TEXT,                        -- pbkdf2$<iterations>$<salt>$<hash>; NULL = Google only
+  email_verified INTEGER NOT NULL DEFAULT 0,
+  google_sub TEXT,                           -- unique index
+  onboarding_step TEXT NOT NULL DEFAULT 'about', -- verify, about, handles, notified, done
+  notify_hour INTEGER NOT NULL DEFAULT 1,
+  notify_rsvp INTEGER NOT NULL DEFAULT 1,
+  notify_result INTEGER NOT NULL DEFAULT 1,
+  notify_streak INTEGER NOT NULL DEFAULT 0,
+  cf_rating_history TEXT                     -- JSON [{ at, rating, contestId, delta }], refreshed with solve sync
 );
 
 CREATE TABLE push_tokens (
@@ -113,6 +129,21 @@ CREATE TABLE attendance (
   reason_type TEXT CHECK (reason_type IN ('exams','travel','illness','clash','forgot','other')),
   reason_text TEXT,
   PRIMARY KEY (contest_id, user_id)
+);
+
+CREATE TABLE auth_codes (                    -- one row per send; the newest row is the live code
+  email TEXT NOT NULL,
+  purpose TEXT NOT NULL CHECK (purpose IN ('verify','reset')),
+  code_hash TEXT NOT NULL,                   -- HMAC of email, purpose and code; the code is never stored
+  expires_at INTEGER NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE login_failures (
+  identifier TEXT PRIMARY KEY,               -- lowercase email or username
+  failures INTEGER NOT NULL,
+  locked_until INTEGER
 );
 
 CREATE TABLE problems (
@@ -187,7 +218,12 @@ The contest steps make no Codeforces calls. Other Codeforces calls in a run are 
    If the window was missed, still create the rows and skip to verify.
 3. **Verify**, for counted contests with `stage < 3` and `now ≥ end_at + 900`: POST to GitHub `actions/workflows/participation.yml/dispatches` with inputs `platform`, `contest`, `alt`, `start` and `end`, and set `stage = 3`. The Action posts to `/ingest/participation`, which marks attendance (handles it lists as present → `present`, everyone else → `absent`), keeps any RSVP reason, sends result pushes (below) and sets `stage = 4`. A contest still at `stage = 3` is dispatched again every hour, up to 24 hours after `end_at + 900`. Codeforces no longer allows filtered `contest.standings` calls, and one call per student doesn't fit the Worker's 50 subrequests, so this runs in `jobs/`.
 4. **Codeforces solves.** Every minute, handles approved but not yet fetched (`synced_at` is NULL) are a queue: up to 4 are fetched, rating first. **Every 10th minute:** refresh Codeforces solves for the 4 students with the oldest `handles.synced_at` for `cf`. Use `user.status?handle=…&from=1&count=50`, 2 s apart, keep `verdict = 'OK'`, upsert `problems`, and insert solves with `live = participantType is CONTESTANT or OUT_OF_COMPETITION`.
+   The same sync refreshes `cf_rating_history` from `user.rating`, because one call per student wouldn't fit one run's 50 subrequests.
 5. **Daily at 18:30 UTC (00:00 IST):** refresh `cf_rating` for all students with one `user.info?handles=…` call.
+6. **Daily at 15:30 UTC (21:00 IST):** streak reminder to users with `notify_streak = 1`, a streak of at least 1 and no solve today.
+7. **GitHub jobs:** because GitHub's own schedules proved unreliable, the Worker dispatches `sync-solves.yml` every 30 minutes and `sync-contests.yml` every 6 hours.
+
+Every push checks its own preference column: reminder `notify_hour`, RSVP `notify_rsvp`, results `notify_result`, streak `notify_streak`.
 
 **Result pushes:**
 - present → "Marked present for X".
@@ -203,23 +239,35 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 
 | Method | Path | Role | Notes |
 |---|---|---|---|
-| POST | /auth/google | none | Body `{ idToken }`. Verify against Google JWKS with `jose` (audience = web + Android client ids). Create the user on first sign-in; role `admin` if the email is in `ADMIN_EMAILS`. Returns `{ token, user }` |
-| GET | /me | student | User, handles with approval state, contests with pending reasons, solve streak |
-| PUT | /me | student | `{ name, batchYear }` |
+| POST | /auth/google | none | `{ idToken }`. Verified with `jose` against Google's keys (audience = web + Android client ids). Matches on `google_sub`, then email; links an existing account and deletes the password if that email was never verified. Role `admin` if the email is in `ADMIN_EMAILS`. Returns `{ token, user }` |
+| POST | /auth/signup | none | `{ email, password }`, password ≥ 8. Always `{ ok: true }`. Creates the account at step `verify` and emails a code; if the email is taken, sends nothing |
+| POST | /auth/verify | none | `{ email, code }`. Returns `{ token, user }`. 400 with one generic error on a wrong or expired code; 5 attempts per code |
+| POST | /auth/resend | none | `{ email, purpose }`. Always `{ ok: true }`. Sends only after 60 s and at most 5 per email per hour |
+| POST | /auth/login | none | `{ identifier, password }`; identifier is an email if it contains `@`. Returns `{ token, user }`. 401 with one generic error; 429 after 5 failures, for 15 minutes; 403 `{ error: 'verify' }` only if the password was right and the email isn't verified |
+| POST | /auth/forgot | none | `{ email }`. Always `{ ok: true }`; emails a reset code if the account exists |
+| POST | /auth/reset | none | `{ email, code, password }`. Sets the password, marks the email verified, returns `{ token, user }` |
+| GET | /auth/username-available?u= | none | `{ available, error? }`: rules, reserved list and uniqueness |
+| GET | /me | student | User (including `username`, `usernameChangesLeft`, `onboardingStep`, `hasPassword`, `hasGoogle`, notification preferences), handles with approval state, contests with pending reasons, solve streak |
+| PUT | /me | student | `{ name, batchYear, username? }`. `username` only during onboarding, and it doesn't use up the one change |
+| POST | /me/onboarding | student | `{ step }`. Moves forward only, in order; `notified` needs Codeforces and CodeChef handles |
+| PATCH | /me/username | student | `{ username }`. 409 if taken, 403 if the one change is used |
+| PATCH | /me/notifications | student | Any of `{ notifyHour, notifyRsvp, notifyResult, notifyStreak }` |
 | PUT | /me/handles/:platform | student | `{ handle }`. Clears `approved_at` only if the handle is different from the current one. 409 if the handle is taken |
 | POST | /me/push-token | student | `{ token, kind }` |
-| GET | /contests/upcoming | student | Next 10 counted contests + my RSVP, plus how many said yes out of how many can take part. Counts only, never who |
+| GET | /contests/upcoming | student | Next 10 counted contests + my RSVP and length, plus how many said yes out of how many can take part. Counts only, never who |
+| GET | /contests/past?before= | student | 20 past counted contests with my status, RSVP and reason |
 | POST | /contests/:id/rsvp | student | `{ going: boolean, reasonType?, reasonText? }`; a reason is required when `going` is false. Accepted until the contest reaches `stage = 4`, then 409 |
 | POST | /contests/:id/reason | student | `{ reasonType, reasonText? }`. Only allowed when my status is `absent` |
-| GET | /leaderboard?period=day\|week\|month | student | `[{ rank, userId, name, batchYear, cfHandle, cfRating, points, solves, hardest }]`. `hardest` is the highest `solves.rp` in the period; `moved` is the rank change over the last 24 hours, or null. Only users with a solve in the period; equal points share a rank |
-| GET | /challenge | student | `{ solved, target, minRating }`: club solves rated 1400+ this week, out of 50 |
+| GET | /leaderboard?period=day\|week\|month&batch=&platform= | student | `[{ rank, userId, name, batchYear, cfHandle, cfRating, points, solves, hardest }]`. `hardest` is the highest `solves.rp` in the period; `moved` is the rank change against the previous period of the same length, or null. Only users with a solve in the period; equal points share a rank |
+| GET | /leaderboard/extras?period=&platform= | student | `{ years, climbers, toughest }`: points per batch, top 3 rank gains, 3 highest-rated solves. All from `solves`, with no rank-history table |
+| GET | /challenge | student | `{ solved, mine, target, minRating }`; target and rating are constants in `shared/` |
 | GET | /feed?before= | student | 30 latest solves with problem info |
-| GET | /users/:id | student | Profile, period stats, streak, top tags, heatmap counts. No attendance data |
+| GET | /users/:id | student | Profile, @username, period stats, total solves, streak, top and weak tags, heatmap counts, rating history, recent scored solves. `attendance` and `contests` only for your own profile or an admin |
 | GET | /admin/attendance?from&to&platform&batch | admin | `{ contests, students, cells }`; the web builds the CSV |
 | PATCH | /admin/contests/:id | admin | `{ counts }` |
 | GET | /admin/students | admin | Students + handles + approval state |
 | PATCH | /admin/handles/:userId/:platform | admin | `{ approved }`. `true` sets `approved_at` to now if unset; `false` clears it. Approving fetches straight away: Codeforces recent solves and rating in the Worker, then `backfill.yml` for 6 months of history on any platform. A failed Codeforces fetch stays queued for the next minute |
-| PATCH | /admin/users/:id | admin | `{ role?, active? }` |
+| PATCH | /admin/users/:id | admin | `{ role?, active?, username? }` |
 | POST | /admin/admins | admin | `{ email }`. Promotes the user, or inserts a `users` row with `role = 'admin'` and an empty name, filled in at first sign-in |
 | GET | /admin/flags | admin | Users with > 30 solves in one IST day in the last 30 days, and handles with `broken = 1` |
 | POST | /ingest/contests | secret | `[{ platform, externalId, altExternalId?, name, url, startAt, endAt, counts }]`, upserted; `counts` applies only on insert |
@@ -248,7 +296,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 - **LeetCode:** unofficial GraphQL `recentAcSubmissionList` (about the last 20) plus `question` difficulty. Solves are never live.
 
 **GitHub secrets:** `API_URL`, `INGEST_SECRET`, `EXPO_TOKEN`.
-**Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`.
+**Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `BREVO_API_KEY`, `EMAIL_FROM`.
 **Worker var:** `WEB_ORIGIN` in `wrangler.toml`, used for CORS and as the VAPID subject.
 
 ## App notifications (`app/lib/push.ts`)
@@ -266,3 +314,9 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 
 - **Android:** the `build-apk` workflow runs the EAS `preview` profile locally on GitHub Actions, avoiding Expo's free queue, and publishes the APK as a GitHub Release. The website's `/download` links to the latest release. JS updates go over the air via `expo-updates` (EAS Update).
 - **Web:** `vite build`, deployed as a static-assets Worker (`web/wrangler.toml`), because new Cloudflare Pages projects are now Workers. The API Worker has its own `workers.dev` domain, with CORS for the website's origin. Don't run `wrangler pages project create` from `api/`: it deploys that folder as a second Worker, cron included.
+
+## Accounts
+
+- **Passwords:** PBKDF2-SHA256 through Web Crypto, a random 16-byte salt per user, stored as `pbkdf2$<iterations>$<salt>$<hash>`. Workers caps PBKDF2 at 100,000 iterations and the free plan allows 10 ms of CPU. The chosen count and how it was measured are recorded in `api/src/secrets.ts`.
+- **Codes:** HMAC-SHA256 with `SESSION_SECRET`, over email, purpose and code. Comparison is constant-time.
+- **Email:** Brevo's transactional API through `fetch`, sent from a single verified sender (`EMAIL_FROM`). Free plan, no domain needed.

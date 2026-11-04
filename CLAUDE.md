@@ -4,7 +4,7 @@ Read these before writing any code, in this order:
 
 1. `PRD.md`: what we are building and the rules (attendance, scoring).
 2. `ARCHITECTURE.md`: how it works internally: schema, jobs, API, adapters.
-3. `DESIGN_SYSTEM.md`: how the app and website look.
+3. `DESIGN.md`: how the app and website look.
 4. `IMPLEMENTATION_PLAN.md`: the order to build in. Work top to bottom.
 5. `TESTING.md`: how to verify each task.
 
@@ -31,7 +31,7 @@ Read these before writing any code, in this order:
 - TypeScript `strict` everywhere, ES modules, named exports, `type` over `interface`.
 - **Time:** store unix seconds UTC as `INTEGER`. Convert to IST (Asia/Kolkata, UTC+05:30, no DST) only for display and for day/week/month boundaries, using `shared/time.ts`.
 - **Platform ids:** `cf`, `cc`, `atcoder`, `leetcode`. Use these strings everywhere.
-- **SQL:** the schema lives only in `api/schema.sql`. Queries sit next to the code that uses them.
+- **SQL:** the schema lives only in `api/migrations/`, and changes are new migration files. Queries sit next to the code that uses them.
 - **Naming:** files kebab-case, React components PascalCase, functions camelCase.
 - **Errors:** the API returns `{ error: string }` with a correct HTTP status and never leaks stack traces. A failed external fetch is retried on the next scheduled run, never in a loop.
 - **Secrets** go only in `wrangler secret`, GitHub Actions secrets or a gitignored `.env`. Never commit them.
@@ -44,7 +44,7 @@ Read these before writing any code, in this order:
 pnpm i
 pnpm -r typecheck
 pnpm -r test
-pnpm --filter api db:local      # apply schema.sql to local D1
+pnpm --filter api db:local      # reset local D1 and apply all migrations
 pnpm --filter api dev           # wrangler dev with local D1 (+ --test-scheduled)
 pnpm --filter api exec wrangler deploy
 pnpm --filter web dev
@@ -58,7 +58,7 @@ Don't add top-level folders.
 
 ```
 shared/   scoring, contest rules, time helpers, shared types (pure TS, no deps)
-api/      Cloudflare Worker: HTTP API + cron dispatcher, schema.sql, wrangler.toml
+api/      Cloudflare Worker: HTTP API + cron dispatcher, migrations/, wrangler.toml
 web/      Vite + React + Tailwind website, deployed as a static-assets Cloudflare Worker
 app/      Expo (React Native) Android app
 jobs/     Node scripts run by GitHub Actions: platform adapters + ingest

@@ -31,7 +31,7 @@ pnpm exec wrangler d1 create cp-tracker
 1. Copy the printed `database_id` into [api/wrangler.toml](api/wrangler.toml).
 2. Create the production tables:
    ```bash
-   pnpm exec wrangler d1 execute cp-tracker --remote --file schema.sql
+   pnpm exec wrangler d1 migrations apply cp-tracker --remote
    ```
 3. Deploy, and note the `https://cp-tracker-api.<you>.workers.dev` URL. This is your **API URL**:
    ```bash

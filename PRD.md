@@ -18,12 +18,25 @@ The college competitive programming club (40–50 students across all years) has
 | Student | Club members | Link handles, answer RSVPs, give absence reasons, see leaderboard, feed and profiles |
 | Admin | 4–5 coordinators | Everything a student can, plus: see attendance and reasons, approve handles, add admins, deactivate students |
 
-- Sign-in is Google only. The first admin comes from the `ADMIN_EMAILS` secret; other admins are added from the admin page.
-- Attendance data (RSVPs, statuses, reasons) is **visible only to admins**. Students see only their own, plus an anonymous count of how many said they're going. Leaderboard, feed and profiles are visible to every signed-in student.
+- The first admin comes from the `ADMIN_EMAILS` secret; other admins are added from the admin page.
+- Attendance data (RSVPs, statuses, reasons) is **visible only to admins**. Students see only their own, plus an anonymous count of how many said they're going. Another student's profile never shows attendance; admins see it on any profile. Leaderboard, feed and profiles are visible to every signed-in student.
+
+## Accounts
+
+- **Sign in:** Google, or an email or username with a password. Any bad combination gets one generic error. Five failures for an identifier lock it for 15 minutes.
+- **Sign up with Google:** Account → About you → Handles → Get notified → Done. Google emails count as verified.
+- **Sign up with email:** Account (email + password of at least 8 characters) → Verify email → About you → Handles → Get notified → Done. The account can't be used until the email is verified.
+- **Email codes:** 6 digits, stored hashed, expire in 10 minutes, at most 5 attempts per code, resend after 60 s, at most 5 sends per email per hour.
+- **Forgot password:** email code → new password. The same flow lets a Google-only user set a password.
+- **Linking:** Google sign-in with an email that already has a password account links the two. If that email was never verified, its password is deleted, so nobody can sign up with someone else's email and wait.
+- **Username:** required in "About you". Lowercase letters, numbers, `_` and `.`, 3–20 characters, unique, with a short reserved list. Changeable once by the user; after that only an admin can change it.
+- **Year:** chosen as 1st to 4th year; the joining year is stored, so everyone moves up on 1 August.
+- **Onboarding is resumable:** the API returns the current step and clients route there. Existing Google users get "About you" next time they open the app.
+- Errors never reveal whether an email or username exists, except the dedicated username check.
 
 ## Platforms
 
-- **Android app** (Expo): the main way students use it, because of notifications. Distributed as an APK from the website, not the Play Store.
+- **Android app** (Expo, branded grind.club): the main way students use it, because of notifications. Distributed as an APK from the website, not the Play Store.
 - **Website:** leaderboard, profiles, and the admin dashboard. iPhone users use the website, installable as a PWA. Web push for iPhone comes in week 2.
 - No iOS app and no desktop app.
 
@@ -69,9 +82,13 @@ The college competitive programming club (40–50 students across all years) has
 
 - Counts every first accepted submission per problem on Codeforces, CodeChef, AtCoder and LeetCode, made after that handle was approved. Solves from before approval show on the profile as history and earn no points. Version 1 covers Codeforces, CodeChef and LeetCode; AtCoder comes in week 2. LeetCode contests don't count for attendance.
 - Each solve earns points (formula in `ARCHITECTURE.md → Scoring`). Harder problems are worth much more, and problems above your own rating get a bonus.
-- Tabs: **Today**, **This week** (Monday to Sunday, IST), **This month**. Each row shows rank, name, year (1st, 2nd, 3rd or 4th), points, number of solves, and the hardest problem solved in the period, by Codeforces-equivalent rating. Only students with at least one solve in the period are listed. Equal points share a rank.
+- Tabs: **Today**, **This week** (Monday to Sunday, IST), **This month**, with filters by year and platform. Each row shows rank, movement against the previous period, name, year (1st, 2nd, 3rd or 4th), points, number of solves, and the hardest problem solved in the period, by Codeforces-equivalent rating. Only students with at least one solve in the period are listed. Equal points share a rank.
 - **Feed (week 2):** latest solves across the club, e.g. "Aman solved 1700 · dp, greedy · 12 min ago".
-- **Profile:** linked handles, CF rating, points today/week/month, solve streak, 6-month heatmap (week 2), and top tags.
+- **Sidebar:** points per year of study, biggest climbers against the previous period, and the toughest solves.
+- **Weekly challenge:** the club solves 50 problems rated 1400+ this week, showing club progress and your contribution.
+- **Profile:** linked handles, CF rating and its history, stat tiles, solve streak, 6-month activity, recent solves, top topics with a weak-topic hint. Your own also shows attendance and contest history.
+- **Streak reminder:** an opt-in push at 21:00 IST if you haven't solved today and have a streak of at least 1.
+- **Notification preferences:** a switch for each type: 1 hour before, 5 min RSVP, after contest, streak.
 - Admin page lists students with more than 30 solves in one day, for manual review. There is no automatic penalty.
 
 **Done when:** a Codeforces AC appears on the leaderboard within 2 hours (usually about 30 min), with points matching the formula.
@@ -84,7 +101,7 @@ The college competitive programming club (40–50 students across all years) has
 
 ## Out of scope
 
-Duels, an in-app problem set, an upsolve tracker, iOS app, Play Store listing, chat, comments, email notifications, and automatic cheating detection.
+Duels, an in-app problem set, an upsolve tracker, iOS app, Play Store listing, chat, comments, email notifications (email is for sign-in codes only), and automatic cheating detection.
 
 ## Constraints
 

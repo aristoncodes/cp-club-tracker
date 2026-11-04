@@ -38,6 +38,18 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 - **Cron decision functions** (pure helpers in `cron.ts`): given `now` and a contest row, they return reminder / rsvp / verify / nothing at the right boundaries (T−3600, T−300, end+900). A contest first seen inside T−5 returns rsvp, not reminder. They do nothing for `counts = 0`.
 - **Live participation** (`jobs`): `CONTESTANT` and `OUT_OF_COMPETITION` → present; `VIRTUAL`, `PRACTICE` and no submissions → absent. On CodeChef, only submissions to that contest or its divisions, inside the contest window, count.
 
+### accounts (api)
+
+- **Username:** valid and invalid forms, reserved names, case-insensitive uniqueness. The second user change gets 403; an admin can still change it.
+- **Codes:** a correct code works once; expiry; 5-attempt limit; 60 s resend cooldown; 5 sends per hour; the plain code is never stored.
+- **Passwords:** hash and verify round trip; wrong password fails; compare is constant-time; the stored form is `pbkdf2$…`.
+- **Sign-in:** works with email and with username; bad identifier and bad password give the same error; locked after 5 failures, for 15 minutes.
+- **Linking:** Google links an existing account; an unverified password is deleted.
+- **Onboarding:** steps only move forward, in order; `notified` needs both required handles.
+- **Streak reminder:** targets only `notify_streak = 1`, streak ≥ 1, no solve today.
+- **Leaderboard extras:** climbers and year totals on a small fixture; history at 0 points is excluded.
+- **Privacy:** another student's `/users/:id` has no attendance; an admin's does.
+
 ## Manual checks per task
 
 Set up local data first:
@@ -60,6 +72,7 @@ curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
 | Verify (CF) | Run `participation` on a finished contest with one handle that took part and one that didn't; statuses match, an earlier RSVP reason is kept and pushes arrive |
 | Verify (CC) | Run `participation` on a Starters within an hour of it ending, while CodeChef shows relative times; statuses update |
 | Solves | Submit an AC on Codeforces with a test handle; within 10 min of cron runs it's in `solves` with the expected points |
+| Accounts | Both sign-up paths, forgot password and resuming onboarding, on web and on a real Android phone |
 | Leaderboard | Today / Week / Month totals match a hand-written `SELECT SUM(points)` with the same boundaries |
 | Admin grid | Grid and CSV agree with the `attendance` table for the range |
 | CPU | `wrangler tail` during cron runs shows no `exceededCpu` outcome |

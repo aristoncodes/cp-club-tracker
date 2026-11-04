@@ -54,6 +54,21 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 20. [ ] Streaks, heatmap, top tags on profiles
 21. [ ] Web push for the installed website (iPhone users)
 
+## Phase 4 — Redesign + accounts
+
+22. [ ] **Design tokens and fonts.** Done when: web and app use the `DESIGN.md` tokens and old ones are gone.
+23. [ ] **Shared UI pieces** used by 2+ screens. Done when: toggle, pills, avatar button and screen header exist and are used.
+24. [ ] **Navigation.** Done when: web has Home, Leaderboard, Contests, Feed, Admin; the app has Home, Board, Contests, Feed; the avatar opens Profile; no "Me" anywhere.
+25. [ ] **Accounts backend.** Done when: migrations apply cleanly on a copy of production's shape, all auth endpoints work locally, and the `TESTING.md` accounts tests pass.
+26. [ ] **Accounts UI.** Done when: both sign-up paths and forgot password work on web and on a real Android phone, and onboarding resumes where it stopped.
+27. [ ] **Home** (web + app). Done when: every `DESIGN.md` Home element shows real data.
+28. [ ] **Leaderboard** (web + app). Done when: filters re-rank, and extras match a hand-written query.
+29. [ ] **Profile** (web + app) and `/u/:id`. Done when: another student's profile shows no attendance.
+30. [ ] **Settings** (web + app). Done when: all three username states and all switches work.
+31. [ ] **Contests and Feed** (web + app). Done when: past contests show your own result.
+32. [ ] **Streak reminder and preference checks.** Done when: each notification respects its switch.
+33. [ ] **Final check.** Done when: `TESTING.md` passes, every web page works at 375 px and desktop, one sign-up per path works on a real phone, and `wrangler tail` shows no `exceededCpu`.
+
 ## Later (don't build until asked)
 
-Duels, weekly club problem set, upsolve tracker.
+Duels, weekly club problem set, admin-editable challenge, upsolve tracker.
