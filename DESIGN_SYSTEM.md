@@ -1,6 +1,8 @@
 # DESIGN_SYSTEM — CP Club Tracker
 
-Dark-first, dense and calm, like a good terminal or the Codeforces ratings table. Numbers are the hero. One accent colour. No illustrations, no gradients, no shadows.
+**Website:** inspired by the feel of Codeforces, without copying its branding. Light by default, dense bordered tables, a tab strip for navigation, a sidebar of titled boxes, bold rating-coloured handles and blue links.
+
+**App:** dark, dense and calm. Numbers are the hero. One accent colour. No illustrations, no gradients, no shadows.
 
 ## Tokens
 
@@ -8,7 +10,7 @@ Define these once:
 - **Web:** CSS variables in `web/src/index.css`, mapped into `tailwind.config` as `bg`, `surface`, etc.
 - **App:** a single `app/theme.ts` object.
 
-The app is dark only. The website follows `prefers-color-scheme`.
+The app is dark only and uses the Dark column below. The website defaults to light with a Light/Dark toggle in the header, remembered in the browser. Its values live in `web/src/index.css` and differ from this table: blue accent (`#1F5FBF` light, `#7EB0F5` dark), and page and border colours tuned for bordered tables.
 
 | Token | Dark | Light | Use |
 |---|---|---|---|
@@ -37,7 +39,7 @@ Use these only for handles and problem ratings. They follow Codeforces ranks, so
 | 2100–2399 | `#F59E0B` |
 | ≥ 2400 | `#EF4444` |
 
-Put the colour mapping in `shared/` (`ratingColor(r)`) and use it on both web and app.
+Put the colour mapping in `shared/` (`ratingColor(r)`) and use it on both web and app. The website mixes it 60% with the text colour, so it stays readable in both themes.
 
 ## Typography
 
@@ -95,7 +97,7 @@ Bottom tabs: Home, Leaderboard, Feed, Profile.
 - `/download` Android APK link
 - `/admin` (admins only), with sub-tabs: Attendance, Students & handles, Admins, Flags
 
-Top nav on desktop, bottom tabs under 640 px.
+A tab strip under the header on desktop, bottom tabs under 640 px. The leaderboard has a sidebar with your standing, upcoming contests and recent solves. Every page opens before setup is finished; a notice links to `/me` until the profile is complete and handles are approved.
 
 ## Copy
 

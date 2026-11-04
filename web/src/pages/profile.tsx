@@ -59,7 +59,7 @@ export function Profile() {
               {week.map((step, dayIndex) => (
                 <div
                   key={dayIndex}
-                  className="relative size-2.5 rounded-[2px] bg-surface-2"
+                  className="relative size-2.5 rounded-[2px] bg-border"
                   style={{ visibility: step === null ? 'hidden' : undefined }}
                 >
                   <div className="absolute inset-0 rounded-[2px] bg-accent" style={{ opacity: HEAT_OPACITY[step ?? 0] }} />

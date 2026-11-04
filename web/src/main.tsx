@@ -1,5 +1,5 @@
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { StrictMode, useEffect } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { api, getSession, setSession, type Me } from './api';
@@ -13,9 +13,36 @@ import { MePage } from './pages/me';
 import { Profile } from './pages/profile';
 import { ErrorText, useLoad, type ShellContext } from './ui';
 
-function isSetUp({ user, handles }: Me): boolean {
+function setupNotice({ user, handles }: Me): string | null {
   const linked = (platform: string) => handles.some((h) => h.platform === platform);
-  return !!user.batchYear && linked('cf') && linked('cc');
+  if (!user.batchYear || !linked('cf') || !linked('cc')) return 'Finish your profile: add your batch year and your Codeforces and CodeChef handles.';
+  if (handles.some((h) => !h.approved)) {
+    return user.role === 'admin'
+      ? 'Your handles need approval. Approve them under Admin → Students & handles; solves count from then on.'
+      : 'Your handles are waiting for admin approval. Solves count from the moment they are approved.';
+  }
+  return null;
+}
+
+function ThemeToggle() {
+  const [theme, setTheme] = useState(document.documentElement.dataset.theme ?? 'light');
+  const next = theme === 'light' ? 'dark' : 'light';
+  return (
+    <button
+      className="min-h-11 cursor-pointer px-2 text-accent hover:underline"
+      onClick={() => {
+        document.documentElement.dataset.theme = next;
+        setTheme(next);
+        try {
+          localStorage.setItem('theme', next);
+        } catch {
+          // The choice lasts only until the next page load.
+        }
+      }}
+    >
+      {next === 'dark' ? 'Dark' : 'Light'}
+    </button>
+  );
 }
 
 function Shell() {
@@ -25,8 +52,8 @@ function Shell() {
   if (!getSession()) return <Navigate to="/login" replace />;
   if (error) return <div className="p-4"><ErrorText>{error}</ErrorText></div>;
   if (!me) return null;
-  if (!isSetUp(me) && pathname !== '/me') return <Navigate to="/me" replace />;
 
+  const notice = setupNotice(me);
   const links = [
     { to: '/', label: 'Leaderboard' },
     { to: '/feed', label: 'Feed' },
@@ -34,41 +61,52 @@ function Shell() {
     { to: '/me', label: 'Me' },
     ...(me.user.role === 'admin' ? [{ to: '/admin', label: 'Admin' }] : []),
   ];
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex min-h-11 items-center justify-center rounded-lg px-3 font-medium ${isActive ? 'text-accent' : 'text-muted'}`;
+  const tabClass = ({ isActive }: { isActive: boolean }) =>
+    `flex min-h-10 items-center border-r border-border px-4 text-[13px] font-semibold uppercase tracking-wide last:border-r-0 ${isActive ? 'bg-accent text-surface' : 'text-accent hover:bg-surface-2'}`;
+  const bottomClass = ({ isActive }: { isActive: boolean }) =>
+    `flex min-h-11 items-center justify-center px-1 text-xs font-medium ${isActive ? 'text-accent' : 'text-muted'}`;
 
   return (
     <div className="pb-20 sm:pb-8">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-[960px] items-center justify-between px-4 py-2 sm:px-6">
-          <Link to="/" className="font-bold">CP Club Tracker</Link>
-          <nav className="hidden items-center gap-1 sm:flex">
-            {links.map((link) => (
-              <NavLink key={link.to} to={link.to} end className={linkClass}>{link.label}</NavLink>
-            ))}
-          </nav>
-          <button
-            className="min-h-11 cursor-pointer px-2 text-muted"
-            onClick={() => {
-              setSession(null);
-              window.location.assign('/login');
-            }}
-          >
-            Sign out
-          </button>
+      <header className="border-b border-border bg-surface">
+        <div className="mx-auto flex max-w-[1120px] items-center justify-between px-4 py-2 sm:px-6">
+          <Link to="/" className="text-lg font-bold">
+            <span className="text-accent">CP</span> Club Tracker
+          </Link>
+          <div className="flex items-center gap-1">
+            <Link to={`/u/${me.user.id}`} className="link mr-2 hidden font-medium sm:inline">{me.user.name}</Link>
+            <ThemeToggle />
+            <button
+              className="min-h-11 cursor-pointer px-2 text-accent hover:underline"
+              onClick={() => {
+                setSession(null);
+                window.location.assign('/login');
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
-      {me.pendingReasons.length > 0 && pathname !== '/me' && (
-        <Link to="/me" className="block bg-pending/12 px-4 py-3 text-center font-medium text-pending">
-          Give a reason for {me.pendingReasons[0].name}
-        </Link>
-      )}
-      <main className="mx-auto max-w-[960px] px-4 py-4 sm:px-6">
+      <div className="mx-auto max-w-[1120px] px-4 pt-4 sm:px-6">
+        <nav className="hidden overflow-hidden rounded-md border border-border bg-surface sm:flex">
+          {links.map((link) => (
+            <NavLink key={link.to} to={link.to} end className={tabClass}>{link.label}</NavLink>
+          ))}
+        </nav>
+      </div>
+      <main className="mx-auto flex max-w-[1120px] flex-col gap-3 px-4 py-4 sm:px-6">
+        {notice && <Link to="/me" className="rounded-md border border-pending bg-pending/10 px-3 py-2 font-medium text-pending">{notice}</Link>}
+        {me.pendingReasons.length > 0 && pathname !== '/me' && (
+          <Link to="/me" className="rounded-md border border-pending bg-pending/10 px-3 py-2 font-medium text-pending">
+            Give a reason for {me.pendingReasons[0].name}
+          </Link>
+        )}
         <Outlet context={{ me, reload } satisfies ShellContext} />
       </main>
       <nav className="fixed inset-x-0 bottom-0 grid auto-cols-fr grid-flow-col border-t border-border bg-surface sm:hidden">
         {links.map((link) => (
-          <NavLink key={link.to} to={link.to} end className={linkClass}>{link.label}</NavLink>
+          <NavLink key={link.to} to={link.to} end className={bottomClass}>{link.label}</NavLink>
         ))}
       </nav>
     </div>

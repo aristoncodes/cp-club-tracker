@@ -1,31 +1,29 @@
 @import 'tailwindcss';
 
 :root {
-  --bg: #f7f8fa;
+  --bg: #f1f3f6;
   --surface: #ffffff;
-  --surface-2: #f0f2f5;
-  --border-color: #e1e4e8;
-  --text: #14171c;
+  --surface-2: #f4f6f9;
+  --border-color: #d5dae1;
+  --text: #1c2128;
   --muted: #5b6472;
-  --accent: #4d7c0f;
+  --accent: #1f5fbf;
   --present: #15803d;
   --absent: #b91c1c;
   --pending: #b45309;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0d10;
-    --surface: #14171c;
-    --surface-2: #1b1f26;
-    --border-color: #262b33;
-    --text: #e6e8eb;
-    --muted: #8b93a1;
-    --accent: #a3e635;
-    --present: #22c55e;
-    --absent: #ef4444;
-    --pending: #f59e0b;
-  }
+:root[data-theme='dark'] {
+  --bg: #0f1216;
+  --surface: #171b21;
+  --surface-2: #1f242c;
+  --border-color: #2d343e;
+  --text: #e6e8eb;
+  --muted: #98a1af;
+  --accent: #7eb0f5;
+  --present: #22c55e;
+  --absent: #ef4444;
+  --pending: #f59e0b;
 }
 
 @theme inline {
@@ -48,6 +46,56 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 14px;
+}
+
+h2 {
+  color: var(--accent);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.data-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.data-table td + td,
+.data-table th + th {
+  border-left: 1px solid var(--border-color);
+}
+
+.data-table tbody tr:nth-child(even) td {
+  background: var(--surface-2);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table .right {
+  text-align: right;
+}
+
+a.link {
+  color: var(--accent);
+}
+
+a.link:hover {
+  text-decoration: underline;
 }
 
 .num {
