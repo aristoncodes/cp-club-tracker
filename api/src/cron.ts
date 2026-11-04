@@ -1,6 +1,6 @@
 import { brokenHandle, cfSolves } from 'shared/cf';
-import { formatIST } from 'shared/time';
-import { CfError, fetchUserInfo, fetchUserStatus } from './cf';
+import { IST_OFFSET, formatIST, istDay } from 'shared/time';
+import { CfError, fetchRatingHistory, fetchUserInfo, fetchUserStatus } from './cf';
 import type { Bindings } from './auth';
 import { sendPushes, type PushMessage } from './push';
 import { createAttendanceRows, insertSolves, markHandleBroken } from './records';
@@ -14,6 +14,10 @@ const CRON_TICK = 60;
 const SOLVE_SYNC_MINUTES = 10;
 const SOLVE_SYNC_STUDENTS = 4;
 const RATING_REFRESH_SECOND_OF_DAY = 18.5 * HOUR;
+const STREAK_REMINDER_SECOND_OF_DAY = 15.5 * HOUR;
+const SOLVE_JOB_SECONDS = 30 * 60;
+const CONTEST_JOB_SECONDS = 6 * HOUR;
+const DAY = 86400;
 
 type ContestRow = {
   id: number;
@@ -45,18 +49,23 @@ export function contestAction(contest: ContestRow, now: number): 'reminder' | 'r
 
 export const isSolveSyncTick = (now: number) => now % (SOLVE_SYNC_MINUTES * CRON_TICK) < CRON_TICK;
 
-export function isRatingRefreshTick(now: number): boolean {
-  const secondOfDay = now % 86400;
-  return secondOfDay >= RATING_REFRESH_SECOND_OF_DAY && secondOfDay < RATING_REFRESH_SECOND_OF_DAY + CRON_TICK;
+function isDailyTick(now: number, secondOfDay: number): boolean {
+  const second = now % DAY;
+  return second >= secondOfDay && second < secondOfDay + CRON_TICK;
 }
 
-async function participantTokens(db: D1Database, platform: string): Promise<string[]> {
+export const isRatingRefreshTick = (now: number) => isDailyTick(now, RATING_REFRESH_SECOND_OF_DAY);
+export const isStreakReminderTick = (now: number) => isDailyTick(now, STREAK_REMINDER_SECOND_OF_DAY);
+export const isSolveJobTick = (now: number) => now % SOLVE_JOB_SECONDS < CRON_TICK;
+export const isContestJobTick = (now: number) => now % CONTEST_JOB_SECONDS < CRON_TICK;
+
+async function participantTokens(db: D1Database, platform: string, preference: 'notify_hour' | 'notify_rsvp'): Promise<string[]> {
   const { results } = await db
     .prepare(
       `SELECT p.token FROM push_tokens p
        JOIN users u ON u.id = p.user_id
        JOIN handles h ON h.user_id = u.id
-       WHERE u.active = 1 AND h.platform = ? AND h.approved_at IS NOT NULL`,
+       WHERE u.active = 1 AND u.${preference} = 1 AND h.platform = ? AND h.approved_at IS NOT NULL`,
     )
     .bind(platform)
     .all<{ token: string }>();
@@ -99,7 +108,7 @@ async function advanceContest(env: Bindings, contest: ContestRow, now: number): 
 
   if (action === 'reminder') {
     const startsAt = formatIST(contest.start_at).split(' · ')[1];
-    const tokens = await participantTokens(db, contest.platform);
+    const tokens = await participantTokens(db, contest.platform, 'notify_hour');
     const messages: PushMessage[] = tokens.map((to) => ({
       to,
       body: `${contest.name} starts at ${startsAt} — in 1 hour.`,
@@ -112,7 +121,7 @@ async function advanceContest(env: Bindings, contest: ContestRow, now: number): 
 
   await createAttendanceRows(db, contest).run();
   if (action === 'rsvp') {
-    const tokens = await participantTokens(db, contest.platform);
+    const tokens = await participantTokens(db, contest.platform, 'notify_rsvp');
     const messages: PushMessage[] = tokens.map((to) => ({
       to,
       body: `${contest.name} starts in 5 min. Giving it?`,
@@ -140,6 +149,14 @@ async function syncCfHandle(db: D1Database, row: CfHandleRow, now: number): Prom
       await db.prepare('UPDATE users SET cf_rating = ? WHERE id = ?').bind(info?.rating ?? null, row.userId).run();
     }
     await insertSolves(db, cfSolves(row.handle, await fetchUserStatus(row.handle)));
+    const history = await fetchRatingHistory(row.handle);
+    await db
+      .prepare('UPDATE users SET cf_rating_history = ? WHERE id = ?')
+      .bind(
+        JSON.stringify(history.map((c) => ({ at: c.ratingUpdateTimeSeconds, rating: c.newRating, contestId: c.contestId, delta: c.newRating - c.oldRating }))),
+        row.userId,
+      )
+      .run();
     await db.prepare(`UPDATE handles SET synced_at = ? WHERE user_id = ? AND platform = 'cf'`).bind(now, row.userId).run();
   } catch (err) {
     if (!(await reportIfBroken(db, err))) console.error(`Solve sync failed for ${row.handle}:`, err);
@@ -183,6 +200,27 @@ async function refreshRatings(db: D1Database): Promise<void> {
   if (known.length) await db.batch(known.map((r) => update.bind(ratings.get(r.handle.toLowerCase()) ?? null, r.userId)));
 }
 
+export function streakReminderQuery(db: D1Database, now: number): D1PreparedStatement {
+  const today = istDay(now);
+  const dayOf = `(s.solved_at + ${IST_OFFSET}) / ${DAY}`;
+  return db
+    .prepare(
+      `SELECT p.token FROM push_tokens p JOIN users u ON u.id = p.user_id
+       WHERE u.active = 1 AND u.notify_streak = 1
+         AND EXISTS (SELECT 1 FROM solves s WHERE s.user_id = u.id AND ${dayOf} = ?1)
+         AND NOT EXISTS (SELECT 1 FROM solves s WHERE s.user_id = u.id AND ${dayOf} = ?2)`,
+    )
+    .bind(today - 1, today);
+}
+
+async function sendStreakReminders(env: Bindings, now: number): Promise<void> {
+  const { results } = await streakReminderQuery(env.DB, now).all<{ token: string }>();
+  await sendPushes(
+    env,
+    results.map((r) => ({ to: r.token, body: 'One problem today keeps your streak alive.', data: { screen: 'home' } })),
+  );
+}
+
 async function attempt(label: string, work: () => Promise<void>): Promise<void> {
   try {
     await work();
@@ -202,6 +240,9 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
     await attempt(`contest ${contest.id}`, () => advanceContest(env, contest, now));
   }
   await attempt('solve sync', () => syncCfSolves(env.DB, now, !isSolveSyncTick(now)));
+  if (isStreakReminderTick(now)) await attempt('streak reminder', () => sendStreakReminders(env, now));
+  if (isSolveJobTick(now)) await attempt('solve job', () => dispatchWorkflow(env, 'sync-solves.yml'));
+  if (isContestJobTick(now)) await attempt('contest job', () => dispatchWorkflow(env, 'sync-contests.yml'));
   if (isRatingRefreshTick(now)) {
     await attempt('rating refresh', async () => {
       try {

@@ -1,4 +1,4 @@
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
@@ -9,13 +9,13 @@ CREATE TABLE users (
   created_at INTEGER NOT NULL
 );
 
-CREATE TABLE push_tokens (
+CREATE TABLE IF NOT EXISTS push_tokens (
   token TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id),
   kind TEXT NOT NULL CHECK (kind IN ('expo','web'))
 );
 
-CREATE TABLE handles (
+CREATE TABLE IF NOT EXISTS handles (
   user_id INTEGER NOT NULL REFERENCES users(id),
   platform TEXT NOT NULL,
   handle TEXT NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE handles (
   UNIQUE (platform, handle)
 );
 
-CREATE TABLE contests (
+CREATE TABLE IF NOT EXISTS contests (
   id INTEGER PRIMARY KEY,
   platform TEXT NOT NULL CHECK (platform IN ('cf','cc')),
   external_id TEXT NOT NULL,                 -- CF contest id / CC contest code
@@ -40,7 +40,7 @@ CREATE TABLE contests (
   UNIQUE (platform, external_id)
 );
 
-CREATE TABLE attendance (
+CREATE TABLE IF NOT EXISTS attendance (
   contest_id INTEGER NOT NULL REFERENCES contests(id),
   user_id INTEGER NOT NULL REFERENCES users(id),
   rsvp TEXT CHECK (rsvp IN ('yes','no')),
@@ -50,7 +50,7 @@ CREATE TABLE attendance (
   PRIMARY KEY (contest_id, user_id)
 );
 
-CREATE TABLE problems (
+CREATE TABLE IF NOT EXISTS problems (
   platform TEXT NOT NULL,
   problem_id TEXT NOT NULL,                  -- cf: "1900C", cc: code, etc.
   name TEXT,
@@ -60,7 +60,7 @@ CREATE TABLE problems (
   PRIMARY KEY (platform, problem_id)
 );
 
-CREATE TABLE solves (
+CREATE TABLE IF NOT EXISTS solves (
   user_id INTEGER NOT NULL REFERENCES users(id),
   platform TEXT NOT NULL,
   problem_id TEXT NOT NULL,
@@ -70,4 +70,4 @@ CREATE TABLE solves (
   points REAL NOT NULL,
   PRIMARY KEY (user_id, platform, problem_id)
 );
-CREATE INDEX solves_by_time ON solves (solved_at);
+CREATE INDEX IF NOT EXISTS solves_by_time ON solves (solved_at);

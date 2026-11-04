@@ -1,7 +1,5 @@
 name: sync-solves
 on:
-  schedule:
-    - cron: '*/30 * * * *'
   workflow_dispatch:
 jobs:
   sync:

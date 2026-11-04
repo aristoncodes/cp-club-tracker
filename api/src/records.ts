@@ -75,8 +75,8 @@ export async function finishContest(
   const { results } = await db
     .prepare(
       `SELECT p.token, a.status, a.reason_type AS reasonType
-       FROM attendance a JOIN push_tokens p ON p.user_id = a.user_id
-       WHERE a.contest_id = ?`,
+       FROM attendance a JOIN push_tokens p ON p.user_id = a.user_id JOIN users u ON u.id = a.user_id
+       WHERE a.contest_id = ? AND u.notify_result = 1`,
     )
     .bind(contest.id)
     .all<{ token: string; status: string; reasonType: string | null }>();

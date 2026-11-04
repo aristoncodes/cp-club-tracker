@@ -282,10 +282,10 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 
 Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)` for parsing. Parsers are tested on saved fixtures. One adapter failing logs an error and doesn't stop the others.
 
-| Script | Schedule (UTC cron) | Does |
+| Script | When | Does |
 |---|---|---|
-| `sync-contests.ts` | `0 */6 * * *` | CF `contest.list?gym=false` (future contests only) + CodeChef upcoming contests → apply `countsForAttendance` and parallel-round merge → `/ingest/contests` |
-| `sync-solves.ts` | `*/30 * * * *` | cc, atcoder, leetcode (and cf as a backstop) accepted submissions from the last 48 hours for approved handles → `/ingest/solves`, one post per handle |
+| `sync-contests.ts` | Every 6 hours, dispatched by the Worker | CF `contest.list?gym=false` (future contests only) + CodeChef upcoming contests → apply `countsForAttendance` and parallel-round merge → `/ingest/contests` |
+| `sync-solves.ts` | Every 30 minutes, dispatched by the Worker | cc, atcoder, leetcode (and cf as a backstop) accepted submissions from the last 48 hours for approved handles → `/ingest/solves`, one post per handle |
 | `backfill.ts` | `workflow_dispatch` (inputs `platform`, `handle`) | On approval: up to 6 months of accepted submissions → `/ingest/solves`, 50 at a time. Codeforces and AtCoder give full history; CodeChef gives about the last page and LeetCode the last 20 |
 | `participation.ts` | `workflow_dispatch` (inputs `platform`, `contest`, `alt`, `start`, `end`) | **cf:** `contest.status?contestId=…&handle=…` for each handle, and for `alt`; any submission with participantType `CONTESTANT` or `OUT_OF_COMPETITION` → present. A handle Codeforces says doesn't exist is reported in `brokenHandles`. **cc:** each handle's recent submissions; any submission linked to the contest or one of its divisions (`START263`, `START263A`…) with a time inside the contest → present. Any other failure stops the run without posting, so nobody is wrongly marked absent → `/ingest/participation` |
 

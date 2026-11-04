@@ -19,6 +19,10 @@ export function fetchUserStatus(handle: string): Promise<CfSubmission[]> {
   return cfGet(`user.status?handle=${encodeURIComponent(handle)}&from=1&count=50`);
 }
 
+export function fetchRatingHistory(handle: string): Promise<{ contestId: number; ratingUpdateTimeSeconds: number; oldRating: number; newRating: number }[]> {
+  return cfGet(`user.rating?handle=${encodeURIComponent(handle)}`);
+}
+
 export function fetchUserInfo(handles: string[]): Promise<{ handle: string; rating?: number }[]> {
   return cfGet(`user.info?handles=${handles.map(encodeURIComponent).join(';')}`);
 }

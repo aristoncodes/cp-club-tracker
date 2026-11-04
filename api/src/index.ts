@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { adminRoutes } from './admin';
-import { authRoutes, type AppEnv, type Bindings } from './auth';
+import { accountRoutes } from './accounts';
+import type { AppEnv, Bindings } from './auth';
 import { runCron } from './cron';
 import { ingestRoutes } from './ingest';
 import { studentRoutes } from './routes';
@@ -23,7 +24,7 @@ app.get('/health', async (c) => {
   return c.json({ ok: true });
 });
 
-app.route('/auth', authRoutes);
+app.route('/auth', accountRoutes);
 app.route('/ingest', ingestRoutes);
 app.route('/admin', adminRoutes);
 app.route('/', studentRoutes);

@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { IST_OFFSET, istDay } from 'shared/time';
+import { normalizeUsername, usernameError } from './accounts';
 import { requireAdmin, requireUser, type AppEnv } from './auth';
 import { syncNewlyApproved } from './cron';
 
@@ -74,7 +75,7 @@ adminRoutes.patch('/contests/:id', async (c) => {
 adminRoutes.get('/students', async (c) => {
   const db = c.env.DB;
   const [users, handles] = await db.batch([
-    db.prepare('SELECT id, email, name, batch_year AS batchYear, role, active FROM users ORDER BY name'),
+    db.prepare('SELECT id, email, name, username, batch_year AS batchYear, role, active FROM users ORDER BY name'),
     db.prepare(
       `SELECT user_id AS userId, platform, handle, approved_at IS NOT NULL AS approved, broken FROM handles ORDER BY platform`,
     ),
@@ -85,13 +86,23 @@ adminRoutes.get('/students', async (c) => {
 adminRoutes.patch('/users/:id', async (c) => {
   const id = Number(c.req.param('id'));
   if (id === c.get('user').id) return c.json({ error: "You can't change your own account" }, 400);
-  const { role, active } = await c.req.json<{ role?: string; active?: boolean }>();
+  const body = await c.req.json<{ role?: string; active?: boolean; username?: string }>();
+  const { role, active } = body;
   if (role !== undefined && role !== 'student' && role !== 'admin') return c.json({ error: 'Invalid role' }, 400);
-  const result = await c.env.DB.prepare(
-    'UPDATE users SET role = COALESCE(?, role), active = COALESCE(?, active) WHERE id = ?',
-  )
-    .bind(role ?? null, active === undefined ? null : active ? 1 : 0, id)
-    .run();
+  const username = body.username === undefined ? null : normalizeUsername(body.username);
+  const invalid = username === null ? null : usernameError(username);
+  if (invalid) return c.json({ error: invalid }, 400);
+  let result: D1Result;
+  try {
+    result = await c.env.DB.prepare(
+      'UPDATE users SET role = COALESCE(?, role), active = COALESCE(?, active), username = COALESCE(?, username) WHERE id = ?',
+    )
+      .bind(role ?? null, active === undefined ? null : active ? 1 : 0, username, id)
+      .run();
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('UNIQUE')) return c.json({ error: 'That name is taken' }, 409);
+    throw err;
+  }
   if (!result.meta.changes) return c.json({ error: 'User not found' }, 404);
   return c.json({ ok: true });
 });

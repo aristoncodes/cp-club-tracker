@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { contestAction, isRatingRefreshTick, isSolveSyncTick } from './cron';
-import { withRanks } from './routes';
+import { contestAction, isContestJobTick, isRatingRefreshTick, isSolveJobTick, isSolveSyncTick, isStreakReminderTick } from './cron';
+import { biggestClimbers, withRanks } from './routes';
 
 const START = 2_000_000_000;
 const END = START + 7200;
@@ -99,5 +99,33 @@ describe('withRanks', () => {
       { points: 30, rank: 1 },
       { points: 12, rank: 3 },
     ]);
+  });
+});
+
+describe('job ticks', () => {
+  it('reminds about streaks at 21:00 IST', () => {
+    const ninePm = Date.UTC(2026, 10, 4, 15, 30) / 1000;
+    expect(isStreakReminderTick(ninePm)).toBe(true);
+    expect(isStreakReminderTick(ninePm + 60)).toBe(false);
+  });
+
+  it('starts GitHub jobs every 30 minutes and 6 hours', () => {
+    expect(isSolveJobTick(1800)).toBe(true);
+    expect(isSolveJobTick(1860)).toBe(false);
+    expect(isContestJobTick(21600)).toBe(true);
+    expect(isContestJobTick(1800)).toBe(false);
+  });
+});
+
+describe('biggestClimbers', () => {
+  const rows = (ranks: number[]) => ranks.map((rank, index) => ({ userId: index + 1, rank }));
+
+  it('takes the top 3 positive changes', () => {
+    const climbers = biggestClimbers(rows([1, 2, 3, 4, 5]), rows([6, 2, 8, 9, 1]));
+    expect(climbers.map((row) => [row.userId, row.gained])).toEqual([[1, 5], [3, 5], [4, 5]]);
+  });
+
+  it('skips people who were not ranked before, or fell', () => {
+    expect(biggestClimbers(rows([1, 2]), [{ userId: 2, rank: 1 }])).toEqual([]);
   });
 });

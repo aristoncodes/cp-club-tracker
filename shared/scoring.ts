@@ -1,5 +1,8 @@
 import type { Platform } from './types';
 
+export const CHALLENGE_TARGET = 50;
+export const CHALLENGE_MIN_RATING = 1400;
+
 const DEFAULT_RATING = 1200;
 const LEETCODE_RP: Record<string, number> = { Easy: 1000, Medium: 1300, Hard: 1600 };
 
