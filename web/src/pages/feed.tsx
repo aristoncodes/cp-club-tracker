@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { timeAgo } from 'shared/time';
 import { api } from '../api';
-import { Button, ErrorText, platformLabel, Rating } from '../ui';
+import { Avatar, Button, Card, ErrorText, platformLabel, RatingChip } from '../ui';
 
 type FeedItem = {
   userId: number;
@@ -41,43 +41,29 @@ export function Feed() {
 
   const now = Date.now() / 1000;
   return (
-    <div className="flex flex-col gap-3">
-      <h1 className="text-2xl font-bold">Feed</h1>
+    <div className="flex max-w-[800px] flex-col gap-4">
+      <h1 className="display text-[52px] leading-none tracking-[-0.035em]">Feed</h1>
       {error && <ErrorText>{error}</ErrorText>}
-      <div className="overflow-hidden rounded-md border border-border bg-surface">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th className="hidden sm:table-cell">When</th>
-              <th>Who</th>
-              <th>Problem</th>
-              <th className="right">Rating</th>
-              <th className="right">Points</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items?.length === 0 && (
-              <tr>
-                <td colSpan={5} className="p-6 text-center text-muted">No solves yet. Be the first on the board.</td>
-              </tr>
-            )}
-            {items?.map((item) => (
-              <tr key={`${item.userId}-${item.platform}-${item.problemId}`}>
-                <td className="hidden whitespace-nowrap text-muted sm:table-cell">{timeAgo(item.solvedAt, now)}</td>
-                <td><Link to={`/u/${item.userId}`} className="link font-medium">{item.name}</Link></td>
-                <td className="min-w-0">
-                  <a href={item.url ?? undefined} target="_blank" rel="noreferrer" className="link">{item.problemName ?? item.problemId}</a>
-                  <p className="text-xs text-muted">
-                    {[platformLabel(item.platform), ...item.tags.slice(0, 3)].join(' · ')}{item.live ? ' · live' : ''}
-                  </p>
-                </td>
-                <td className="right"><Rating value={item.rp} /></td>
-                <td className="num right font-bold text-accent">+{item.points}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {items?.length === 0 && <Card><p className="text-muted">No solves yet. Be the first on the board.</p></Card>}
+      {!!items?.length && (
+        <Card className="flex flex-col gap-4">
+          {items.map((item) => (
+            <div key={`${item.userId}-${item.platform}-${item.problemId}`} className="flex items-start gap-3">
+              <Avatar userId={item.userId} name={item.name} />
+              <div className="min-w-0 flex-1">
+                <p>
+                  <Link to={`/u/${item.userId}`} className="font-bold hover:underline">{item.name}</Link> solved{' '}
+                  <a href={item.url ?? undefined} target="_blank" rel="noreferrer" className="hover:underline">{item.problemName ?? item.problemId}</a> on {platformLabel(item.platform)}
+                </p>
+                <p className="text-xs text-muted">
+                  {[...item.tags.slice(0, 3), timeAgo(item.solvedAt, now)].join(' · ')}{item.live ? ' · live' : ''} · <span className="num text-lime">+{item.points}</span>
+                </p>
+              </div>
+              <RatingChip value={item.rp} />
+            </div>
+          ))}
+        </Card>
+      )}
       {more && items && (
         <div><Button variant="secondary" onClick={() => load(items[items.length - 1].solvedAt)}>Show more</Button></div>
       )}

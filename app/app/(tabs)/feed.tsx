@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { timeAgo } from 'shared/time';
 import { api } from '../../lib/api';
-import { Rating } from '../../lib/ui';
+import { Avatar, Rating } from '../../lib/ui';
 import { theme } from '../../theme';
 
 type FeedItem = {
@@ -66,23 +66,24 @@ export default function Feed() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <FlatList
         data={items}
+        contentContainerStyle={styles.list}
         keyExtractor={(item) => `${item.userId}-${item.platform}-${item.problemId}`}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={theme.accent} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={theme.lime} />}
         onEndReached={loadMore}
         ListEmptyComponent={refreshing ? undefined : <Text style={styles.muted}>No solves yet. Be the first on the board.</Text>}
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => item.url && Linking.openURL(item.url)}>
+            <Avatar userId={item.userId} name={item.name} />
             <View style={styles.main}>
               <Text style={styles.line}>
                 <Text style={styles.name} onPress={() => router.push({ pathname: '/user/[id]', params: { id: String(item.userId) } })}>
-                  {item.name}
+                  {item.name.split(' ')[0]}
                 </Text>{' '}
-                <Text style={styles.muted}>solved</Text> <Rating value={item.rp} />
+                solved {item.problemName ?? item.problemId}
               </Text>
-              <Text style={styles.line} numberOfLines={1}>{item.problemName ?? item.problemId}</Text>
               <Text style={styles.small} numberOfLines={1}>{[...item.tags.slice(0, 3), timeAgo(item.solvedAt, now)].join(' · ')}</Text>
             </View>
-            <Text style={styles.points}>+{item.points}</Text>
+            <View style={styles.chip}><Rating value={item.rp} /></View>
           </Pressable>
         )}
       />
@@ -91,14 +92,15 @@ export default function Feed() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, paddingTop: 64, paddingHorizontal: 16, gap: 12 },
-  title: { color: theme.text, fontFamily: theme.font.bold, fontSize: 24 },
-  error: { color: theme.absent, fontFamily: theme.font.regular, fontSize: 14 },
-  row: { flexDirection: 'row', gap: 12, padding: 12, backgroundColor: theme.surface, borderBottomWidth: 1, borderBottomColor: theme.border },
+  page: { flex: 1, paddingTop: 56, paddingHorizontal: theme.gutter, gap: 12 },
+  title: { color: theme.text, fontFamily: theme.font.display, fontSize: 30, letterSpacing: -0.9 },
+  error: { color: theme.pink, fontFamily: theme.font.regular, fontSize: 14 },
+  list: { gap: 6, paddingBottom: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card },
   main: { flex: 1, gap: 2 },
   line: { color: theme.text, fontFamily: theme.font.regular, fontSize: 14 },
-  name: { color: theme.text, fontFamily: theme.font.medium, fontSize: 14 },
+  name: { color: theme.text, fontFamily: theme.font.bold, fontSize: 14 },
   muted: { color: theme.muted, fontFamily: theme.font.regular, fontSize: 14 },
   small: { color: theme.muted, fontFamily: theme.font.regular, fontSize: 12 },
-  points: { color: theme.accent, fontFamily: theme.font.mono, fontSize: 14 },
+  chip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: theme.card2 },
 });

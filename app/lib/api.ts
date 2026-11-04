@@ -9,6 +9,7 @@ export type Me = {
   user: { id: number; name: string; batchYear: number | null };
   handles: Handle[];
   pendingReasons: { id: number; name: string }[];
+  streak: number;
 };
 
 export class ApiError extends Error {

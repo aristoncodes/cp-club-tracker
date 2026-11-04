@@ -27,7 +27,7 @@ Everything runs on free tiers. Cloudflare Workers Free gives 100k requests/day, 
 | `shared` | `vitest` (dev) |
 | `api` | `hono`, `jose`, `wrangler` (dev), `vitest` (dev), `@types/node` (dev) |
 | `web` | `react`, `react-dom`, `react-router-dom`, `vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/vite`, `@react-oauth/google`, `@types/react` (dev), `@types/react-dom` (dev) |
-| `app` | `react`, `react-native`, `expo`, `expo-router`, `expo-notifications`, `expo-task-manager`, `expo-device`, `expo-auth-session`, `expo-secure-store`, `expo-updates`, `expo-font`, `expo-constants`, `expo-linking`, `react-native-screens`, `react-native-safe-area-context`, `@expo/metro-runtime`, `@expo/log-box`, `@expo-google-fonts/inter`, `@expo-google-fonts/jetbrains-mono`, `@types/react` (dev) |
+| `app` | `react`, `react-native`, `expo`, `expo-router`, `expo-notifications`, `expo-task-manager`, `expo-device`, `expo-auth-session`, `expo-secure-store`, `expo-updates`, `expo-font`, `expo-constants`, `expo-linking`, `react-native-screens`, `react-native-safe-area-context`, `@expo/metro-runtime`, `@expo/log-box`, `@expo-google-fonts/inter`, `@expo-google-fonts/space-grotesk`, `@expo-google-fonts/jetbrains-mono`, `@expo/vector-icons`, `@types/react` (dev) |
 | `jobs` | `cheerio`, `tsx`, `@types/node` (dev), `vitest` (dev) |
 
 Ask before adding anything else.
@@ -37,7 +37,7 @@ Ask before adding anything else.
 Target shape. Don't add files beyond this without a reason from `CLAUDE.md`.
 
 ```
-shared/  scoring.ts  contests.ts  time.ts  types.ts  rating-color.ts  cf.ts  batch.ts  *.test.ts
+shared/  scoring.ts  contests.ts  time.ts  types.ts  rating-color.ts  cf.ts  batch.ts  reasons.ts  *.test.ts
 api/     schema.sql  wrangler.toml  seed.dev.sql
          src/index.ts      Hono app, mounts routes, exports fetch + scheduled
          src/auth.ts       Google token verify, session JWT, requireUser/requireAdmin
@@ -204,14 +204,15 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | Method | Path | Role | Notes |
 |---|---|---|---|
 | POST | /auth/google | none | Body `{ idToken }`. Verify against Google JWKS with `jose` (audience = web + Android client ids). Create the user on first sign-in; role `admin` if the email is in `ADMIN_EMAILS`. Returns `{ token, user }` |
-| GET | /me | student | User, handles with approval state, contests with pending reasons |
+| GET | /me | student | User, handles with approval state, contests with pending reasons, solve streak |
 | PUT | /me | student | `{ name, batchYear }` |
 | PUT | /me/handles/:platform | student | `{ handle }`. Clears `approved_at` only if the handle is different from the current one. 409 if the handle is taken |
 | POST | /me/push-token | student | `{ token, kind }` |
-| GET | /contests/upcoming | student | Next 10 counted contests + my RSVP |
+| GET | /contests/upcoming | student | Next 10 counted contests + my RSVP, plus how many said yes out of how many can take part. Counts only, never who |
 | POST | /contests/:id/rsvp | student | `{ going: boolean, reasonType?, reasonText? }`; a reason is required when `going` is false. Accepted until the contest reaches `stage = 4`, then 409 |
 | POST | /contests/:id/reason | student | `{ reasonType, reasonText? }`. Only allowed when my status is `absent` |
-| GET | /leaderboard?period=day\|week\|month | student | `[{ rank, userId, name, batchYear, cfHandle, cfRating, points, solves, hardest }]`. `hardest` is the highest `solves.rp` in the period. Only users with a solve in the period; equal points share a rank |
+| GET | /leaderboard?period=day\|week\|month | student | `[{ rank, userId, name, batchYear, cfHandle, cfRating, points, solves, hardest }]`. `hardest` is the highest `solves.rp` in the period; `moved` is the rank change over the last 24 hours, or null. Only users with a solve in the period; equal points share a rank |
+| GET | /challenge | student | `{ solved, target, minRating }`: club solves rated 1400+ this week, out of 50 |
 | GET | /feed?before= | student | 30 latest solves with problem info |
 | GET | /users/:id | student | Profile, period stats, streak, top tags, heatmap counts. No attendance data |
 | GET | /admin/attendance?from&to&platform&batch | admin | `{ contests, students, cells }`; the web builds the CSV |

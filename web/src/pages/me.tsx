@@ -1,19 +1,9 @@
 import { useEffect, useState } from 'react';
 import { batchForStudyYear, STUDY_YEARS, studyYearOf } from 'shared/batch';
-import { formatIST } from 'shared/time';
+import { REASONS } from 'shared/reasons';
 import { api, type Me } from '../api';
-import { Button, Card, ErrorText, inputClass, platformLabel, PLATFORMS, useLoad, useMe } from '../ui';
-
-type Contest = { id: number; platform: string; name: string; startAt: number; rsvp: string | null };
-
-const REASONS = [
-  { id: 'exams', label: 'Exams' },
-  { id: 'travel', label: 'Travel' },
-  { id: 'illness', label: 'Illness' },
-  { id: 'clash', label: 'Other commitment' },
-  { id: 'forgot', label: 'Forgot' },
-  { id: 'other', label: 'Other' },
-];
+import { NextContest, type Contest } from '../next-contest';
+import { Button, Card, ErrorText, inputClass, PLATFORMS, useLoad, useMe } from '../ui';
 
 function ReasonForm({ onSubmit }: { onSubmit: (reason: { reasonType: string; reasonText: string }) => Promise<void> }) {
   const [reasonType, setReasonType] = useState('');
@@ -42,7 +32,7 @@ function ReasonForm({ onSubmit }: { onSubmit: (reason: { reasonType: string; rea
             role="radio"
             aria-checked={reasonType === reason.id}
             onClick={() => setReasonType(reason.id)}
-            className={`min-h-11 cursor-pointer rounded-full border px-4 ${reasonType === reason.id ? 'border-accent text-accent' : 'border-border bg-surface-2'}`}
+            className={`min-h-11 cursor-pointer rounded-full border-2 px-4 font-bold ${reasonType === reason.id ? 'border-sun bg-sun text-ink' : 'border-line text-text'}`}
           >
             {reason.label}
           </button>
@@ -56,7 +46,7 @@ function ReasonForm({ onSubmit }: { onSubmit: (reason: { reasonType: string; rea
         aria-label="Reason details"
       />
       {error && <ErrorText>{error}</ErrorText>}
-      <div><Button onClick={submit} disabled={!reasonType || saving}>Submit</Button></div>
+      <div><Button onClick={submit} disabled={!reasonType || saving}>Add reason</Button></div>
     </div>
   );
 }
@@ -91,7 +81,7 @@ function SetupForm({ me, onSaved }: { me: Me; onSaved: () => void }) {
 
   return (
     <Card className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Your profile</h2>
+      <h2 className="display text-xl">Your profile</h2>
       <label className="flex flex-col gap-1">
         <span className="label">Year</span>
         <select className={inputClass} value={studyYear} onChange={(e) => setStudyYear(Number(e.target.value))}>
@@ -105,60 +95,20 @@ function SetupForm({ me, onSaved }: { me: Me; onSaved: () => void }) {
           <label key={id} className="flex flex-col gap-1">
             <span className="label">{label}{required ? '' : ' (optional)'}</span>
             <input
-              className={`${inputClass} num`}
+              className={`${inputClass} handle`}
               autoCapitalize="none"
               autoCorrect="off"
               value={handles[id] ?? ''}
               onChange={(e) => setHandles((current) => ({ ...current, [id]: e.target.value }))}
             />
-            {saved && !saved.approved && <span className="text-xs text-pending">Waiting for admin approval</span>}
+            {saved && !saved.approved && <span className="text-xs text-sun">Waiting for admin approval</span>}
           </label>
         );
       })}
       {error && <ErrorText>{error}</ErrorText>}
-      {message && <p className="text-present">{message}</p>}
+      {message && <p className="font-bold text-lime">{message}</p>}
       <div><Button onClick={save} disabled={saving}>Save</Button></div>
     </Card>
-  );
-}
-
-function UpcomingContest({ contest, onChange }: { contest: Contest; onChange: () => void }) {
-  const [answeringNo, setAnsweringNo] = useState(false);
-  const [error, setError] = useState('');
-
-  async function going() {
-    try {
-      await api(`/contests/${contest.id}/rsvp`, 'POST', { going: true });
-      setAnsweringNo(false);
-      onChange();
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0">
-      <div>
-        <span className="label">{platformLabel(contest.platform)}</span>
-        <p className="font-medium">{contest.name}</p>
-        <p className="num text-muted">{formatIST(contest.startAt)}</p>
-      </div>
-      {contest.rsvp && <p className="text-muted">{contest.rsvp === 'yes' ? "You said you're going." : "You said you can't make it."}</p>}
-      <div className="flex gap-2">
-        <Button variant="secondary" onClick={going}>Yes, giving it</Button>
-        <Button variant="secondary" onClick={() => setAnsweringNo(true)}>Can't make it</Button>
-      </div>
-      {error && <ErrorText>{error}</ErrorText>}
-      {answeringNo && (
-        <ReasonForm
-          onSubmit={async (reason) => {
-            await api(`/contests/${contest.id}/rsvp`, 'POST', { going: false, ...reason });
-            setAnsweringNo(false);
-            onChange();
-          }}
-        />
-      )}
-    </div>
   );
 }
 
@@ -191,9 +141,9 @@ function PushToggle() {
 
   return (
     <Card className="flex flex-col gap-2">
-      <h2 className="text-lg font-semibold">Notifications</h2>
+      <h2 className="display text-xl">Notifications</h2>
       {!supported && <p className="text-muted">On iPhone, add this site to your Home Screen, then open it from there to turn these on.</p>}
-      {supported && state === 'on' && <p className="text-present">Notifications are on for this device.</p>}
+      {supported && state === 'on' && <p className="font-bold text-lime">✓ Notifications are on for this device.</p>}
       {supported && state === 'off' && (
         <>
           <p className="text-muted">Get contest reminders on this device.</p>
@@ -208,30 +158,30 @@ function PushToggle() {
 export function MePage() {
   const { me, reload } = useMe();
   const { data: contests, reload: reloadContests } = useLoad(() => api<Contest[]>('/contests/upcoming'), []);
+  const next = contests?.[0];
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Me</h1>
+      <h1 className="display text-[52px] leading-none tracking-[-0.035em]">Me</h1>
       {me.pendingReasons.map((contest) => (
-        <Card key={contest.id} className="flex flex-col gap-3 border-pending">
-          <h2 className="text-lg font-semibold">What got in the way of {contest.name}?</h2>
+        <div key={contest.id} className="flex flex-col gap-3 rounded-2xl border border-sun-line bg-sun-tint p-4">
+          <h2 className="display text-lg text-sun-text">What got in the way of {contest.name}?</h2>
           <ReasonForm
             onSubmit={async (reason) => {
               await api(`/contests/${contest.id}/reason`, 'POST', reason);
               reload();
             }}
           />
-        </Card>
-      ))}
-      <SetupForm me={me} onSaved={reload} />
-      <Card>
-        <h2 className="mb-3 text-lg font-semibold">Upcoming contests</h2>
-        {contests?.length === 0 && <p className="text-muted">No contests coming up yet. Check back soon.</p>}
-        <div className="divide-y divide-border">
-          {contests?.slice(0, 3).map((contest) => <UpcomingContest key={contest.id} contest={contest} onChange={reloadContests} />)}
         </div>
-      </Card>
-      <PushToggle />
+      ))}
+      <div className="grid items-start gap-4 min-[900px]:grid-cols-[1fr_360px]">
+        <SetupForm me={me} onSaved={reload} />
+        <div className="flex flex-col gap-4">
+          {next && <NextContest contest={next} onChange={reloadContests} />}
+          {contests?.length === 0 && <Card><p className="text-muted">No contests coming up yet. Check back soon.</p></Card>}
+          <PushToggle />
+        </div>
+      </div>
     </div>
   );
 }

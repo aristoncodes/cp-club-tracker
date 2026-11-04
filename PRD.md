@@ -19,7 +19,7 @@ The college competitive programming club (40–50 students across all years) has
 | Admin | 4–5 coordinators | Everything a student can, plus: see attendance and reasons, approve handles, add admins, deactivate students |
 
 - Sign-in is Google only. The first admin comes from the `ADMIN_EMAILS` secret; other admins are added from the admin page.
-- Attendance data (RSVPs, statuses, reasons) is **visible only to admins**. Leaderboard, feed and profiles are visible to every signed-in student.
+- Attendance data (RSVPs, statuses, reasons) is **visible only to admins**. Students see only their own, plus an anonymous count of how many said they're going. Leaderboard, feed and profiles are visible to every signed-in student.
 
 ## Platforms
 

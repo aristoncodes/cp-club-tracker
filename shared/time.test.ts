@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatIST, heatmapWeeks, istDay, periodStart, solveStreak, timeAgo } from './time';
+import { formatIST, heatmapWeeks, istDay, periodStart, solveStreak, timeAgo, weekStrip } from './time';
 
 const ist = (month: number, day: number, hour = 0, minute = 0) =>
   Date.UTC(2026, month - 1, day, hour, minute) / 1000 - 19800;
@@ -58,6 +58,19 @@ describe('timeAgo', () => {
     expect(timeAgo(1000, 1000 + 720)).toBe('12 min ago');
     expect(timeAgo(1000, 1000 + 7200)).toBe('2 h ago');
     expect(timeAgo(1000, 1000 + 259200)).toBe('3 d ago');
+  });
+});
+
+describe('weekStrip', () => {
+  const wednesday = istDay(ist(11, 4, 12));
+
+  it('marks solved days and leaves today open until a solve', () => {
+    const strip = weekStrip([{ day: wednesday - 2, count: 1 }], wednesday);
+    expect(strip.map((d) => d.state)).toEqual(['done', 'other', 'today', 'other', 'other', 'other', 'other']);
+  });
+
+  it('marks today done after a solve', () => {
+    expect(weekStrip([{ day: wednesday, count: 2 }], wednesday)[2].state).toBe('done');
   });
 });
 

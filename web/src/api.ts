@@ -6,6 +6,7 @@ export type Me = {
   user: { id: number; email: string; name: string; batchYear: number | null; role: string };
   handles: Handle[];
   pendingReasons: { id: number; name: string }[];
+  streak: number;
 };
 
 export function getSession(): string | null {

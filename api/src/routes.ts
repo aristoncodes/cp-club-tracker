@@ -9,6 +9,9 @@ const PERIODS = ['day', 'week', 'month'];
 const FEED_SIZE = 30;
 const HEATMAP_DAYS = 183;
 const TOP_TAGS = 5;
+const MOVEMENT_WINDOW = 86400;
+const CHALLENGE_TARGET = 50;
+const CHALLENGE_MIN_RATING = 1400;
 
 type ReasonBody = { reasonType?: string; reasonText?: string };
 
@@ -29,7 +32,8 @@ studentRoutes.use(requireUser);
 
 studentRoutes.get('/me', async (c) => {
   const user = c.get('user');
-  const [handles, pendingReasons] = await c.env.DB.batch([
+  const now = Math.floor(Date.now() / 1000);
+  const [handles, pendingReasons, days] = await c.env.DB.batch([
     c.env.DB.prepare(
       `SELECT platform, handle, approved_at IS NOT NULL AS approved FROM handles WHERE user_id = ?`,
     ).bind(user.id),
@@ -38,8 +42,12 @@ studentRoutes.get('/me', async (c) => {
        WHERE a.user_id = ? AND a.status = 'absent' AND a.reason_type IS NULL AND c.counts = 1
        ORDER BY c.start_at DESC`,
     ).bind(user.id),
+    c.env.DB.prepare(
+      `SELECT (solved_at + ${IST_OFFSET}) / 86400 AS day FROM solves WHERE user_id = ? AND solved_at >= ? GROUP BY day`,
+    ).bind(user.id, now - HEATMAP_DAYS * 86400),
   ]);
-  return c.json({ user, handles: handles.results, pendingReasons: pendingReasons.results });
+  const streak = solveStreak((days.results as { day: number }[]).map((d) => d.day), istDay(now));
+  return c.json({ user, handles: handles.results, pendingReasons: pendingReasons.results, streak });
 });
 
 studentRoutes.put('/me', async (c) => {
@@ -91,7 +99,10 @@ studentRoutes.post('/me/push-token', async (c) => {
 
 studentRoutes.get('/contests/upcoming', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT c.id, c.platform, c.name, c.url, c.start_at AS startAt, a.rsvp
+    `SELECT c.id, c.platform, c.name, c.url, c.start_at AS startAt, a.rsvp,
+            (SELECT COUNT(*) FROM attendance x WHERE x.contest_id = c.id AND x.rsvp = 'yes') AS goingCount,
+            (SELECT COUNT(*) FROM handles h JOIN users u ON u.id = h.user_id
+             WHERE h.platform = c.platform AND h.approved_at IS NOT NULL AND u.active = 1) AS participantCount
      FROM contests c LEFT JOIN attendance a ON a.contest_id = c.id AND a.user_id = ?
      WHERE c.counts = 1 AND c.start_at > unixepoch()
      ORDER BY c.start_at LIMIT 10`,
@@ -154,19 +165,49 @@ studentRoutes.post('/contests/:id/reason', async (c) => {
 studentRoutes.get('/leaderboard', async (c) => {
   const period = c.req.query('period') ?? 'day';
   if (!PERIODS.includes(period)) return c.json({ error: 'period must be day, week or month' }, 400);
-  const { results } = await c.env.DB.prepare(
-    `SELECT u.id AS userId, u.name, u.batch_year AS batchYear, u.cf_rating AS cfRating, h.handle AS cfHandle,
-            SUM(s.points) AS points, COUNT(*) AS solves, MAX(s.rp) AS hardest
-     FROM solves s
-     JOIN users u ON u.id = s.user_id
-     LEFT JOIN handles h ON h.user_id = u.id AND h.platform = 'cf'
-     WHERE s.solved_at >= ? AND u.active = 1
-     GROUP BY u.id
-     ORDER BY points DESC`,
+  const now = Math.floor(Date.now() / 1000);
+  const start = periodStart(period as Period, now);
+  const db = c.env.DB;
+  const [current, earlier] = await db.batch<{ userId: number; points: number }>([
+    db
+      .prepare(
+        `SELECT u.id AS userId, u.name, u.batch_year AS batchYear, u.cf_rating AS cfRating, h.handle AS cfHandle,
+                SUM(s.points) AS points, COUNT(*) AS solves, MAX(s.rp) AS hardest
+         FROM solves s
+         JOIN users u ON u.id = s.user_id
+         LEFT JOIN handles h ON h.user_id = u.id AND h.platform = 'cf'
+         WHERE s.solved_at >= ? AND u.active = 1
+         GROUP BY u.id
+         ORDER BY points DESC`,
+      )
+      .bind(start),
+    db
+      .prepare(
+        `SELECT s.user_id AS userId, SUM(s.points) AS points
+         FROM solves s JOIN users u ON u.id = s.user_id
+         WHERE s.solved_at >= ? AND s.solved_at < ? AND u.active = 1
+         GROUP BY s.user_id
+         ORDER BY points DESC`,
+      )
+      .bind(start, now - MOVEMENT_WINDOW),
+  ]);
+  const earlierRank = new Map(withRanks(earlier.results).map((row) => [row.userId, row.rank]));
+  return c.json(
+    withRanks(current.results).map((row) => {
+      const before = earlierRank.get(row.userId);
+      return { ...row, moved: before ? before - row.rank : null };
+    }),
+  );
+});
+
+studentRoutes.get('/challenge', async (c) => {
+  const row = await c.env.DB.prepare(
+    `SELECT COUNT(*) AS solved FROM solves s JOIN users u ON u.id = s.user_id
+     WHERE s.solved_at >= ? AND s.rp >= ? AND u.active = 1`,
   )
-    .bind(periodStart(period as Period, Math.floor(Date.now() / 1000)))
-    .all<{ points: number }>();
-  return c.json(withRanks(results));
+    .bind(periodStart('week', Math.floor(Date.now() / 1000)), CHALLENGE_MIN_RATING)
+    .first<{ solved: number }>();
+  return c.json({ solved: row?.solved ?? 0, target: CHALLENGE_TARGET, minRating: CHALLENGE_MIN_RATING });
 });
 
 studentRoutes.get('/feed', async (c) => {

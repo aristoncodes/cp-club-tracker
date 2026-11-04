@@ -1,61 +1,121 @@
+import { Feather } from '@expo/vector-icons';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { formatIST } from 'shared/time';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { RSVP_REASONS } from 'shared/reasons';
+import { solvePoints } from 'shared/scoring';
+import { formatIST, istDay, solvesText, weekStrip } from 'shared/time';
 import { ApiError, api, clearSession, getSession, type Me } from '../../lib/api';
 import { registerPushToken } from '../../lib/push';
-import { Button } from '../../lib/ui';
+import { Avatar, Button, StreakPill } from '../../lib/ui';
 import { theme } from '../../theme';
 
-type Contest = { id: number; platform: string; name: string; url: string; startAt: number; rsvp: string | null };
+type Contest = { id: number; platform: string; name: string; startAt: number; rsvp: string | null; goingCount: number; participantCount: number };
 type Destination = 'login' | 'onboarding' | null;
-type Standing = { userId: number; rank: number; points: number };
-type Stats = { rank: number | null; points: number };
+type Standing = { userId: number; name: string; rank: number; points: number; solves: number; cfRating: number | null };
+type Profile = { heatmap: { day: number; count: number }[]; today: number };
 
 const PLATFORM_LABELS: Record<string, string> = { cf: 'Codeforces', cc: 'CodeChef' };
+const HINT_RATING = 1500;
 
-function countdown(startAt: number): string {
-  const minutes = Math.max(0, Math.floor((startAt - Date.now() / 1000) / 60));
-  const days = Math.floor(minutes / 1440);
-  if (days) return `in ${days}d ${Math.floor((minutes % 1440) / 60)}h`;
-  return `in ${Math.floor(minutes / 60)}h ${minutes % 60}m`;
-}
-
-function shortTime(startAt: number): string {
-  const [date, time] = formatIST(startAt).split(' · ');
-  return `${date.split(',')[0]} ${time}`;
-}
-
-function rsvpLabel(rsvp: string | null): string {
-  if (rsvp === 'yes') return "You said you're going";
-  if (rsvp === 'no') return "You said you can't make it";
-  return 'We will ask 5 minutes before it starts';
-}
-
-function ContestCard({ contest }: { contest: Contest }) {
+function Tile({ value, label }: { value: number; label: string }) {
   return (
-    <View style={styles.card}>
-      <Text style={styles.tag}>{(PLATFORM_LABELS[contest.platform] ?? contest.platform).toUpperCase()}</Text>
-      <Text style={styles.contestName}>{contest.name}</Text>
-      <Text style={styles.time}>
-        {shortTime(contest.startAt)} · {countdown(contest.startAt)}
-      </Text>
-      <Text style={styles.muted}>{rsvpLabel(contest.rsvp)}</Text>
+    <View style={styles.tile}>
+      <Text style={styles.tileValue}>{String(value).padStart(2, '0')}</Text>
+      <Text style={styles.tileLabel}>{label}</Text>
     </View>
   );
 }
 
-function standingOf(rows: Standing[], userId: number): Stats {
-  const mine = rows.find((row) => row.userId === userId);
-  return { rank: mine?.rank ?? null, points: mine?.points ?? 0 };
+function NextContest({ contest, onChange }: { contest: Contest; onChange: () => void }) {
+  const [choosing, setChoosing] = useState(false);
+  const [reasonType, setReasonType] = useState('');
+  const [reasonText, setReasonText] = useState('');
+  const [error, setError] = useState('');
+  const left = Math.max(0, contest.startAt - Math.floor(Date.now() / 1000));
+  const [date, time] = formatIST(contest.startAt).split(' · ');
+
+  async function send(body: Record<string, unknown>) {
+    setError('');
+    try {
+      await api(`/contests/${contest.id}/rsvp`, 'POST', body);
+      setChoosing(false);
+      onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save. Please try again.');
+    }
+  }
+
+  return (
+    <View style={styles.contest}>
+      <View style={styles.between}>
+        <Text style={styles.platform}>{(PLATFORM_LABELS[contest.platform] ?? contest.platform).toUpperCase()}</Text>
+        <Text style={styles.contestTime}>{date.split(',')[0]} · {time}</Text>
+      </View>
+      <Text style={styles.contestName}>{contest.name}</Text>
+      <View style={styles.tiles}>
+        <Tile value={Math.floor(left / 86400)} label="DAYS" />
+        <Tile value={Math.floor((left % 86400) / 3600)} label="HRS" />
+        <Tile value={Math.floor((left % 3600) / 60)} label="MIN" />
+      </View>
+      {contest.rsvp === 'yes' && !choosing ? (
+        <View style={styles.inStrip}>
+          <Text style={styles.inText}>You're in. Good luck!</Text>
+          <Pressable accessibilityRole="button" onPress={() => setChoosing(true)} hitSlop={12}><Text style={styles.change}>Change</Text></Pressable>
+        </View>
+      ) : null}
+      {!contest.rsvp && !choosing ? (
+        <View style={styles.row}>
+          <Button title="I'm in" flex onPress={() => send({ going: true })} />
+          <Button title="Can't" flex variant="onViolet" onPress={() => setChoosing(true)} />
+        </View>
+      ) : null}
+      {contest.rsvp === 'no' && !choosing ? (
+        <View style={styles.answered}>
+          <Text style={styles.contestTime}>You can't make this one.</Text>
+          <Button title="Actually, I'm in" onPress={() => send({ going: true })} />
+        </View>
+      ) : null}
+      {choosing ? (
+        <View style={styles.choose}>
+          <Text style={styles.chooseTitle}>What's stopping you?</Text>
+          <View style={styles.chips}>
+            {RSVP_REASONS.map((reason) => {
+              const selected = reason.id === reasonType;
+              return (
+                <Pressable
+                  key={reason.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  onPress={() => setReasonType(reason.id)}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{reason.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {reasonType === 'other' ? (
+            <TextInput style={styles.input} value={reasonText} onChangeText={setReasonText} placeholder="Tell us a little more" placeholderTextColor={theme.muted} />
+          ) : null}
+          <View style={styles.row}>
+            <Button title="Send" flex disabled={!reasonType || (reasonType === 'other' && !reasonText.trim())} onPress={() => send({ going: false, reasonType, reasonText })} />
+            <Button title="I'm in" flex variant="onViolet" onPress={() => send({ going: true })} />
+          </View>
+        </View>
+      ) : null}
+      {error ? <Text style={styles.contestError}>{error}</Text> : null}
+      <Text style={styles.going}><Text style={styles.goingNumber}>{contest.goingCount}</Text> of {contest.participantCount} are going</Text>
+    </View>
+  );
 }
 
-function StatCard({ label, stats }: { label: string; stats: Stats }) {
+function StatCard({ label, standing, accent }: { label: string; standing?: Standing; accent?: boolean }) {
   return (
-    <View style={[styles.card, styles.stat]}>
-      <Text style={styles.tag}>{label}</Text>
-      <Text style={styles.bigStat}>{stats.points}</Text>
-      <Text style={styles.muted}>{stats.rank ? `Rank ${stats.rank}` : 'Not ranked yet'}</Text>
+    <View style={[styles.card, styles.flexOne]}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={[styles.bigStat, accent && styles.limeText]}>{standing?.points ?? 0}</Text>
+      <Text style={styles.muted}>{standing ? `#${standing.rank} in club · ${solvesText(standing.solves)}` : 'Not ranked yet'}</Text>
     </View>
   );
 }
@@ -68,8 +128,9 @@ function needsOnboarding({ user, handles }: Me): boolean {
 export default function Home() {
   const [me, setMe] = useState<Me | null>(null);
   const [contests, setContests] = useState<Contest[]>([]);
-  const [today, setToday] = useState<Stats>({ rank: null, points: 0 });
-  const [week, setWeek] = useState<Stats>({ rank: null, points: 0 });
+  const [dayRows, setDayRows] = useState<Standing[]>([]);
+  const [weekRows, setWeekRows] = useState<Standing[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [destination, setDestination] = useState<Destination>(null);
   const [error, setError] = useState('');
 
@@ -77,18 +138,20 @@ export default function Home() {
     setError('');
     if (!(await getSession())) return setDestination('login');
     try {
-      const [meData, upcoming, dayRows, weekRows] = await Promise.all([
-        api<Me>('/me'),
+      const meData = await api<Me>('/me');
+      registerPushToken().catch(console.warn);
+      if (needsOnboarding(meData)) return setDestination('onboarding');
+      const [upcoming, day, week, userProfile] = await Promise.all([
         api<Contest[]>('/contests/upcoming'),
         api<Standing[]>('/leaderboard?period=day'),
         api<Standing[]>('/leaderboard?period=week'),
+        api<Profile>(`/users/${meData.user.id}`),
       ]);
-      registerPushToken().catch(console.warn);
-      if (needsOnboarding(meData)) return setDestination('onboarding');
       setMe(meData);
       setContests(upcoming);
-      setToday(standingOf(dayRows, meData.user.id));
-      setWeek(standingOf(weekRows, meData.user.id));
+      setDayRows(day);
+      setWeekRows(week);
+      setProfile(userProfile);
     } catch (err) {
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
         await clearSession();
@@ -117,8 +180,25 @@ export default function Home() {
 
   if (!me) return null;
 
+  const myIndex = weekRows.findIndex((row) => row.userId === me.user.id);
+  const mine = weekRows[myIndex];
+  const above = weekRows[myIndex - 1];
+  const today = profile?.today ?? istDay(Date.now() / 1000);
+  const strip = weekStrip(profile?.heatmap ?? [], today);
+  const solvedToday = strip.every((day) => day.state !== 'today');
+
   return (
     <ScrollView contentContainerStyle={styles.page}>
+      <View style={styles.between}>
+        <View style={styles.flexOne}>
+          <Text style={styles.muted}>{formatIST(Date.now() / 1000).split(' · ')[0]}</Text>
+          <Text style={styles.greeting} numberOfLines={1}>Hey {me.user.name.split(' ')[0]}</Text>
+        </View>
+        <View style={styles.row}>
+          <StreakPill streak={me.streak} />
+          <Avatar userId={me.user.id} name={me.user.name} />
+        </View>
+      </View>
       {me.pendingReasons.map((contest) => (
         <Pressable
           key={contest.id}
@@ -126,35 +206,96 @@ export default function Home() {
           style={styles.banner}
           onPress={() => router.push({ pathname: '/reason', params: { contestId: String(contest.id) } })}
         >
-          <Text style={styles.bannerText}>Give a reason for {contest.name}</Text>
+          <View style={styles.bannerTile}><Text style={styles.bannerMark}>!</Text></View>
+          <Text style={styles.bannerText}><Text style={styles.bannerBold}>Missed {contest.name}.</Text> Tap to add a reason.</Text>
+          <Feather name="chevron-right" size={20} color={theme.sunText} />
         </Pressable>
       ))}
-      {contests[0] ? (
-        <ContestCard contest={contests[0]} />
-      ) : (
-        <Text style={styles.muted}>No contests coming up yet. Check back soon.</Text>
-      )}
-      <View style={styles.stats}>
-        <StatCard label="TODAY" stats={today} />
-        <StatCard label="THIS WEEK" stats={week} />
+      {contests[0] ? <NextContest contest={contests[0]} onChange={load} /> : <View style={styles.card}><Text style={styles.muted}>No contests coming up yet. Check back soon.</Text></View>}
+      <View style={styles.row}>
+        <StatCard label="Today" accent standing={dayRows.find((row) => row.userId === me.user.id)} />
+        <StatCard label="This week" standing={mine} />
       </View>
-      <Button title="See the leaderboard" variant="secondary" onPress={() => router.push('/leaderboard')} />
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Streak</Text>
+        <View style={styles.strip}>
+          {strip.map((day, index) => (
+            <View key={index} style={styles.stripDay}>
+              <View style={[styles.stripTile, day.state === 'done' && styles.stripDone, day.state === 'today' && styles.stripToday]}>
+                <Text style={styles.stripMark}>{day.state === 'done' ? '✓' : day.state === 'today' ? '·' : ''}</Text>
+              </View>
+              <Text style={styles.statLabel}>{day.label}</Text>
+            </View>
+          ))}
+        </View>
+        <Text style={styles.muted}>
+          {solvedToday ? `Solved today. Streak is at ${me.streak}.` : `Solve one problem today to make it ${me.streak + 1}.`}
+        </Text>
+      </View>
+      <Pressable style={styles.card} accessibilityRole="button" onPress={() => router.push('/leaderboard')}>
+        <View style={styles.between}>
+          <Text style={styles.cardTitle}>Chasing</Text>
+          <Text style={styles.link}>Leaderboard →</Text>
+        </View>
+        <Text style={styles.muted}>
+          {!mine
+            ? 'One solve this week gets you on the board.'
+            : above
+              ? `${above.name.split(' ')[0]} is ${Math.round((above.points - mine.points) * 10) / 10} pts ahead. One ${HINT_RATING} problem is worth about ${solvePoints(HINT_RATING, mine.cfRating, false)}.`
+              : "You're at the top this week. Nobody's ahead of you."}
+        </Text>
+      </Pressable>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 16, paddingTop: 64, gap: 16 },
-  centered: { flex: 1, justifyContent: 'center', padding: 16, gap: 16 },
-  card: { backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1, borderRadius: 12, padding: 16, gap: 8 },
-  stats: { flexDirection: 'row', gap: 12 },
-  stat: { flex: 1 },
-  bigStat: { color: theme.accent, fontFamily: theme.font.monoBold, fontSize: 32 },
-  tag: { color: theme.muted, fontFamily: theme.font.medium, fontSize: 12, letterSpacing: 0.48 },
-  contestName: { color: theme.text, fontFamily: theme.font.semibold, fontSize: 18 },
-  time: { color: theme.text, fontFamily: theme.font.mono, fontSize: 14 },
-  muted: { color: theme.muted, fontFamily: theme.font.regular, fontSize: 14 },
-  banner: { backgroundColor: theme.pendingTint, borderRadius: 8, padding: 12, minHeight: 44, justifyContent: 'center' },
-  bannerText: { color: theme.pending, fontFamily: theme.font.medium, fontSize: 14 },
-  error: { color: theme.absent, fontFamily: theme.font.regular, fontSize: 14 },
+  page: { padding: theme.gutter, paddingTop: 56, gap: 14 },
+  centered: { flex: 1, justifyContent: 'center', padding: theme.gutter, gap: 16 },
+  between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  flexOne: { flex: 1 },
+  greeting: { color: theme.text, fontFamily: theme.font.display, fontSize: 28, letterSpacing: -0.8 },
+  muted: { color: theme.muted, fontFamily: theme.font.regular, fontSize: 13 },
+  error: { color: theme.pink, fontFamily: theme.font.regular, fontSize: 14 },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, minHeight: 44, borderRadius: 16, borderWidth: 1, borderColor: theme.sunLine, backgroundColor: theme.sunTint },
+  bannerTile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.sun },
+  bannerMark: { color: theme.ink, fontFamily: theme.font.display, fontSize: 18 },
+  bannerText: { flex: 1, color: theme.sunText, fontFamily: theme.font.regular, fontSize: 14 },
+  bannerBold: { fontFamily: theme.font.bold },
+  contest: { gap: 12, padding: 18, borderRadius: 22, backgroundColor: theme.violet },
+  platform: { overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, backgroundColor: '#FFFFFF', color: '#5B21B6', fontFamily: theme.font.bold, fontSize: 11, letterSpacing: 0.8 },
+  contestTime: { color: theme.violetPale, fontFamily: theme.font.semibold, fontSize: 13 },
+  contestName: { color: '#FFFFFF', fontFamily: theme.font.display, fontSize: 22, letterSpacing: -0.4 },
+  tiles: { flexDirection: 'row', gap: 8 },
+  tile: { flex: 1, alignItems: 'center', padding: 10, borderRadius: 14, backgroundColor: theme.violetDeep },
+  tileValue: { color: '#FFFFFF', fontFamily: theme.font.monoHeavy, fontSize: 24 },
+  tileLabel: { color: theme.violetSoft, fontFamily: theme.font.bold, fontSize: 10, letterSpacing: 0.8 },
+  inStrip: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: 18, borderRadius: 999, backgroundColor: theme.lime },
+  inText: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14 },
+  change: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14, textDecorationLine: 'underline' },
+  answered: { gap: 8 },
+  choose: { gap: 10 },
+  chooseTitle: { color: '#FFFFFF', fontFamily: theme.font.bold, fontSize: 14 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, borderRadius: 999, borderWidth: 2, borderColor: theme.violetSoft },
+  chipSelected: { backgroundColor: theme.lime, borderColor: theme.lime },
+  chipText: { color: '#FFFFFF', fontFamily: theme.font.bold, fontSize: 13 },
+  chipTextSelected: { color: theme.ink },
+  input: { height: 48, paddingHorizontal: 14, borderRadius: 16, backgroundColor: theme.card, color: theme.text, fontFamily: theme.font.regular, fontSize: 14 },
+  contestError: { padding: 10, borderRadius: 12, overflow: 'hidden', backgroundColor: theme.ink, color: theme.pink, fontFamily: theme.font.regular, fontSize: 13 },
+  going: { color: theme.violetPale, fontFamily: theme.font.regular, fontSize: 13 },
+  goingNumber: { color: '#FFFFFF', fontFamily: theme.font.monoHeavy },
+  card: { gap: 10, padding: 18, borderRadius: 20, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card },
+  statLabel: { color: theme.muted, fontFamily: theme.font.bold, fontSize: 12 },
+  bigStat: { color: theme.text, fontFamily: theme.font.monoHeavy, fontSize: 32, letterSpacing: -1 },
+  limeText: { color: theme.lime },
+  cardTitle: { color: theme.text, fontFamily: theme.font.display, fontSize: 18, letterSpacing: -0.3 },
+  link: { color: theme.lime, fontFamily: theme.font.bold, fontSize: 13 },
+  strip: { flexDirection: 'row', gap: 6 },
+  stripDay: { flex: 1, alignItems: 'center', gap: 4 },
+  stripTile: { width: '100%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: theme.card2 },
+  stripDone: { backgroundColor: theme.sun },
+  stripToday: { backgroundColor: theme.sunTint, borderWidth: 2, borderStyle: 'dashed', borderColor: theme.sun },
+  stripMark: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14 },
 });

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "CP Club Tracker",
+    "name": "grind.club",
     "slug": "cp-club-tracker",
     "scheme": [
       "cpclub",
@@ -9,7 +9,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0B0D10",
+    "backgroundColor": "#0E0E14",
     "android": {
       "package": "com.cpclub.tracker",
       "googleServicesFile": "./google-services.json"

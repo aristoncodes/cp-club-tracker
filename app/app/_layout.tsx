@@ -1,5 +1,6 @@
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { JetBrainsMono_500Medium, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
+import { JetBrainsMono_500Medium, JetBrainsMono_700Bold, JetBrainsMono_800ExtraBold } from '@expo-google-fonts/jetbrains-mono';
+import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { router, Stack } from 'expo-router';
@@ -16,6 +17,8 @@ export default function RootLayout() {
     Inter_700Bold,
     JetBrainsMono_500Medium,
     JetBrainsMono_700Bold,
+    JetBrainsMono_800ExtraBold,
+    SpaceGrotesk_700Bold,
   });
   const response = Notifications.useLastNotificationResponse();
 
@@ -39,5 +42,5 @@ export default function RootLayout() {
   }, [response, fontsLoaded]);
 
   if (!fontsLoaded) return null;
-  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.bg } }} />;
+  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.ink } }} />;
 }

@@ -1,18 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { REASONS } from 'shared/reasons';
 import { api } from '../lib/api';
 import { Button } from '../lib/ui';
 import { theme } from '../theme';
-
-const REASONS = [
-  { id: 'exams', label: 'Exams' },
-  { id: 'travel', label: 'Travel' },
-  { id: 'illness', label: 'Illness' },
-  { id: 'clash', label: 'Other commitment' },
-  { id: 'forgot', label: 'Forgot' },
-  { id: 'other', label: 'Other' },
-];
 
 export default function Reason() {
   const { contestId, rsvp } = useLocalSearchParams<{ contestId: string; rsvp?: string }>();
@@ -73,32 +65,24 @@ export default function Reason() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, padding: 16, paddingTop: 64, gap: 16 },
-  title: { color: theme.text, fontFamily: theme.font.bold, fontSize: 24 },
+  page: { flex: 1, padding: theme.gutter, paddingTop: 64, gap: 16 },
+  title: { color: theme.text, fontFamily: theme.font.display, fontSize: 30, letterSpacing: -0.9 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    backgroundColor: theme.surface2,
-    borderColor: theme.border,
-    borderWidth: 1,
-  },
-  chipSelected: { borderColor: theme.accent },
-  chipText: { color: theme.text, fontFamily: theme.font.regular, fontSize: 14 },
-  chipTextSelected: { color: theme.accent },
+  chip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 999, borderColor: theme.line, borderWidth: 2 },
+  chipSelected: { backgroundColor: theme.sun, borderColor: theme.sun },
+  chipText: { color: theme.text, fontFamily: theme.font.bold, fontSize: 14 },
+  chipTextSelected: { color: theme.ink },
   input: {
     color: theme.text,
-    backgroundColor: theme.surface2,
-    borderColor: theme.border,
+    backgroundColor: theme.card,
+    borderColor: theme.line,
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 16,
     minHeight: 96,
-    padding: 12,
+    padding: 14,
     fontFamily: theme.font.regular,
     fontSize: 14,
     textAlignVertical: 'top',
   },
-  error: { color: theme.absent, fontFamily: theme.font.regular, fontSize: 14 },
+  error: { color: theme.pink, fontFamily: theme.font.regular, fontSize: 14 },
 });

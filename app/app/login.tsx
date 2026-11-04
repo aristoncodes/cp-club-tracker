@@ -47,8 +47,14 @@ export default function Login() {
 
   return (
     <View style={styles.page}>
-      <Text style={styles.title}>CP Club Tracker</Text>
-      <Text style={styles.purpose}>Contests, attendance and the club leaderboard.</Text>
+      <View style={styles.brand}>
+        <View style={styles.logoTile}><Text style={styles.logoMark}>&gt;_</Text></View>
+        <Text style={styles.wordmark}>grind<Text style={styles.dot}>.</Text>club</Text>
+      </View>
+      <Text style={styles.headline}>
+        Show up.{'\n'}<Text style={styles.dot}>Solve more.</Text>{'\n'}Climb the board.
+      </Text>
+      <Text style={styles.purpose}>Contest reminders, attendance and a live leaderboard for the club.</Text>
       <Button title="Continue with Google" onPress={signIn} disabled={!request} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -56,8 +62,13 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, justifyContent: 'center', padding: 16, gap: 16 },
-  title: { color: theme.text, fontFamily: theme.font.bold, fontSize: 24 },
-  purpose: { color: theme.muted, fontFamily: theme.font.regular, fontSize: 14 },
-  error: { color: theme.absent, fontFamily: theme.font.regular, fontSize: 14 },
+  page: { flex: 1, justifyContent: 'center', padding: theme.gutter, gap: 20 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logoTile: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.violet, transform: [{ rotate: '-6deg' }] },
+  logoMark: { color: '#FFFFFF', fontFamily: theme.font.monoBold, fontSize: 14 },
+  wordmark: { color: theme.text, fontFamily: theme.font.display, fontSize: 22 },
+  dot: { color: theme.lime },
+  headline: { color: theme.text, fontFamily: theme.font.display, fontSize: 42, lineHeight: 46, letterSpacing: -1.4 },
+  purpose: { color: theme.muted, fontFamily: theme.font.regular, fontSize: 15 },
+  error: { color: theme.pink, fontFamily: theme.font.regular, fontSize: 14 },
 });

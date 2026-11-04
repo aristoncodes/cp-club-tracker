@@ -64,3 +64,17 @@ export function heatmapWeeks(counts: { day: number; count: number }[], today: nu
     }),
   );
 }
+
+export type StreakDay = { label: string; state: 'done' | 'today' | 'other' };
+
+export function weekStrip(counts: { day: number; count: number }[], today: number): StreakDay[] {
+  const solved = new Set(counts.filter((c) => c.count > 0).map((c) => c.day));
+  const monday = today - ((today + 3) % 7);
+  return ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((label, index) => {
+    const day = monday + index;
+    if (solved.has(day)) return { label, state: 'done' };
+    return { label, state: day === today ? 'today' : 'other' };
+  });
+}
+
+export const solvesText = (count: number) => `${count} ${count === 1 ? 'solve' : 'solves'}`;
