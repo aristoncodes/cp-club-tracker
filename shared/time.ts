@@ -55,12 +55,12 @@ const HEATMAP_WEEKS = 26;
 export const heatLevel = (count: number) => (count === 0 ? 0 : count === 1 ? 1 : count <= 3 ? 2 : count <= 5 ? 3 : 4);
 
 // Columns of Monday-to-Sunday cells: a step from 0 to 4, or null for days after today.
-export function heatmapWeeks(counts: { day: number; count: number }[], today: number): (number | null)[][] {
+export function heatmapWeeks(counts: { day: number; count: number }[], today: number, weeks = HEATMAP_WEEKS): (number | null)[][] {
   const byDay = new Map(counts.map((c) => [c.day, c.count]));
   const thisMonday = today - ((today + 3) % 7);
-  return Array.from({ length: HEATMAP_WEEKS }, (_, week) =>
+  return Array.from({ length: weeks }, (_, week) =>
     Array.from({ length: 7 }, (_, weekday) => {
-      const day = thisMonday - (HEATMAP_WEEKS - 1 - week) * 7 + weekday;
+      const day = thisMonday - (weeks - 1 - week) * 7 + weekday;
       if (day > today) return null;
       return heatLevel(byDay.get(day) ?? 0);
     }),

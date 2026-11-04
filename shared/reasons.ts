@@ -8,3 +8,12 @@ export const REASONS = [
 ];
 
 export const RSVP_REASONS = REASONS.filter((reason) => reason.id !== 'forgot');
+
+export type ContestOutcome = { status: string | null; reasonType: string | null; ratingDelta: number | null; liveSolves: number };
+
+export function contestResult({ status, reasonType, ratingDelta, liveSolves }: ContestOutcome): string {
+  if (status === 'absent') return reasonType ? (REASONS.find((r) => r.id === reasonType)?.label ?? 'Reason given') : 'No reason yet';
+  if (status !== 'present') return 'Not recorded';
+  if (ratingDelta !== null) return `${ratingDelta >= 0 ? '+' : ''}${ratingDelta} rating`;
+  return `${liveSolves} solved live`;
+}

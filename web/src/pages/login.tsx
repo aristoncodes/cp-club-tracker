@@ -1,58 +1,66 @@
-import { GoogleLogin } from '@react-oauth/google';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { api, getSession, setSession } from '../api';
-import { ErrorText, Eyebrow, Logo } from '../ui';
+import { api, getSession, setSession, type User } from '../api';
+import { Button, ErrorText, GoogleButton, inputClass, Logo, PasswordInput } from '../ui';
 
 const EXAMPLE_ROWS = ['A', 'B', 'C', 'D'];
 
 export function Login() {
   const navigate = useNavigate();
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   if (getSession()) return <Navigate to="/" replace />;
 
-  async function signIn(idToken?: string) {
+  function enter({ token }: { token: string }) {
+    setSession(token);
+    navigate('/', { replace: true });
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
     setError('');
+    setBusy(true);
     try {
-      const { token } = await api<{ token: string }>('/auth/google', 'POST', { idToken });
-      setSession(token);
-      navigate('/', { replace: true });
+      enter(await api<{ token: string; user: User }>('/auth/login', 'POST', { identifier, password }));
     } catch (err) {
-      setError((err as Error).message);
+      const message = (err as Error).message;
+      if (message !== 'verify') return setError(message);
+      if (identifier.includes('@')) return navigate('/signup', { state: { verifyEmail: identifier } });
+      setError('Sign in with your email to finish verifying it.');
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
-    <main className="mx-auto grid min-h-screen max-w-[1200px] items-center gap-10 px-6 py-10 min-[900px]:grid-cols-[1fr_440px]">
-      <section className="flex flex-col items-start gap-6">
+    <main className="mx-auto grid min-h-screen max-w-[1200px] items-center gap-10 px-6 py-10 min-[900px]:grid-cols-[minmax(0,460px)_1fr] min-[900px]:gap-20">
+      <section className="flex flex-col gap-5">
         <Logo />
-        <Eyebrow>For the college CP club</Eyebrow>
-        <h1 className="display text-5xl leading-[1.08] tracking-[-0.035em] min-[420px]:text-[64px]">
-          Show up.<br />
-          <span className="text-lime">Solve more.</span><br />
-          Climb the{' '}
-          <span className="inline-block -rotate-2 rounded-2xl bg-pink px-3 text-ink">board.</span>
+        <h1 className="display text-[44px] leading-[1.05] tracking-[-0.035em] sm:text-[56px]">
+          Welcome back.<br /><span className="text-lime">Let's grind.</span>
         </h1>
-        <p className="max-w-[480px] text-base text-muted">
-          Contest reminders, attendance and a live leaderboard across Codeforces, CodeChef, AtCoder and LeetCode.
+        <p className="text-base text-muted">Contest reminders, attendance and a live leaderboard for the club.</p>
+        <GoogleButton text="continue_with" onDone={enter} onError={setError} />
+        <div className="flex items-center gap-3 text-xs text-muted"><i className="h-px flex-1 bg-line" />or sign in with email or username<i className="h-px flex-1 bg-line" /></div>
+        <form onSubmit={submit} className="flex flex-col gap-3">
+          <input aria-label="Email or username" placeholder="Email or username" autoComplete="username" autoCapitalize="none" className={`${inputClass} h-12 rounded-[14px]`} value={identifier} onChange={(e) => setIdentifier(e.target.value)} />
+          <div className="flex flex-col gap-1">
+            <Link to="/forgot" className="self-end text-xs font-bold text-lime hover:underline">Forgot password?</Link>
+            <PasswordInput value={password} onChange={setPassword} autoComplete="current-password" />
+          </div>
+          {error && <ErrorText>{error}</ErrorText>}
+          <Button type="submit" disabled={busy || !identifier || !password}>Sign in</Button>
+        </form>
+        <p>New to the club? <Link to="/signup" className="font-bold text-lime hover:underline">Create your account →</Link></p>
+        <p className="text-xs text-muted">
+          <Link to="/download" className="hover:underline">Get the Android app</Link>. On iPhone, open this site in Safari → Share → Add to Home Screen.
         </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <GoogleLogin
-            shape="pill"
-            size="large"
-            theme="outline"
-            text="continue_with"
-            onSuccess={({ credential }) => signIn(credential)}
-            onError={() => setError('Google sign-in failed. Please try again.')}
-          />
-          <Link to="/download" className="lift inline-flex h-11 items-center rounded-full border-2 border-line px-5 font-bold">Get the Android app</Link>
-        </div>
-        {error && <ErrorText>{error}</ErrorText>}
-        <p className="text-muted">On iPhone? Open this site in Safari → Share → Add to Home Screen.</p>
       </section>
 
-      <section aria-label="Example of what's inside" className="flex flex-col gap-3">
+      <section aria-label="Example of what's inside" className="hidden flex-col gap-3 min-[900px]:flex">
         <div className="rotate-2 rounded-[22px] bg-lime p-5 text-ink">
           <div className="mb-3 flex items-center justify-between">
             <span className="display text-lg">This week</span>
@@ -63,7 +71,7 @@ export function Login() {
               <div key={letter} className="flex items-center gap-3 rounded-2xl bg-ink/10 px-3 py-2">
                 <span className="num w-4">{index + 1}</span>
                 <span className="flex size-8 items-center justify-center rounded-full bg-ink text-xs font-bold text-lime">{letter}</span>
-                <span className="font-bold">Student {letter}</span>
+                <span className="handle">@student_{letter.toLowerCase()}</span>
                 <span aria-hidden className="ml-auto h-3 rounded-full bg-ink/30" style={{ width: 72 - index * 12 }} />
               </div>
             ))}
@@ -73,12 +81,12 @@ export function Login() {
           <span className="num flex size-10 items-center justify-center rounded-[10px] bg-white text-sm text-[#5B21B6]">5m</span>
           <div>
             <p className="font-bold">A round starts in 5 min</p>
-            <p className="text-sm text-[#EDE9FE]">Giving it? Yes · No</p>
+            <p className="text-sm text-violet-pale">Giving it? Yes · No</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-2xl border border-line bg-card p-3">
           <i aria-hidden className="size-2.5 rounded-full bg-pink" />
-          <span>A clubmate just solved a <span className="handle" style={{ color: '#60A5FA' }}>1700</span></span>
+          <span>A clubmate just solved a <span className="handle text-cf-blue">1700</span></span>
         </div>
       </section>
     </main>

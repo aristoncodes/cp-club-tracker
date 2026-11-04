@@ -2,8 +2,52 @@ const API_URL = import.meta.env.VITE_API_URL;
 const SESSION_KEY = 'session';
 
 export type Handle = { platform: string; handle: string; approved: number };
+export type User = {
+  id: number;
+  email: string;
+  name: string;
+  username: string | null;
+  usernameChangesLeft: number;
+  batchYear: number | null;
+  role: string;
+  onboardingStep: string;
+  hasPassword: number;
+  hasGoogle: number;
+  cfRating: number | null;
+  notifyHour: number;
+  notifyRsvp: number;
+  notifyResult: number;
+  notifyStreak: number;
+};
+
+export type Contest = {
+  id: number;
+  platform: string;
+  name: string;
+  url: string;
+  startAt: number;
+  endAt: number;
+  rsvp: string | null;
+  goingCount: number;
+  participantCount: number;
+};
+
+export type PastContest = {
+  id: number;
+  platform: string;
+  name: string;
+  url: string;
+  startAt: number;
+  status: string | null;
+  rsvp: string | null;
+  reasonType: string | null;
+  reasonText: string | null;
+  liveSolves: number;
+  ratingDelta: number | null;
+};
+
 export type Me = {
-  user: { id: number; email: string; name: string; batchYear: number | null; role: string };
+  user: User;
   handles: Handle[];
   pendingReasons: { id: number; name: string }[];
   streak: number;
@@ -33,7 +77,7 @@ export async function api<T>(path: string, method = 'GET', body?: unknown): Prom
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const json = await response.json();
-  if (response.status === 401 && getSession()) {
+  if (response.status === 401 && getSession() && !path.startsWith('/auth/')) {
     setSession(null);
     window.location.assign('/login');
   }

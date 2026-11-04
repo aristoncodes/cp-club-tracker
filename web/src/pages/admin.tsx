@@ -4,14 +4,14 @@ import { batchForStudyYear, STUDY_YEARS, studyYearLabel } from 'shared/batch';
 import { REASONS } from 'shared/reasons';
 import { formatIST, IST_OFFSET, solvesText } from 'shared/time';
 import { api } from '../api';
-import { Avatar, Button, Card, ErrorText, inputClass, platformLabel, ProgressBar, useLoad, useMe } from '../ui';
+import { Avatar, Button, Card, CellMark, ErrorText, inputClass, platformLabel, ProgressBar, useLoad, useMe } from '../ui';
 
 type Section = 'attendance' | 'students' | 'admins' | 'flags';
 type GridContest = { id: number; platform: string; name: string; startAt: number; counts: number };
 type GridStudent = { id: number; name: string; batchYear: number | null };
 type Cell = { contestId: number; userId: number; rsvp: string | null; status: string | null; reasonType: string | null; reasonText: string | null };
 type AttendanceData = { contests: GridContest[]; students: GridStudent[]; cells: Cell[] };
-type AdminUser = { id: number; email: string; name: string; batchYear: number | null; role: string; active: number };
+type AdminUser = { id: number; email: string; name: string; username: string | null; batchYear: number | null; role: string; active: number };
 type AdminHandle = { userId: number; platform: string; handle: string; approved: number; broken: number };
 
 const SECTIONS: { id: Section; label: string }[] = [
@@ -32,14 +32,6 @@ function describeCell(cell: Cell | undefined): string {
   if (!cell.reasonType) return 'Absent, no reason';
   const label = REASONS.find((r) => r.id === cell.reasonType)?.label ?? cell.reasonType;
   return `Absent: ${label}${cell.reasonText ? ` (${cell.reasonText})` : ''}`;
-}
-
-function CellMark({ cell }: { cell: Cell | undefined }) {
-  const base = 'num flex size-6 items-center justify-center rounded-[7px] text-xs text-ink';
-  if (!cell?.status) return <span className={`${base} bg-card-2`} />;
-  if (cell.status === 'present') return <span className={`${base} bg-lime`}>✓</span>;
-  if (!cell.reasonType) return <span className="num flex size-6 items-center justify-center rounded-[7px] border-2 border-dashed border-sun text-xs text-sun">?</span>;
-  return <span className={`${base} bg-pink`}>{REASONS.find((r) => r.id === cell.reasonType)?.letter ?? 'O'}</span>;
 }
 
 const shortName = (contest: GridContest) =>
@@ -229,7 +221,7 @@ function Attendance() {
                                   onClick={() => setDetail(`${student.name}, ${contest.name}: ${text || 'No record'}${cell?.rsvp ? ` · RSVP ${cell.rsvp}` : ''}`)}
                                   className="mx-auto block cursor-pointer"
                                 >
-                                  <CellMark cell={cell} />
+                                  <CellMark status={cell?.status} reasonType={cell?.reasonType} />
                                 </button>
                               </td>
                             );
@@ -326,8 +318,19 @@ function Students() {
             <div>
               <Link to={`/u/${user.id}`} className="font-bold hover:underline">{user.name || user.email}</Link>
               <span className="ml-2 text-muted">{studyYearLabel(user.batchYear, Date.now() / 1000)}</span>
-              <p className="text-muted">{user.email}</p>
+              <p className="text-muted">{user.email}{user.username ? ` · @${user.username}` : ''}</p>
             </div>
+            {user.id !== me.user.id && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const username = window.prompt('New username', user.username ?? '');
+                  if (username) act(`/admin/users/${user.id}`, { username });
+                }}
+              >
+                Change username
+              </Button>
+            )}
             {user.id !== me.user.id && (
               <Button variant={user.active ? 'danger' : 'secondary'} onClick={() => act(`/admin/users/${user.id}`, { active: !user.active })}>
                 {user.active ? 'Deactivate' : 'Reactivate'}

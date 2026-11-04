@@ -1,7 +1,10 @@
+import { GoogleLogin } from '@react-oauth/google';
 import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { ratingColor } from 'shared/rating-color';
-import type { Me } from './api';
+import { REASONS } from 'shared/reasons';
+import { formatIST } from 'shared/time';
+import { api, type Contest, type Me, type User } from './api';
 
 export type ShellContext = { me: Me; reload: () => void };
 
@@ -145,4 +148,89 @@ export function useLoad<T>(load: () => Promise<T>, deps: unknown[]) {
     };
   }, [...deps, version]);
   return { data, error, reload: () => setVersion((v) => v + 1) };
+}
+
+const CODE_COLORS: Record<string, string> = { cf: 'text-cf-blue', cc: 'text-orange', atcoder: 'text-text', leetcode: 'text-sun' };
+const CODES: Record<string, string> = { cf: 'CF', cc: 'CC', atcoder: 'AC', leetcode: 'LC' };
+
+export function PlatformCode({ platform }: { platform: string }) {
+  return <span className={`handle text-xs ${CODE_COLORS[platform] ?? 'text-text'}`}>{CODES[platform] ?? platform}</span>;
+}
+
+export function Toggle({ on, label, onChange }: { on: boolean; label: string; onChange: (on: boolean) => void }) {
+  return (
+    <button
+      aria-pressed={on}
+      aria-label={label}
+      onClick={() => onChange(!on)}
+      className={`relative h-[30px] w-[52px] shrink-0 cursor-pointer rounded-full transition-colors duration-150 ${on ? 'bg-lime' : 'bg-line'}`}
+    >
+      <span className={`absolute top-[3px] size-6 rounded-full transition-all duration-150 ${on ? 'left-[25px] bg-ink' : 'left-[3px] bg-muted'}`} />
+    </button>
+  );
+}
+
+const PILLS: Record<string, string> = {
+  lime: 'bg-lime-tint text-lime',
+  sun: 'bg-sun-tint text-sun-text',
+  pink: 'bg-pink-tint text-pink-text',
+  muted: 'bg-card-2 text-muted',
+};
+
+export function Pill({ tone, children }: { tone: keyof typeof PILLS & string; children: ReactNode }) {
+  return <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-xs font-bold ${PILLS[tone]}`}>{children}</span>;
+}
+
+const RSVP_PILLS = {
+  yes: <Pill tone="lime">Going</Pill>,
+  no: <Pill tone="pink">Can't make it</Pill>,
+};
+
+export function ContestRow({ contest }: { contest: Contest }) {
+  const [date, time] = formatIST(contest.startAt).split(' · ');
+  const [weekday, day] = date.split(', ');
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <span className="flex size-12 shrink-0 flex-col items-center justify-center rounded-[14px] bg-card-2">
+        <span className="text-[10px] font-bold text-muted uppercase">{weekday}</span>
+        <span className="num text-base leading-none">{day.split(' ')[0]}</span>
+      </span>
+      <div className="min-w-0 flex-1">
+        <a href={contest.url} target="_blank" rel="noreferrer" className="block truncate font-bold hover:underline">{contest.name}</a>
+        <p className="text-xs text-muted"><span className={contest.platform === 'cf' ? 'text-cf-blue' : 'text-orange'}>{platformLabel(contest.platform)}</span> · {time}</p>
+      </div>
+      {RSVP_PILLS[contest.rsvp as 'yes' | 'no'] ?? <Pill tone="muted">Not answered</Pill>}
+    </div>
+  );
+}
+
+export function CellMark({ status, reasonType }: { status: string | null | undefined; reasonType: string | null | undefined }) {
+  const base = 'num flex size-6 shrink-0 items-center justify-center rounded-[7px] text-xs text-ink';
+  if (!status) return <span className={`${base} bg-card-2`} />;
+  if (status === 'present') return <span className={`${base} bg-lime`}>✓</span>;
+  if (!reasonType) return <span className="num flex size-6 shrink-0 items-center justify-center rounded-[7px] border-2 border-dashed border-sun text-xs text-sun">?</span>;
+  return <span className={`${base} bg-pink`}>{REASONS.find((r) => r.id === reasonType)?.letter ?? 'O'}</span>;
+}
+
+export function GoogleButton({ text, onDone, onError }: { text: 'continue_with' | 'signup_with'; onDone: (result: { token: string; user: User }) => void; onError: (message: string) => void }) {
+  return (
+    <GoogleLogin
+      shape="pill"
+      size="large"
+      theme="outline"
+      text={text}
+      onSuccess={async ({ credential }) => {
+        try {
+          onDone(await api<{ token: string; user: User }>('/auth/google', 'POST', { idToken: credential }));
+        } catch (err) {
+          onError((err as Error).message);
+        }
+      }}
+      onError={() => onError('Google sign-in failed. Please try again.')}
+    />
+  );
+}
+
+export function PasswordInput({ value, onChange, label = 'Password', autoComplete }: { value: string; onChange: (value: string) => void; label?: string; autoComplete: string }) {
+  return <input type="password" aria-label={label} placeholder={label} autoComplete={autoComplete} className={`${inputClass} h-12 rounded-[14px]`} value={value} onChange={(e) => onChange(e.target.value)} />;
 }

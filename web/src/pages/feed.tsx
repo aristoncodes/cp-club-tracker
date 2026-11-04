@@ -7,6 +7,7 @@ import { Avatar, Button, Card, ErrorText, platformLabel, RatingChip } from '../u
 type FeedItem = {
   userId: number;
   name: string;
+  username: string | null;
   platform: string;
   problemId: string;
   problemName: string | null;
@@ -52,7 +53,7 @@ export function Feed() {
               <Avatar userId={item.userId} name={item.name} />
               <div className="min-w-0 flex-1">
                 <p>
-                  <Link to={`/u/${item.userId}`} className="font-bold hover:underline">{item.name}</Link> solved{' '}
+                  <Link to={`/u/${item.userId}`} className="font-bold hover:underline">{item.name}</Link>{item.username ? <span className="handle text-xs text-muted"> @{item.username}</span> : null} solved{' '}
                   <a href={item.url ?? undefined} target="_blank" rel="noreferrer" className="hover:underline">{item.problemName ?? item.problemId}</a> on {platformLabel(item.platform)}
                 </p>
                 <p className="text-xs text-muted">
