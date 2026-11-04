@@ -3,7 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2026-10-01"
 
 [vars]
-WEB_ORIGIN = "http://localhost:5173"
+WEB_ORIGIN = "https://cp-club-web.aristoncodes247.workers.dev"
 
 [triggers]
 crons = ["* * * * *"]

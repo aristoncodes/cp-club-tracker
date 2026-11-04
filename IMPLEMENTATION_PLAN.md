@@ -43,7 +43,7 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 16. [x] **Website.** Login, leaderboard, profile, `/me`, `/download`; admin pages Attendance (grid + CSV), Students & handles, Admins, Flags.
 17. [ ] **Ship.**
     - Deploy the Worker and set its secrets.
-    - Deploy Pages.
+    - Deploy the website.
     - Build the APK with EAS, link it on `/download`.
     - Onboard 3 test students, then the whole club.
 

@@ -5,7 +5,7 @@
 ```
  Android app (Expo) ─┐                         ┌─ Expo Push API ─► phones
                      ├─► Cloudflare Worker ────┤
- Website (Pages) ────┘    (API + 1 cron/min)   ├─ Codeforces API (small calls)
+ Website (Worker) ───┘    (API + 1 cron/min)   ├─ Codeforces API (small calls)
                                │  ▲            └─ GitHub API (dispatch participation)
                                ▼  │ POST /ingest/* (shared secret)
                           Cloudflare D1        │
@@ -49,7 +49,7 @@ api/     schema.sql  wrangler.toml  seed.dev.sql
          src/cf.ts         Codeforces API client (user.status, user.info)
          src/push.ts       push sender for Expo and web
          src/web-push.ts   RFC 8291 encryption and VAPID for web push
-web/     src/main.tsx  src/api.ts  src/ui.tsx  src/pages/*.tsx  src/index.css  vite.config.ts
+web/     wrangler.toml  src/main.tsx  src/api.ts  src/ui.tsx  src/pages/*.tsx  src/index.css  vite.config.ts
          public/sw.js  public/manifest.webmanifest  public/icon-*.png
 app/     index.ts (registers the background task before any screen)
          app/(tabs)/*.tsx  app/user/[id].tsx  app/reason.tsx  app/onboarding.tsx  app/login.tsx  app/+native-intent.ts
@@ -263,4 +263,4 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 ## Distribution
 
 - **Android:** an EAS Build `preview` profile produces an APK, linked from the website's `/download`. JS updates go over the air via `expo-updates` (EAS Update).
-- **Web:** `vite build`, deployed to Cloudflare Pages. The Worker serves the API under its own `workers.dev` domain with CORS for the Pages origin.
+- **Web:** `vite build`, deployed as a static-assets Worker (`web/wrangler.toml`), because new Cloudflare Pages projects are now Workers. The API Worker has its own `workers.dev` domain, with CORS for the website's origin. Don't run `wrangler pages project create` from `api/`: it deploys that folder as a second Worker, cron included.

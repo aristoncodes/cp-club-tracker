@@ -40,11 +40,18 @@ pnpm exec wrangler d1 create cp-tracker
 
 ## 4. Website
 
+Build and deploy it once, so that it has an address (replace `<you>` with your subdomain):
+
 ```bash
-pnpm --filter api exec wrangler pages project create cp-tracker --production-branch main
+cd web
+echo "VITE_API_URL=https://cp-tracker-api.<you>.workers.dev" > .env.production
+pnpm build
+../api/node_modules/.bin/wrangler deploy
 ```
 
-Note the `https://cp-tracker.pages.dev` URL (yours may differ). This is your **web URL**. Then set `WEB_ORIGIN` in [api/wrangler.toml](api/wrangler.toml) to it.
+Note the `https://cp-club-web.<you>.workers.dev` URL. This is your **web URL**. Then set `WEB_ORIGIN` in [api/wrangler.toml](api/wrangler.toml) to it.
+
+Don't use `wrangler pages project create`. New Pages projects are now Workers, and running it from `api/` deploys a second copy of the API.
 
 ## 5. Google sign-in
 
@@ -120,7 +127,7 @@ VITE_VAPID_PUBLIC_KEY=from step 2
 
 ```bash
 pnpm --filter web build
-pnpm --filter api exec wrangler pages deploy ../web/dist --project-name cp-tracker
+cd web && ../api/node_modules/.bin/wrangler deploy
 ```
 
 ## 10. Test before inviting the club

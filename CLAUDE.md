@@ -59,7 +59,7 @@ Don't add top-level folders.
 ```
 shared/   scoring, contest rules, time helpers, shared types (pure TS, no deps)
 api/      Cloudflare Worker: HTTP API + cron dispatcher, schema.sql, wrangler.toml
-web/      Vite + React + Tailwind website, deployed to Cloudflare Pages
+web/      Vite + React + Tailwind website, deployed as a static-assets Cloudflare Worker
 app/      Expo (React Native) Android app
 jobs/     Node scripts run by GitHub Actions: platform adapters + ingest
 .github/workflows/   schedules for jobs/
