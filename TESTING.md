@@ -32,7 +32,7 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 ### api
 
 - **Cron decision functions** (pure helpers in `cron.ts`): given `now` and a contest row, they return reminder / rsvp / verify / nothing at the right boundaries (T−3600, T−300, end+900). A contest first seen inside T−5 returns rsvp, not reminder. They do nothing for `counts = 0`.
-- **Standings marking:** `CONTESTANT` and `OUT_OF_COMPETITION` → present; `VIRTUAL`, `PRACTICE` and missing → absent. An earlier RSVP "no" reason is kept.
+- **Live participation** (`jobs`): `CONTESTANT` and `OUT_OF_COMPETITION` → present; `VIRTUAL`, `PRACTICE` and no submissions → absent. On CodeChef, only submissions to that contest or its divisions, inside the contest window, count.
 
 ## Manual checks per task
 
@@ -53,8 +53,8 @@ curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
 | Ingest | A call without `X-Ingest-Secret` gets 401; posting the same solve twice leaves one row; a solve dated before the handle's `approved_at` adds no row |
 | Reminder / RSVP | Trigger the cron at T−60 and T−5; exactly one push each arrives on your device; triggering again sends nothing (stage advanced) |
 | RSVP from notification | With the app killed, tap Yes → row has `rsvp = 'yes'`. No + text → reason stored, no "why" push later |
-| Verify (CF) | Set the finished contest's `end_at` to 16 minutes ago and trigger the cron; statuses match the real standings and pushes arrive |
-| Verify (CC) | Trigger `cc-participation` with `workflow_dispatch` on a past Starters; statuses update |
+| Verify (CF) | Run `participation` on a finished contest with one handle that took part and one that didn't; statuses match, an earlier RSVP reason is kept and pushes arrive |
+| Verify (CC) | Run `participation` on a Starters within an hour of it ending, while CodeChef shows relative times; statuses update |
 | Solves | Submit an AC on Codeforces with a test handle; within 10 min of cron runs it's in `solves` with the expected points |
 | Leaderboard | Today / Week / Month totals match a hand-written `SELECT SUM(points)` with the same boundaries |
 | Admin grid | Grid and CSV agree with the `attendance` table for the range |

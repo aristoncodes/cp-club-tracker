@@ -1,8 +1,11 @@
+import { isLiveSubmission, type CfSubmission } from 'shared/cf';
 import { countsForAttendance } from 'shared/contests';
 import type { IngestContest } from 'shared/types';
 import { politeFetch } from '../lib';
 
 const CF_GAP_MS = 2000;
+
+type CfSubmissionList = { status: string; comment?: string; result?: CfSubmission[] };
 
 type CfContestList = {
   status: string;
@@ -35,4 +38,26 @@ export function parseContests(raw: CfContestList): IngestContest[] {
     div2.altExternalId = c.externalId;
     return false;
   });
+}
+
+export async function fetchUserStatus(handle: string): Promise<CfSubmissionList> {
+  const response = await politeFetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}&from=1&count=50`, CF_GAP_MS);
+  return response.json() as Promise<CfSubmissionList>;
+}
+
+export async function fetchContestStatus(contestId: string, handle: string): Promise<CfSubmissionList> {
+  const response = await politeFetch(
+    `https://codeforces.com/api/contest.status?contestId=${contestId}&handle=${encodeURIComponent(handle)}&from=1&count=100`,
+    CF_GAP_MS,
+  );
+  return response.json() as Promise<CfSubmissionList>;
+}
+
+export function parseSubmissions(raw: CfSubmissionList): CfSubmission[] {
+  if (raw.status !== 'OK' || !raw.result) throw new Error(raw.comment ?? `Codeforces returned status ${raw.status}`);
+  return raw.result;
+}
+
+export function tookPartLive(submissions: CfSubmission[]): boolean {
+  return submissions.some(isLiveSubmission);
 }

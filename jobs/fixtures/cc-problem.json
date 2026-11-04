@@ -1,0 +1,10 @@
+{
+  "status": "success",
+  "problem_name": "Trees Are Fun",
+  "difficulty_rating": "3060",
+  "user_tags": [
+    "Trees",
+    "Segment Trees",
+    "DFS Order"
+  ]
+}

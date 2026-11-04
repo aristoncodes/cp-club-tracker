@@ -6,7 +6,7 @@
  Android app (Expo) ─┐                         ┌─ Expo Push API ─► phones
                      ├─► Cloudflare Worker ────┤
  Website (Pages) ────┘    (API + 1 cron/min)   ├─ Codeforces API (small calls)
-                               │  ▲            └─ GitHub API (dispatch cc-participation)
+                               │  ▲            └─ GitHub API (dispatch participation)
                                ▼  │ POST /ingest/* (shared secret)
                           Cloudflare D1        │
                                          GitHub Actions (jobs/)
@@ -14,7 +14,7 @@
                                    LeetCode adapters
 ```
 
-- The **Worker** owns the database, the API and everything time-critical: reminders, RSVP pushes, Codeforces verification.
+- The **Worker** owns the database, the API and everything time-critical: reminders, RSVP pushes, starting verification.
 - **GitHub Actions** do every large download or HTML scrape and post compact JSON to the Worker. They never touch D1 directly.
 
 Everything runs on free tiers. Cloudflare Workers Free gives 100k requests/day, 10 ms CPU per invocation, 50 subrequests and 5 cron triggers. D1 Free gives 5 GB, 5M reads and 100k writes per day.
@@ -37,7 +37,7 @@ Ask before adding anything else.
 Target shape. Don't add files beyond this without a reason from `CLAUDE.md`.
 
 ```
-shared/  scoring.ts  contests.ts  time.ts  types.ts  rating-color.ts  *.test.ts
+shared/  scoring.ts  contests.ts  time.ts  types.ts  rating-color.ts  cf.ts  *.test.ts
 api/     schema.sql  wrangler.toml  seed.dev.sql
          src/index.ts      Hono app, mounts routes, exports fetch + scheduled
          src/auth.ts       Google token verify, session JWT, requireUser/requireAdmin
@@ -45,7 +45,8 @@ api/     schema.sql  wrangler.toml  seed.dev.sql
          src/admin.ts      admin routes
          src/ingest.ts     /ingest/* routes
          src/cron.ts       per-minute dispatcher
-         src/cf.ts         Codeforces API client (standings, user.status, user.info)
+         src/records.ts    writing solves and contest results, used by cron and ingest
+         src/cf.ts         Codeforces API client (user.status, user.info)
          src/push.ts       Expo push sender
 web/     src/main.tsx  src/api.ts  src/pages/*.tsx  index.css  tailwind.config.ts
 app/     index.ts (registers the background task before any screen)
@@ -53,7 +54,7 @@ app/     index.ts (registers the background task before any screen)
          lib/api.ts  lib/push.ts  lib/ui.tsx  theme.ts
 jobs/    lib.ts (fetch with UA + delay, ingest poster)
          adapters/{cf,cc,atcoder,leetcode}.ts
-         sync-contests.ts  sync-solves.ts  cc-participation.ts
+         sync-contests.ts  sync-solves.ts  participation.ts
          fixtures/  (saved responses for tests)
 ```
 
@@ -173,7 +174,7 @@ Rp is the Codeforces-equivalent rating of the problem. The conversion is a const
 
 ## Worker cron: one trigger, `* * * * *` (`api/src/cron.ts`)
 
-Codeforces calls in a run are 2 s apart, and each run finishes well under 10 ms CPU. "Participants" below means active users, students and admins alike, with an approved handle on the contest's platform.
+The contest steps make no Codeforces calls. Other Codeforces calls in a run are 2 s apart, and each run finishes well under 10 ms CPU. "Participants" below means active users, students and admins alike, with an approved handle on the contest's platform.
 
 1. **Reminder:** for counted contests with `stage = 0` and `start_at − 3600 ≤ now < start_at − 300`, send the T−60 push to all participants and set `stage = 1`. A contest first seen inside T−5 skips this and gets only the RSVP push.
 2. **RSVP:** for counted contests with `stage ≤ 1` and `now ≥ start_at − 300` (and `now < start_at`):
@@ -182,9 +183,7 @@ Codeforces calls in a run are 2 s apart, and each run finishes well under 10 ms 
    - set `stage = 2`.
 
    If the window was missed, still create the rows and skip to verify.
-3. **Verify**, for counted contests with `stage < 3` and `now ≥ end_at + 900`:
-   - **cf:** call `contest.standings?contestId=…&handles=a;b;…&showUnofficial=true`, and in the same run for `alt_external_id`, then mark once from both results. A handle present with participantType `CONTESTANT` or `OUT_OF_COMPETITION` → `present`; everyone else → `absent`. If `rsvp = 'no'`, the RSVP reason is already in `reason_type`/`reason_text`. Then send result pushes (below) and set `stage = 4`. If Codeforces rejects the call because a handle doesn't exist, set that handle's `broken = 1` and leave it out of later Codeforces calls; the contest retries on the next tick. A handle changed to a different one has `broken` reset to 0.
-   - **cc:** POST to GitHub `actions/workflows/cc-participation.yml/dispatches` with input `contest`, and set `stage = 3`. The Action posts to `/ingest/participation`, which applies the same marking and pushes and sets `stage = 4`. A contest still at `stage = 3` is dispatched again every hour, up to 24 hours after `end_at`.
+3. **Verify**, for counted contests with `stage < 3` and `now ≥ end_at + 900`: POST to GitHub `actions/workflows/participation.yml/dispatches` with inputs `platform`, `contest`, `alt`, `start` and `end`, and set `stage = 3`. The Action posts to `/ingest/participation`, which marks attendance (handles it lists as present → `present`, everyone else → `absent`), keeps any RSVP reason, sends result pushes (below) and sets `stage = 4`. A contest still at `stage = 3` is dispatched again every hour, up to 24 hours after `end_at + 900`. Codeforces no longer allows filtered `contest.standings` calls, and one call per student doesn't fit the Worker's 50 subrequests, so this runs in `jobs/`.
 4. **Every 10th minute:** refresh Codeforces solves for the 4 students with the oldest `handles.synced_at` for `cf`. Use `user.status?handle=…&from=1&count=50`, 2 s apart, keep `verdict = 'OK'`, upsert `problems`, and insert solves with `live = participantType is CONTESTANT or OUT_OF_COMPETITION`.
 5. **Daily at 18:30 UTC (00:00 IST):** refresh `cf_rating` for all students with one `user.info?handles=…` call.
 
@@ -222,7 +221,7 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | GET | /admin/flags | admin | Users with > 30 solves in one IST day in the last 30 days, and handles with `broken = 1` |
 | POST | /ingest/contests | secret | `[{ platform, externalId, altExternalId?, name, url, startAt, endAt, counts }]`, upserted; `counts` applies only on insert |
 | POST | /ingest/solves | secret | `[{ platform, handle, problemId, name?, rating?, tags?, url?, solvedAt, live }]`. The Worker maps handle → user, computes points and inserts with `OR IGNORE` |
-| POST | /ingest/participation | secret | `{ platform, externalId, presentHandles: string[] }` |
+| POST | /ingest/participation | secret | `{ platform, externalId, presentHandles: string[], brokenHandles?: string[] }` |
 | GET | /ingest/handles?platform= | secret | Approved handles for the adapters to fetch |
 
 - Ingest routes check `X-Ingest-Secret` against `INGEST_SECRET`.
@@ -235,14 +234,14 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 | Script | Schedule (UTC cron) | Does |
 |---|---|---|
 | `sync-contests.ts` | `0 */6 * * *` | CF `contest.list?gym=false` (future contests only) + CodeChef upcoming contests → apply `countsForAttendance` and parallel-round merge → `/ingest/contests` |
-| `sync-solves.ts` | `*/30 * * * *` | cc, atcoder, leetcode (and cf as a backstop) recent accepted submissions for approved handles → `/ingest/solves` |
-| `cc-participation.ts` | `workflow_dispatch` (input `contest`) | Scrape the contest rankings / each handle's contest history → `/ingest/participation` |
+| `sync-solves.ts` | `*/30 * * * *` | cc, atcoder, leetcode (and cf as a backstop) accepted submissions from the last 48 hours for approved handles → `/ingest/solves`, one post per handle |
+| `participation.ts` | `workflow_dispatch` (inputs `platform`, `contest`, `alt`, `start`, `end`) | **cf:** `contest.status?contestId=…&handle=…` for each handle, and for `alt`; any submission with participantType `CONTESTANT` or `OUT_OF_COMPETITION` → present. A handle Codeforces says doesn't exist is reported in `brokenHandles`. **cc:** each handle's recent submissions; any submission linked to the contest or one of its divisions (`START263`, `START263A`…) with a time inside the contest → present. Any other failure stops the run without posting, so nobody is wrongly marked absent → `/ingest/participation` |
 
 **Platform notes:**
-- **Codeforces:** official API, 1 call per 2 s.
-- **CodeChef:** no official API. Use the JSON endpoints the CodeChef website itself calls (contest list, recent submissions), falling back to HTML. Expect changes; keep parsing in `adapters/cc.ts` only.
-- **AtCoder:** AtCoder Problems API for submissions (`from_second`) and difficulty estimates. Be polite: one request per second.
-- **LeetCode:** unofficial GraphQL `recentAcSubmissionList` (about the last 20) plus `question` difficulty.
+- **Codeforces:** official API, 1 call per 2 s. Filtered `contest.standings` is rejected for non-admins; use `contest.status` with `handle`.
+- **CodeChef:** no official API. Use `/api/list/contests/all`, `/recent/user` (JSON wrapping an HTML table), `/api/contests/<code>` and `/api/contests/<code>/problems/<problem>`. `/api/rankings` isn't usable. Expect changes; keep parsing in `adapters/cc.ts` only.
+- **AtCoder:** AtCoder Problems API for submissions (`from_second`), difficulty estimates, problem names and contest times. A solve is live if it falls inside its contest, for contests up to a day long. Be polite: one request per second.
+- **LeetCode:** unofficial GraphQL `recentAcSubmissionList` (about the last 20) plus `question` difficulty. Solves are never live.
 
 **GitHub secrets:** `API_URL`, `INGEST_SECRET`.
 **Worker secrets:** `SESSION_SECRET`, `INGEST_SECRET`, `ADMIN_EMAILS`, `GOOGLE_CLIENT_IDS`, `GITHUB_TOKEN` (fine-grained, Actions write on this repo only), `GITHUB_REPO`.

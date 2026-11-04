@@ -5,7 +5,9 @@
   "scripts": {
     "typecheck": "tsc -p .",
     "test": "vitest run",
-    "sync-contests": "tsx --env-file-if-exists=.env sync-contests.ts"
+    "sync-contests": "tsx --env-file-if-exists=.env sync-contests.ts",
+    "sync-solves": "tsx --env-file-if-exists=.env sync-solves.ts",
+    "participation": "tsx --env-file-if-exists=.env participation.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
@@ -13,6 +15,7 @@
     "vitest": "^5.1.0"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
     "shared": "workspace:*"
   }
 }

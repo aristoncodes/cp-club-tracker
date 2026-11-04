@@ -12,3 +12,15 @@ export type IngestContest = {
   endAt: number;
   counts: boolean;
 };
+
+export type IngestSolve = {
+  platform: Platform;
+  handle: string;
+  problemId: string;
+  name?: string;
+  rating?: number | string;
+  tags?: string[];
+  url?: string;
+  solvedAt: number;
+  live: boolean;
+};

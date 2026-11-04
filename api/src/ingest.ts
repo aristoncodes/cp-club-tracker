@@ -1,20 +1,7 @@
 import { Hono } from 'hono';
-import { problemRp, solvePoints } from 'shared/scoring';
-import type { IngestContest, Platform } from 'shared/types';
+import type { IngestContest, IngestSolve } from 'shared/types';
 import type { AppEnv } from './auth';
-import { sendPushes, type PushMessage } from './push';
-
-type IngestSolve = {
-  platform: Platform;
-  handle: string;
-  problemId: string;
-  name?: string;
-  rating?: number | string;
-  tags?: string[];
-  url?: string;
-  solvedAt: number;
-  live: boolean;
-};
+import { finishContest, insertSolves, markHandleBroken } from './records';
 
 export const ingestRoutes = new Hono<AppEnv>();
 
@@ -48,83 +35,27 @@ ingestRoutes.post('/contests', async (c) => {
 });
 
 ingestRoutes.post('/solves', async (c) => {
-  const solves = await c.req.json<IngestSolve[]>();
-  const { results: handles } = await c.env.DB.prepare(
-    `SELECT h.platform, lower(h.handle) AS handle, h.user_id AS userId, h.approved_at AS approvedAt, u.cf_rating AS cfRating
-     FROM handles h JOIN users u ON u.id = h.user_id
-     WHERE h.approved_at IS NOT NULL AND u.active = 1`,
-  ).all<{ platform: string; handle: string; userId: number; approvedAt: number; cfRating: number | null }>();
-  const byHandle = new Map(handles.map((h) => [`${h.platform}:${h.handle}`, h]));
-
-  const upsertProblem = c.env.DB.prepare(
-    `INSERT INTO problems (platform, problem_id, name, rating, tags, url) VALUES (?, ?, ?, ?, ?, ?)
-     ON CONFLICT (platform, problem_id) DO UPDATE SET
-       name = COALESCE(excluded.name, name),
-       rating = COALESCE(excluded.rating, rating),
-       tags = COALESCE(excluded.tags, tags),
-       url = COALESCE(excluded.url, url)`,
-  );
-  const insertSolve = c.env.DB.prepare(
-    `INSERT OR IGNORE INTO solves (user_id, platform, problem_id, solved_at, live, rp, points) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  );
-
-  const statements = solves.flatMap((s) => {
-    const owner = byHandle.get(`${s.platform}:${s.handle.toLowerCase()}`);
-    if (!owner || s.solvedAt < owner.approvedAt) return [];
-    const rp = problemRp(s.platform, s.rating ?? null);
-    return [
-      upsertProblem.bind(s.platform, s.problemId, s.name ?? null, s.rating ?? null, s.tags ? JSON.stringify(s.tags) : null, s.url ?? null),
-      insertSolve.bind(owner.userId, s.platform, s.problemId, s.solvedAt, s.live ? 1 : 0, rp, solvePoints(rp, owner.cfRating, s.live)),
-    ];
-  });
-  if (statements.length) await c.env.DB.batch(statements);
+  await insertSolves(c.env.DB, await c.req.json<IngestSolve[]>());
   return c.json({ ok: true });
 });
 
 ingestRoutes.post('/participation', async (c) => {
-  const { platform, externalId, presentHandles } = await c.req.json<{
+  const { platform, externalId, presentHandles, brokenHandles = [] } = await c.req.json<{
     platform: string;
     externalId: string;
     presentHandles: string[];
+    brokenHandles?: string[];
   }>();
   const contest = await c.env.DB.prepare(
-    'SELECT id, name, stage FROM contests WHERE platform = ? AND external_id = ? AND counts = 1',
+    'SELECT id, platform, name, stage FROM contests WHERE platform = ? AND external_id = ? AND counts = 1',
   )
     .bind(platform, externalId)
-    .first<{ id: number; name: string; stage: number }>();
+    .first<{ id: number; platform: string; name: string; stage: number }>();
   if (!contest) return c.json({ error: 'Contest not found' }, 404);
   if (contest.stage === 4) return c.json({ ok: true });
 
-  await c.env.DB.batch([
-    c.env.DB.prepare(
-      `INSERT OR IGNORE INTO attendance (contest_id, user_id)
-       SELECT ?, u.id FROM users u JOIN handles h ON h.user_id = u.id
-       WHERE u.active = 1 AND h.platform = ? AND h.approved_at IS NOT NULL`,
-    ).bind(contest.id, platform),
-    c.env.DB.prepare(
-      `UPDATE attendance SET status = CASE WHEN user_id IN (
-         SELECT user_id FROM handles
-         WHERE platform = ?1 AND lower(handle) IN (SELECT lower(value) FROM json_each(?2))
-       ) THEN 'present' ELSE 'absent' END
-       WHERE contest_id = ?3`,
-    ).bind(platform, JSON.stringify(presentHandles), contest.id),
-  ]);
-
-  const { results } = await c.env.DB.prepare(
-    `SELECT p.token, a.status, a.reason_type AS reasonType
-     FROM attendance a JOIN push_tokens p ON p.user_id = a.user_id
-     WHERE a.contest_id = ? AND p.kind = 'expo'`,
-  )
-    .bind(contest.id)
-    .all<{ token: string; status: string; reasonType: string | null }>();
-  const messages = results.flatMap((r): PushMessage[] => {
-    if (r.status === 'present') return [{ to: r.token, body: `Marked present for ${contest.name}.` }];
-    if (r.reasonType) return [];
-    return [{ to: r.token, body: `You missed ${contest.name}. Why?`, data: { contestId: contest.id, screen: 'reason' } }];
-  });
-  await sendPushes(c.env.DB, messages);
-
-  await c.env.DB.prepare('UPDATE contests SET stage = 4 WHERE id = ?').bind(contest.id).run();
+  if (brokenHandles.length) await c.env.DB.batch(brokenHandles.map((h) => markHandleBroken(c.env.DB, platform, h)));
+  await finishContest(c.env.DB, contest, presentHandles);
   return c.json({ ok: true });
 });
 

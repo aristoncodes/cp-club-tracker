@@ -1,0 +1,22 @@
+name: sync-solves
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile --filter jobs...
+      - run: pnpm --filter jobs sync-solves
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}

@@ -9,6 +9,8 @@ export type Bindings = {
   INGEST_SECRET: string;
   ADMIN_EMAILS: string;
   GOOGLE_CLIENT_IDS: string;
+  GITHUB_TOKEN: string;
+  GITHUB_REPO: string;
 };
 
 type User = {

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "agc074",
+    "start_epoch_second": 1761480000,
+    "duration_second": 10800,
+    "title": "AtCoder Grand Contest 074",
+    "rate_change": "2000 ~"
+  },
+  {
+    "id": "APG4b",
+    "start_epoch_second": 0,
+    "duration_second": 3153600000,
+    "title": "C++\u5165\u9580 AtCoder Programming Guide for beginners (APG4b)",
+    "rate_change": "-"
+  }
+]

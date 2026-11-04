@@ -30,5 +30,5 @@ app.route('/', studentRoutes);
 
 export default {
   fetch: app.fetch,
-  scheduled: (event, env, ctx) => ctx.waitUntil(runCron(env.DB, Math.floor(event.scheduledTime / 1000))),
+  scheduled: (event, env, ctx) => ctx.waitUntil(runCron(env, Math.floor(event.scheduledTime / 1000))),
 } satisfies ExportedHandler<Bindings>;

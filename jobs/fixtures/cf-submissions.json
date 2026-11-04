@@ -1,0 +1,159 @@
+{
+  "status": "OK",
+  "result": [
+    {
+      "id": 397268142,
+      "contestId": 2122,
+      "creationTimeSeconds": 1793729968,
+      "relativeTimeSeconds": 2147483647,
+      "problem": {
+        "contestId": 2122,
+        "index": "E",
+        "name": "Greedy Grid Counting",
+        "type": "PROGRAMMING",
+        "points": 2500.0,
+        "rating": 2600,
+        "tags": [
+          "combinatorics",
+          "dp",
+          "greedy",
+          "math"
+        ]
+      },
+      "author": {
+        "contestId": 2122,
+        "participantId": 233742249,
+        "members": [
+          {
+            "handle": "jiangly"
+          }
+        ],
+        "participantType": "PRACTICE",
+        "ghost": false,
+        "startTimeSeconds": 1752935700
+      },
+      "programmingLanguage": "C++23 (GCC 14-64, msys2)",
+      "verdict": "OK",
+      "testset": "TESTS",
+      "passedTestCount": 29,
+      "timeConsumedMillis": 78,
+      "memoryConsumedBytes": 0
+    },
+    {
+      "id": 397267714,
+      "contestId": 2223,
+      "creationTimeSeconds": 1793729629,
+      "relativeTimeSeconds": 2147483647,
+      "problem": {
+        "contestId": 2223,
+        "index": "D",
+        "name": "Zhily and Cycle",
+        "type": "PROGRAMMING",
+        "points": 2500.0,
+        "rating": 2800,
+        "tags": [
+          "graphs",
+          "greedy"
+        ]
+      },
+      "author": {
+        "contestId": 2223,
+        "participantId": 237326854,
+        "members": [
+          {
+            "handle": "jiangly"
+          }
+        ],
+        "participantType": "PRACTICE",
+        "ghost": false,
+        "startTimeSeconds": 1778047500
+      },
+      "programmingLanguage": "C++23 (GCC 14-64, msys2)",
+      "verdict": "WRONG_ANSWER",
+      "testset": "TESTS",
+      "passedTestCount": 0,
+      "timeConsumedMillis": 15,
+      "memoryConsumedBytes": 0
+    },
+    {
+      "id": 395032231,
+      "contestId": 2261,
+      "creationTimeSeconds": 1792258288,
+      "relativeTimeSeconds": 10588,
+      "problem": {
+        "contestId": 2261,
+        "index": "F1",
+        "name": "Plegma II: Ask Me Any Cell (Easy Version)",
+        "type": "PROGRAMMING",
+        "points": 2500.0,
+        "rating": 2500,
+        "tags": [
+          "constructive algorithms",
+          "greedy",
+          "math"
+        ]
+      },
+      "author": {
+        "contestId": 2261,
+        "participantId": 248737455,
+        "members": [
+          {
+            "handle": "jiangly"
+          }
+        ],
+        "participantType": "CONTESTANT",
+        "ghost": false,
+        "room": 87,
+        "startTimeSeconds": 1792247700
+      },
+      "programmingLanguage": "C++23 (GCC 14-64, msys2)",
+      "verdict": "OK",
+      "testset": "TESTS",
+      "passedTestCount": 2,
+      "timeConsumedMillis": 15,
+      "memoryConsumedBytes": 0
+    },
+    {
+      "id": 395002182,
+      "contestId": 2261,
+      "creationTimeSeconds": 1792252311,
+      "relativeTimeSeconds": 4611,
+      "problem": {
+        "contestId": 2261,
+        "index": "G",
+        "name": "1 2 3 and XOR, Where Did Everybody Go?",
+        "type": "PROGRAMMING",
+        "points": 4000.0,
+        "rating": 2800,
+        "tags": [
+          "bitmasks",
+          "data structures",
+          "divide and conquer",
+          "dp",
+          "greedy",
+          "sortings",
+          "two pointers"
+        ]
+      },
+      "author": {
+        "contestId": 2261,
+        "participantId": 248737455,
+        "members": [
+          {
+            "handle": "jiangly"
+          }
+        ],
+        "participantType": "CONTESTANT",
+        "ghost": false,
+        "room": 87,
+        "startTimeSeconds": 1792247700
+      },
+      "programmingLanguage": "C++23 (GCC 14-64, msys2)",
+      "verdict": "TIME_LIMIT_EXCEEDED",
+      "testset": "PRETESTS",
+      "passedTestCount": 2,
+      "timeConsumedMillis": 7000,
+      "memoryConsumedBytes": 215654400
+    }
+  ]
+}

@@ -33,10 +33,10 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 
 ## Phase 2 — Day 2: verification, leaderboard, website
 
-11. [ ] **Cron step 3 for Codeforces** (standings check, result pushes).
+11. [ ] **Cron step 3 and Codeforces verification** (`participation.ts`, its workflow, the Worker dispatch call, result pushes).
     - Done when: verified against a finished real CF contest with one handle that took part and one that didn't.
-12. [ ] **CodeChef participation.** `cc-participation.ts`, the workflow with `workflow_dispatch`, and the Worker dispatch call.
-13. [ ] **Codeforces solves.** Cron step 4 and step 5 (ratings).
+12. [ ] **CodeChef participation** in `participation.ts`.
+13. [x] **Codeforces solves.** Cron step 4 and step 5 (ratings).
     - Done when: a new AC appears in `solves` with correct points.
 14. [ ] **CodeChef and LeetCode solves and the Codeforces backstop** in `sync-solves.ts` + workflow.
 15. [ ] **Leaderboard endpoint + app Leaderboard tab + Profile (basic).**

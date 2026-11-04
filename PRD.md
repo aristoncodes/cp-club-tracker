@@ -38,9 +38,9 @@ The college competitive programming club (40–50 students across all years) has
 ### Rules
 
 - Every counted contest creates one attendance entry per active user, students and admins alike, with an approved handle on that contest's platform.
-- **Present** = the student's handle appears in the official standings as a live participant. On Codeforces, `CONTESTANT` and `OUT_OF_COMPETITION` both count.
-- **Absent** = not in live standings. A reason is required. A virtual or practice attempt later still counts as absent, but its solves count on the leaderboard.
-- Present or absent is decided by the standings, not by what the student answered. A student who said No but took part is present.
+- **Present** = the student made a submission in the contest as a live participant, during the contest. On Codeforces, `CONTESTANT` and `OUT_OF_COMPETITION` both count.
+- **Absent** = no live submission. A reason is required. A virtual or practice attempt later still counts as absent, but its solves count on the leaderboard.
+- Present or absent is decided by the platform's data, not by what the student answered. A student who said No but took part is present.
 - The RSVP answer is kept separately so admins can see "said Yes, didn't show". RSVPs are accepted until the contest is verified.
 - Reason types: `exams`, `travel`, `illness`, `clash` (other commitment), `forgot`, `other`, plus optional free text. Text is required for `other`.
 
@@ -50,8 +50,8 @@ The college competitive programming club (40–50 students across all years) has
 |---|---|---|
 | T − 60 min | "Codeforces Round 1095 (Div. 2) starts at 8:05 PM — in 1 hour." | Opens contest page |
 | T − 5 min | "Codeforces Round 1095 starts in 5 min. Giving it?" | Buttons: **Yes**, **No** (No asks for a reason) |
-| T + 15 min after end (present) | "Marked present for Codeforces Round 1095." | none |
-| T + 15 min after end (absent, no reason yet) | "You missed Codeforces Round 1095. Why?" | Opens reason form |
+| About T + 20 min after end (present) | "Marked present for Codeforces Round 1095." | none |
+| About T + 20 min after end (absent, no reason yet) | "You missed Codeforces Round 1095. Why?" | Opens reason form |
 
 - If the student answered **No** with a reason, that reason becomes the absence reason and no "why" push is sent.
 - Students with a pending reason see a banner on the app home screen and on the website until they answer.
@@ -63,7 +63,7 @@ The college competitive programming club (40–50 students across all years) has
 - Reasons grouped by type.
 - CSV export of the current grid.
 
-**Done when:** a contest inserted locally 6 minutes in the future produces the T−5 push on a real device. Answering No + reason from the notification stores it. After the end, a handle in standings is marked present and one not in standings is marked absent with the stored reason.
+**Done when:** a contest inserted locally 6 minutes in the future produces the T−5 push on a real device. Answering No + reason from the notification stores it. After the end, a handle with a live submission is marked present and one without is marked absent with the stored reason.
 
 ## Feature 2 — Leaderboard
 
