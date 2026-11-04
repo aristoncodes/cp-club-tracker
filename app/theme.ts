@@ -1,0 +1,19 @@
+export const theme = {
+  bg: '#0B0D10',
+  surface: '#14171C',
+  surface2: '#1B1F26',
+  border: '#262B33',
+  text: '#E6E8EB',
+  muted: '#8B93A1',
+  accent: '#A3E635',
+  pending: '#F59E0B',
+  absent: '#EF4444',
+  pendingTint: 'rgba(245, 158, 11, 0.12)',
+  font: {
+    regular: 'Inter_400Regular',
+    medium: 'Inter_500Medium',
+    semibold: 'Inter_600SemiBold',
+    bold: 'Inter_700Bold',
+    mono: 'JetBrainsMono_500Medium',
+  },
+};

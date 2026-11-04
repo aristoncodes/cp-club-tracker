@@ -27,7 +27,7 @@ Everything runs on free tiers. Cloudflare Workers Free gives 100k requests/day, 
 | `shared` | `vitest` (dev) |
 | `api` | `hono`, `jose`, `wrangler` (dev), `vitest` (dev) |
 | `web` | `react`, `react-dom`, `react-router-dom`, `vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/vite`, `@react-oauth/google` |
-| `app` | `react`, `react-native`, `expo`, `expo-router`, `expo-notifications`, `expo-task-manager`, `expo-device`, `expo-auth-session`, `expo-secure-store`, `expo-updates`, `@expo-google-fonts/inter`, `@expo-google-fonts/jetbrains-mono` |
+| `app` | `react`, `react-native`, `expo`, `expo-router`, `expo-notifications`, `expo-task-manager`, `expo-device`, `expo-auth-session`, `expo-secure-store`, `expo-updates`, `expo-font`, `expo-constants`, `expo-linking`, `react-native-screens`, `react-native-safe-area-context`, `@expo/metro-runtime`, `@expo/log-box`, `@expo-google-fonts/inter`, `@expo-google-fonts/jetbrains-mono`, `@types/react` (dev) |
 | `jobs` | `cheerio`, `tsx`, `@types/node` (dev), `vitest` (dev) |
 
 Ask before adding anything else.
@@ -48,8 +48,9 @@ api/     schema.sql  wrangler.toml  seed.dev.sql
          src/cf.ts         Codeforces API client (standings, user.status, user.info)
          src/push.ts       Expo push sender
 web/     src/main.tsx  src/api.ts  src/pages/*.tsx  index.css  tailwind.config.ts
-app/     app/(tabs)/*.tsx  app/reason.tsx  app/onboarding.tsx  app/login.tsx
-         lib/api.ts  lib/push.ts  theme.ts
+app/     index.ts (registers the background task before any screen)
+         app/(tabs)/*.tsx  app/reason.tsx  app/onboarding.tsx  app/login.tsx  app/+native-intent.ts
+         lib/api.ts  lib/push.ts  lib/ui.tsx  theme.ts
 jobs/    lib.ts (fetch with UA + delay, ingest poster)
          adapters/{cf,cc,atcoder,leetcode}.ts
          sync-contests.ts  sync-solves.ts  cc-participation.ts
@@ -253,7 +254,8 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
   - `no`: buttonTitle "No", with `textInput` (placeholder "Why not?") and `opensAppToForeground: false`.
 - Handle responses in a background notification task (`expo-task-manager` via `Notifications.registerTaskAsync`). The handler calls `/contests/:id/rsvp`. A No with typed text uses `reasonType: 'other'`. A No with no text calls nothing and posts a local notification, "Tap to give a reason", which opens the Reason screen; that screen sends the reason to `/contests/:id/rsvp` with `going: false`.
 - If background handling proves unreliable on test devices, switch both actions to `opensAppToForeground: true` and handle them in `useLastNotificationResponse`. Document the switch in this file.
-- A push with `screen: 'reason'` opens `/reason?contestId=…`.
+- A push with `screen: 'reason'` opens `/reason?contestId=…`. A push with `url` opens that page.
+- Google sign-in uses `expo-auth-session` with PKCE and the redirect `com.cpclub.tracker:/oauthredirect`.
 - Android channel `contests`, importance HIGH.
 
 ## Distribution

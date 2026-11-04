@@ -5,7 +5,7 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 ## Phase 0 — Setup (done by the human)
 
 - [ ] Cloudflare account; `wrangler login`; `wrangler d1 create cp-tracker`
-- [ ] Google Cloud project: OAuth client IDs for Web and Android (SHA-1 from the EAS keystore)
+- [ ] Google Cloud project: OAuth client IDs for Web and Android (SHA-1 from the EAS keystore, package `com.cpclub.tracker`, custom URI scheme enabled under the Android client's advanced settings)
 - [ ] Expo account; `eas init` in `app/`
 - [ ] Firebase project with an Android app; FCM credentials uploaded to Expo (needed for Android push)
 - [ ] Public GitHub repo; fine-grained token with Actions write on that repo
