@@ -85,6 +85,21 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 - **App version:** `appVersionAction` gives none, optional and required correctly, comparing versions as numbers (1.10 > 1.9).
 - **Pushes:** each new type respects its switch; duel and announcement pushes ignore switches; a second push of the same event-driven type in a minute is dropped.
 
+### admin
+
+1. A handle on Waiting or Rejected never adds points, attendance or a duel result. Remove approval stops its solves counting from the next sync.
+2. Every admin endpoint returns 403 for non-admins, and every successful write adds its `audit_log` row: one per thing changed.
+3. A manual attendance edit survives the automatic attendance job re-running.
+4. Exam week: the members in it get no contest reminders and their entries become X. Deleting the exam week reverts only entries that weren't edited by hand.
+5. A mandatory contest sends the T−3h reminder. A contest with Counts off is ignored in attendance %.
+6. The at-risk flags match each threshold; the nudge limit is one per 3 days; a snoozed member stays hidden until the date.
+7. Fairness: voiding solves removes their points from every board and the season; undo restores them exactly.
+8. Changing a Rules value takes effect the next day, and the old value still applies today.
+9. You can't remove yourself, the last admin or an `ADMIN_EMAILS` admin.
+10. The nightly jobs finish within the CPU limit with 50 members and 90 days of solves, measured on a staging Worker.
+
+**Migration `0013`:** run it on a copy of production's data with rows in `attendance`, `upsolves` and the virtual tables. Row counts must match, `PRAGMA foreign_key_check` must be empty, and an insert with an unknown contest must still fail.
+
 ## Manual checks per task
 
 Set up local data first:

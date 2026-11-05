@@ -572,3 +572,82 @@ Picks run in the Worker, not an Action, because GitHub's timing is unreliable an
 - **Over the air:** everything uses existing native modules. Check on open and on foreground with `Updates.checkForUpdateAsync` and `fetchUpdateAsync`, then show the card from `isUpdatePending`. The version and notes shown come from `extra.release` in `app/app.json`, so update those before publishing. `checkAutomatically: NEVER` isn't set, because it would need a new APK and members shouldn't have to reinstall. Because `runtimeVersion` follows the app version, a version bump stops over-the-air updates reaching older APKs, so those phones must first get an update containing the install prompt.
 - **Notifications:** a new `duel` category with `duel_accept` and `duel_decline` actions, set up through the same JS calls as `rsvp`. The response handler opens a push's `data.path`.
 - **Web toast:** on focus, fetch `/index.html` with `no-store` and compare its script name with the running one. No build changes.
+
+## Admin redesign
+
+Rules are in `PRD_ADMIN.md` and looks in `DESIGN_ADMIN.md`. No new dependencies. Admin is web only.
+
+### Schema (`api/migrations/0013_admin.sql`)
+
+The migration is the truth for columns. `attendance` and `contests` are rebuilt, because SQLite can't change a CHECK. `contests` is recreated under its own name with `defer_foreign_keys` on: putting its rows back is what clears the violations the DROP leaves on its child tables, and a rename doesn't.
+
+- **"Counts" stays `handles.approved_at IS NOT NULL`.** `handles.status` adds Waiting and Rejected for display, and every write sets both together.
+- **`users.active` stays the test for "active".** `deactivated_at` records when.
+- **Attendance words stay** `present` / `absent` / `excused`. Absent with no `reason_type` is the "?" cell. `manual = 1` means the automatic run must not touch the row. `exam_week_id` marks entries an exam week excused, so deleting it reverts only those.
+- **Other-site and in-person contests** use `platform = 'other'`. `source` says how attendance is read. Participants for `platform = 'other'` are all active members.
+- **Voiding** moves `solves.points` into `solves.voided_points` and sets points to 0. Every board already filters on `points > 0`, so nothing else changes and undo restores the exact value.
+- **Adjusting** adds a `point_adjustments` row. Board queries add active adjustments dated inside the period.
+- **`settings`** holds `value`, plus `pending_value` and `pending_from` for a change saved today. The 00:00 IST job moves pending values into `value`, so today keeps the old value.
+
+### Audit helper (`api/src/admin-write.ts`)
+
+```ts
+adminWrite(c, { area, action, target, before, after }, statements): Promise<D1Result[]>
+```
+
+Runs the statements and one `audit_log` insert in a single `D1.batch`, so a write can't happen without its log row. It's the only way admin routes write. A bulk action writes one row per thing changed: Approve all, one per handle; Rules, one per key. Cron jobs aren't admin writes and aren't logged.
+
+### Settings (`api/src/settings.ts`)
+
+`getSettings(db)` reads the table, with defaults from one object in `shared/settings.ts`, the only place those numbers exist. `solvePoints` and `potdBonus` take their values as arguments. The per-minute cron reads settings once per run.
+
+### API (`/api/admin/*`)
+
+All need an admin session, validate input and write through `adminWrite`.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | /badges | Sidebar counts: inbox, waiting handles, at-risk, open flags |
+| GET | /overview | KPIs, inbox, trend, at-risk preview, upcoming RSVP splits |
+| GET | /members?batch=&status=&q= | Table |
+| GET, PUT | /members/:id, /members/:id/notes | Drawer data; notes |
+| GET | /students?waiting=&q= | Cards with handles |
+| PATCH | /handles/:userId/:platform | `{ status }`: approve, reject or back to waiting |
+| POST | /handles/approve-all | |
+| PATCH | /users/:id | `{ active?, username?, role? }`; role refuses yourself, the last admin and `ADMIN_EMAILS` |
+| GET, POST | /admins | List; add by email, 404 "No account with this email" |
+| GET | /audit?area=&before= | 50 per page |
+| GET | /at-risk | Flagged, hiding snoozed and exam-week members |
+| POST | /at-risk/:userId/snooze, /at-risk/:userId/nudge | Nudge returns 409 inside the limit |
+| GET | /attendance | Existing grid, plus manual, note and mandatory |
+| PATCH | /attendance/:contestId/:userId | `{ status, note? }`; sets `manual = 1` |
+| GET, POST | /exam-weeks, /exam-weeks/preview | Preview returns N, M and K |
+| PATCH, DELETE | /exam-weeks/:id | Delete reverts only non-manual entries |
+| GET, POST | /contests | Upcoming and past; add custom |
+| PATCH | /contests/:id | `{ counts?, mandatory? }` |
+| GET, POST | /sessions | List; create, announce |
+| GET, PUT, DELETE | /sessions/:id/checkins/:userId | Toggle present |
+| GET | /engagement?batch= | Reads `stats_daily` |
+| GET | /fairness | Open flags and history |
+| POST | /fairness/:id/clear, /adjust, /void, /undo | Adjust and void need a reason, and notify the member |
+| GET, POST | /seasons | List with the live board; start new |
+| GET, POST | /member-of-month, /member-of-month/announce | Draft and override; announce |
+| GET | /reports?from=&to=&sections=, /reports.csv | CSV is generated by the Worker |
+| GET, PUT | /rules | PUT stores pending values |
+
+Member routes added: `POST /contests/:id/took-part`, `GET /seasons/current` and `GET /me/point-notices`.
+
+### Cron additions (`api/src/admin-jobs.ts`)
+
+| When (IST) | Job |
+|---|---|
+| 00:00 | Apply pending settings; freeze a season ending today |
+| 01:00 | At-risk |
+| 01:01 | Fairness |
+| 01:02 | `stats_daily` |
+| 1st, 02:00 | Member of the month draft |
+| Every minute | Session reminders; T−3h for mandatory contests |
+
+Contest pushes, POTD and upsolve reminders leave out members in an active exam week.
+
+**Staying under the CPU limit:** each job is `INSERT … SELECT` run inside D1, so the Worker parses almost no rows. Jobs run in separate minutes, and those minutes skip the Codeforces queue so the costs don't add up. Anything needing JS takes a slice of members per minute, as the badge sweep does. Test 10 measures `cpuTime` on a separate free staging Worker seeded with 50 members and 90 days of solves, because local runs don't enforce the limit.

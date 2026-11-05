@@ -4,6 +4,10 @@ Last updated: 2026-11-05. `IMPLEMENTATION_PLAN.md` has the full detail of each t
 
 **Where it stands:** the redesign, one-page sign-up, per-minute fetch, meal-time pushes and daily health check are built. Website, API and app updates are deployed from `main`; the APK download link serves the newest release. Still to check on a real phone: push arrival, RSVP buttons with the app closed, and sign-up.
 
+## Admin redesign
+
+Docs and migration `0013` written on the `admin-redesign` branch. Not applied to production. Building starts at task 51.
+
 ## Add-ons
 
 **Live for testing since 2026-11-05:** migrations applied, Worker and website deployed, over-the-air update published to `preview` (runtime 1.1.0), and the first problem and history import done. Not announced to the club yet.

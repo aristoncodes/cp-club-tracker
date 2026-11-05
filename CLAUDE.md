@@ -24,6 +24,8 @@ Don't read whole code files when a section will do. When a file, route group or 
 - After each task: `pnpm -r typecheck`, `pnpm -r test`, the task's manual check from `TESTING.md`. Then tick the box in `IMPLEMENTATION_PLAN.md` and commit as `<area>: <what>` (e.g. `api: rsvp endpoint`).
 - Docs are the source of truth. If a decision changes, update the doc in the same commit, so code and docs never disagree.
 - If the docs don't answer a question about attendance rules, scoring or what users see, stop and ask. Don't guess.
+- **Every admin write goes through the audit helper** (`adminWrite`), so there's no write path without a log row.
+- **Every threshold is read from `settings`**, with defaults in one place. No magic numbers.
 - Never write to production D1 or push to real students while developing. Use local D1 (`wrangler dev`) and your own device token.
 
 ## Conventions

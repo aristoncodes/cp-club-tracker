@@ -117,6 +117,23 @@ Rules are in `PRD_ADDONS.md`, looks in `DESIGN_ADDONS.md` and the design in `ARC
 49. [ ] **Final check.**
     - Done when: everything in `TESTING.md` passes, every add-on page works at 375 px and desktop, duels on two real phones cover both decision scenarios, and `wrangler tail` shows no `exceededCpu` and no Codeforces "Call limit exceeded" over a full day.
 
+## Admin redesign
+
+Rules are in `PRD_ADMIN.md`, looks in `DESIGN_ADMIN.md` and the design in `ARCHITECTURE.md → Admin redesign`.
+
+50. [x] **Docs and schema.**
+    - Done when: migration `0013` passes on a populated copy of production's data.
+51. [ ] **Shell and existing pages.** Layout, audit helper, Students & handles, Admins & audit log, mounted Announcements and Digest.
+    - Done when: every old admin action works in the new shell and is logged, and only approved handles count anywhere.
+52. [ ] **Run the club.** Overview, Members, At-risk, Attendance, Exam weeks, Contests, Sessions.
+    - Done when: each page's "Done when" in `PRD_ADMIN.md` holds.
+53. [ ] **Engagement.** `stats_daily`, Engagement, Fairness, Seasons.
+    - Done when: each page's "Done when" holds.
+54. [ ] **Reports and Rules.**
+    - Done when: a Rules change applies the next day without a deploy, and Reports prints to A4 and exports CSV.
+55. [ ] **Tests.** `TESTING.md → admin`.
+    - Done when: all 10 pass, including the CPU measurement.
+
 ## Later (don't build until asked)
 
 Weekly club problem set, admin-editable challenge, best-of-three duels, admin-editable badge rules.

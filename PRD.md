@@ -18,7 +18,7 @@ The college competitive programming club (40–50 students across all years) has
 | Student | Club members | Link handles, answer RSVPs, give absence reasons, see leaderboard, feed and profiles |
 | Admin | 4–5 coordinators | Everything a student can, plus: see attendance and reasons, approve handles, add admins, deactivate students |
 
-- The first admin comes from the `ADMIN_EMAILS` secret; other admins are added from the admin page.
+- The first admin comes from the `ADMIN_EMAILS` secret; other admins are added from the admin page, and must already have an account.
 - Attendance data (RSVPs, statuses, reasons) is **visible only to admins**. Students see only their own, plus an anonymous count of how many said they're going. Another student's profile never shows attendance; admins see it on any profile. Leaderboard, feed and profiles are visible to every signed-in student. Rival cards and badges may show "present" counts, never RSVPs or reasons.
 
 ## Accounts
@@ -47,6 +47,7 @@ The college competitive programming club (40–50 students across all years) has
 
 - Every counted contest creates one attendance entry per active user, students and admins alike, with an approved handle on that contest's platform.
 - **Present** = the student made a submission in the contest as a live participant, during the contest. On Codeforces, `CONTESTANT` and `OUT_OF_COMPETITION` both count.
+- **Excused** = set by an admin or an exam week; doesn't count against the student (see `PRD_ADMIN.md`).
 - **Absent** = no live submission. A reason is required. A virtual or practice attempt later still counts as absent, but its solves count on the leaderboard. The one exception is a club virtual an admin has set to count (see `PRD_ADDONS.md`).
 - Present or absent is decided by the platform's data, not by what the student answered. A student who said No but took part is present.
 - The RSVP answer is kept separately so admins can see "said Yes, didn't show". RSVPs are accepted until the contest is verified.

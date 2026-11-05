@@ -14,6 +14,7 @@ Read this first, then open only what the task needs. Update it in the same commi
 | Cron, pushes or Codeforces calls | `ARCHITECTURE.md → Worker cron`, `Add-ons → Codeforces call queue`, `Add-ons → Worker cron additions` |
 | How a screen looks | `DESIGN.md`: Tokens, then its component and screen. Add-ons: `DESIGN_ADDONS.md` |
 | Testing a change | The matching section of `TESTING.md` |
+| Admin pages | `PRD_ADMIN.md` (Decisions, then that page), `DESIGN_ADMIN.md`, `ARCHITECTURE.md → Admin redesign` |
 | Releasing | `SETUP.md → Releasing the add-ons` |
 
 Current state and what's left: `PROGRESS.md`.
@@ -64,7 +65,7 @@ Current state and what's left: `PROGRESS.md`.
 | `web-push.ts` | | RFC 8291 encryption, VAPID |
 | `meal-pushes.ts` | | Meal lines and timing |
 
-Migrations: `0000` baseline, `0001` accounts, `0002` meals, `0003` push errors, `0004` announcements + `push_log`, `0005` upsolves, `0006` problem of the day + `cf_history`, `0007` goals, `0008` rivals, `0009` badges, `0010` duels, `0011` recap switch, `0012` virtuals.
+Migrations: `0000` baseline, `0001` accounts, `0002` meals, `0003` push errors, `0004` announcements + `push_log`, `0005` upsolves, `0006` problem of the day + `cf_history`, `0007` goals, `0008` rivals, `0009` badges, `0010` duels, `0011` recap switch, `0012` virtuals, `0013` admin redesign.
 
 ## jobs/ (GitHub Actions; `.github/workflows/` has one file per script)
 
@@ -98,4 +99,5 @@ Migrations: `0000` baseline, `0001` accounts, `0002` meals, `0003` push errors, 
 - Duel winners come only from submission data, through `decideDuel`.
 - Points are set once at insert in `insertSolves`, and the problem-of-the-day bonus is part of them.
 - Web and app have separate UI code, so a screen change usually means both.
+- Admin writes go through `adminWrite`, and thresholds come from `settings`.
 - `eas update` needs the `EXPO_PUBLIC_*` values exported by hand (`SETUP.md`).
