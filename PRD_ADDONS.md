@@ -35,8 +35,8 @@ These are defaults chosen to unblock the build. Change any of them before Phase 
 | Sunday 21:00 IST | The recap replaces the dinner nudge for people who get the recap |
 | Duel spectators | See players, timer and status, but not the problem until the duel ends |
 | Calendar sync, streak freeze | Removed for now (see Out of scope) |
-| **Open:** new APK | Not decided. Recommended: no new APK, because `expo-updates` is already in the current APK and everything can ship over the air. Decide before task 1 ships |
-| **Open:** digest email service | Not decided, and no email service exists. Recommended: Brevo's HTTP API through `fetch`, once its free plan is confirmed to work without a domain. Until then the digest shows only at Admin → Digest |
+| New APK | None. Members don't reinstall: `expo-updates` is already in the current APK, so everything ships over the air |
+| Digest email | None. The digest shows only at Admin → Digest, and no email is sent |
 
 ## Features
 
@@ -190,9 +190,9 @@ The winner comes **only from Codeforces submission data**. Every submission has 
 - *Done when:* virtual participants appear in club standings within 2 minutes of a submission, and non-participants don't.
 
 **D3. Coordinator digest**
-- An email to all admins every Monday at 09:00 IST, once an email service is chosen (see Decisions). The same content shows at Admin → Digest.
+- A weekly summary for admins at Admin → Digest, covering the last 7 days. No email is sent.
 - **Contents:** attendance (with the change from last week), active members, club solves, each contest's turnout, members with no solves in 7 days, pending reasons, handles waiting for approval, top 3 climbers, new sign-ups.
-- *Done when:* admins can read it at Admin → Digest with figures that match the admin pages, and receive it by email on Monday once a service is chosen.
+- *Done when:* admins can read it at Admin → Digest with figures that match the admin pages.
 
 ## New notifications
 

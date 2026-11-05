@@ -231,7 +231,7 @@ export function DigestSection() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="display text-[44px] leading-none tracking-[-0.035em]">Digest</h1>
-      <p className="text-muted">The last 7 days. Coordinators read it here until an email service is chosen.</p>
+      <p className="text-muted">The last 7 days.</p>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="rounded-[20px] bg-lime p-5 text-ink">
           <p className="text-xs font-extrabold uppercase">Attendance</p>

@@ -518,7 +518,6 @@ All IST times below are daily unless noted, and fire through `isDailyTick`.
 | 08:00 | Problem-of-the-day push (`notify_practice`) |
 | Every 5 minutes | Upsolve reminders at end + 2 days and + 6 days (`notify_practice`), using `contests.upsolve_pushes` |
 | Sunday 21:00 | Recap push (`notify_recap`); those people skip dinner's line |
-| Monday 09:00 | Digest email: **not built**, waiting for the email service decision in `PRD_ADDONS.md`. Admin → Digest works without it |
 | 22:00 | Dispatch `sync-problemset.yml` |
 
 Picks run in the Worker, not an Action, because GitHub's timing is unreliable and the work is only SQL. The health check also reports a day with no problem picked.
@@ -555,7 +554,7 @@ Picks run in the Worker, not an Action, because GitHub's timing is unreliable an
 | GET, POST | /admin/virtuals | admin | List; create from a contest id and start |
 | GET | /admin/virtuals/lookup?contestId= | admin | Name, length and problem count, read from `cf_rounds` and `problems` |
 | GET | /virtuals/:contestId/standings | student | Club-only table |
-| GET | /admin/digest | admin | Same data as the email |
+| GET | /admin/digest | admin | The last 7 days, for Admin → Digest |
 | POST | /ingest/problemset | secret | `{ rounds, problems }`, up to 500 of each, with `json_each` upserts that write only changed rows |
 | GET | /ingest/history-missing | secret | Handles with no `history_imported_at` |
 | POST | /ingest/cf-history | secret | `{ handle, problemIds, done }` |
@@ -570,6 +569,6 @@ Picks run in the Worker, not an Action, because GitHub's timing is unreliable an
 
 ### App and web
 
-- **Over the air:** everything uses existing native modules. Check on open and on foreground with `Updates.checkForUpdateAsync` and `fetchUpdateAsync`, then show the card from `isUpdatePending`. The version and notes shown come from `extra.release` in `app/app.json`, so update those before publishing. `checkAutomatically: NEVER` isn't set, because it would need an APK; that is an open decision in `PRD_ADDONS.md`. Because `runtimeVersion` follows the app version, a version bump stops over-the-air updates reaching older APKs, so those phones must first get an update containing the install prompt.
+- **Over the air:** everything uses existing native modules. Check on open and on foreground with `Updates.checkForUpdateAsync` and `fetchUpdateAsync`, then show the card from `isUpdatePending`. The version and notes shown come from `extra.release` in `app/app.json`, so update those before publishing. `checkAutomatically: NEVER` isn't set, because it would need a new APK and members shouldn't have to reinstall. Because `runtimeVersion` follows the app version, a version bump stops over-the-air updates reaching older APKs, so those phones must first get an update containing the install prompt.
 - **Notifications:** a new `duel` category with `duel_accept` and `duel_decline` actions, set up through the same JS calls as `rsvp`. The response handler opens a push's `data.path`.
 - **Web toast:** on focus, fetch `/index.html` with `no-store` and compare its script name with the running one. No build changes.

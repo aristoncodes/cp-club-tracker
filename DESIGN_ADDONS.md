@@ -16,7 +16,7 @@ This file covers only the add-ons. Everything else (tokens, typography, base com
 
 The reference mockups are on the canvas page **"Add-ons"**:
 - **App screens:** Home with add-ons, Practice, Duels, New duel, Live duel → result, Badges, Sunday recap, Contests, Club virtual standings, Announcements inbox, All new notifications, Update ready, New APK version.
-- **Coordinator tools:** Admin announcements + club virtuals, and the digest email.
+- **Coordinator tools:** Admin announcements + club virtuals. The digest email mockup isn't used, because no email is sent.
 - **Website:** Home, Practice, Duels, Live duel, Contests, Club virtual standings, Badges, Sunday recap.
 
 Rules come from `PRD_ADDONS.md`. Everything uses the existing tokens; the add-ons introduce only these new ones:
@@ -111,7 +111,7 @@ Rules come from `PRD_ADDONS.md`. Everything uses the existing tokens; the add-on
   - **Composer card:** title input; message textarea with a mono "142 / 280" counter; audience pills; optional link; Send now / Schedule pills (Schedule reveals a date-time field); a "Pin to Home" switch; and a primary CTA with the count ("Send to 47 members").
   - **Side:** a phone notification preview on `#1B2233`, and a "Sent" list with "seen by N of M" bars.
 - **Club virtual scheduler:** Codeforces contest id (mono), start (IST), a `lime-tint` "✓ Round name · length · N problems" confirmation, a "Counts for attendance" switch (off), and "Schedule virtual".
-- **Digest email:** a light email (600 px wide, white card on `#E9E9EF`) with an `ink` header, three KPI tiles (attendance in `lime`), a contest table, a pink "Needs a nudge" box with name chips, top climbers, handles waiting + new sign-ups tiles, and an `ink` "Open Admin" button. Light theme because email clients render dark mail poorly.
+- **Digest page:** four KPI tiles (attendance in `lime`), a contest table, a pink "Needs a nudge" box with name chips, top climbers, and handles waiting + new sign-ups tiles.
 
 ### Screens
 

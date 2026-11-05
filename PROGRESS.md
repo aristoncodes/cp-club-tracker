@@ -6,7 +6,7 @@ Last updated: 2026-11-05. `IMPLEMENTATION_PLAN.md` has the full detail of each t
 
 ## Add-ons
 
-All tasks are written on the `add-ons` branch. **Nothing is deployed, migrated on production, published over the air or pushed.** Two decisions are open: a new APK (the code assumes none), and the digest email service (no email is sent yet).
+All tasks are written on the `add-ons` branch. **Nothing is deployed, migrated on production, published over the air or pushed.**
 
 | Task | Status |
 |---|---|
@@ -24,12 +24,11 @@ All tasks are written on the `add-ons` branch. **Nothing is deployed, migrated o
 | 45. Duel UI | Web checked in Chrome. Needs real duels between two accounts on two phones, covering the three decision cases |
 | 46. Recap | API and web story checked. The Sunday push hasn't fired |
 | 47. Club virtuals | Scheduling, RSVP and standings tested; result parsing has unit tests. Needs a real virtual on Codeforces |
-| 48. Digest | Admin → Digest works. Email isn't built |
+| 48. Digest | Admin → Digest works. No email, by decision |
 | 49. Final check | Web pages pass at 375 px and desktop with no console errors. Phones, a full day of `wrangler tail` and real duels are still to do |
 
 ## Before the add-ons go live
 
-- [ ] Decide on the APK and the email service
 - [ ] Review the migrations (`api/migrations/0004` to `0012`), then approve applying them to production
 - [ ] Merge `add-ons` into `main`; the Worker dispatches `sync-problemset.yml` from `main`
 - [ ] Follow `SETUP.md → Releasing the add-ons`

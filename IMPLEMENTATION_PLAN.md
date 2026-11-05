@@ -75,7 +75,7 @@ Rules are in `PRD_ADDONS.md`, looks in `DESIGN_ADDONS.md` and the design in `ARC
 
 ### Phase A — Quick wins
 
-34. [ ] **In-app updates.** Update card, foreground check, `/app-version`, optional sheet and required screen, web toast. The APK step depends on the open decision in `PRD_ADDONS.md`.
+34. [ ] **In-app updates.** Update card, foreground check, `/app-version`, optional sheet and required screen, web toast. No new APK.
     - Done when: publishing an update makes the card appear on a running phone within one foreground cycle, and tapping it restarts into the new version.
 35. [x] **Announcements.** Admin composer, scheduled send, push, app inbox, web bell dropdown, pin on Home, seen counts.
     - Done when: a scheduled announcement to one year of study reaches only that year's members at the right time, shows as unread, and the seen count goes up when they open the inbox.
@@ -112,8 +112,8 @@ Rules are in `PRD_ADDONS.md`, looks in `DESIGN_ADDONS.md` and the design in `ARC
     - Done when: every active member gets a recap built from that week's data.
 47. [ ] **Club virtual contests.** Scheduler, Contests integration, RSVP and reminders, live standings, optional attendance.
     - Done when: virtual participants appear in club standings within 2 minutes of a submission, and non-participants don't.
-48. [ ] **Coordinator digest.** Admin → Digest, then the Monday email once a service is chosen.
-    - Done when: admins can read it at Admin → Digest with figures that match the admin pages, and receive it by email on Monday once a service is chosen.
+48. [ ] **Coordinator digest.** Admin → Digest. No email.
+    - Done when: admins can read it at Admin → Digest with figures that match the admin pages.
 49. [ ] **Final check.**
     - Done when: everything in `TESTING.md` passes, every add-on page works at 375 px and desktop, duels on two real phones cover both decision scenarios, and `wrangler tail` shows no `exceededCpu` and no Codeforces "Call limit exceeded" over a full day.
 
