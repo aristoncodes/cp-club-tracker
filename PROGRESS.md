@@ -15,11 +15,12 @@ All of it is written on the `admin-redesign` branch. **Nothing is pushed, deploy
 | 52. Run the club | Pages checked in Chrome; rules covered by `admin.integration.test.ts` |
 | 53. Engagement | Same. Member of the month and season freeze have no automated test |
 | 54. Reports and Rules | Done on local D1. PDF not printed to paper |
-| 55. Tests | 9 of 10 fully pass. Test 10 proves the nightly jobs run at 50 members and 90 days of solves, but not their CPU, which needs a Worker on Cloudflare |
+| 55. Tests | All 10 run. Test 10's CPU part was measured by hand on a staging Worker with 50 made-up members: at-risk 5–13 ms, fairness 4–13 ms, stats 3–7 ms, all `ok`, against the documented 10 ms limit |
 
 **Still to check:**
 
-- [ ] Measure the nightly jobs' CPU on a staging Worker. The live Worker already uses 16–30 ms against the documented 10 ms limit
+- [ ] Badge sweep CPU: 8–32 ms per minute at 50 members on staging, the highest of any job. All runs were `ok`
+- [ ] Solve sync CPU at club size: the live Worker uses 16–30 ms with 5 handles, against 3–4 ms for a tick with no Codeforces reads on staging, so it likely grows with handles. Not measured at 25 handles
 - [ ] Member-facing changes on a real phone
 - [ ] Exam-week muting with real pushes (only the SQL it uses is tested)
 - [ ] A real gym contest with a handle, and the behaviour for private groups
