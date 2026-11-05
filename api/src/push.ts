@@ -12,7 +12,13 @@ export type PushMessage = {
   categoryId?: string;
 };
 
-type PushTicket = { status: string; details?: { error?: string } };
+type PushTicket = { status: string; message?: string; details?: { error?: string } };
+
+// DeviceNotRegistered only means an old phone; anything else means nobody is getting pushes, so the health check reports it.
+export function ticketErrors(tickets: PushTicket[]): string[] {
+  const errors = tickets.filter((t) => t.status === 'error' && t.details?.error !== 'DeviceNotRegistered');
+  return [...new Set(errors.map((t) => t.details?.error ?? t.message ?? 'Unknown push error'))];
+}
 
 // Web push subscriptions are stored as JSON; Expo tokens are plain strings.
 const isWebSubscription = (token: string) => token.startsWith('{');
@@ -34,6 +40,11 @@ async function sendExpo(db: D1Database, messages: PushMessage[]): Promise<void> 
     if (!response.ok) throw new Error(`Expo push returned ${response.status}: ${await response.text()}`);
 
     const { data } = await response.json<{ data: PushTicket[] }>();
+    const errors = ticketErrors(data);
+    if (errors.length) {
+      const record = db.prepare('INSERT INTO push_errors (at, error) VALUES (unixepoch(), ?)');
+      await db.batch(errors.map((error) => record.bind(error)));
+    }
     await deleteTokens(
       db,
       batch.filter((_, index) => data[index]?.details?.error === 'DeviceNotRegistered').map((m) => m.to),

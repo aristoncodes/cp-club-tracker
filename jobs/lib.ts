@@ -68,6 +68,7 @@ export function healthProblems(report: HealthReport, runs: Record<string, Workfl
     if (!latest || latest.startAt < now) problems.push(`${platform} has no upcoming contests imported`);
   }
   if (report.stuckContests.length) problems.push(`Attendance not finished for: ${report.stuckContests.join(', ')}`);
+  if (report.pushErrors.length) problems.push(`Push notifications are failing: ${report.pushErrors.join(', ')}`);
   if (report.brokenHandles.length) problems.push(`Broken handles: ${report.brokenHandles.join(', ')}`);
   for (const [name, list] of Object.entries(runs)) problems.push(...workflowProblems(name, list, now));
   return problems;

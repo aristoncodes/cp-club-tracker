@@ -16,6 +16,7 @@ const healthy: HealthReport = {
   ],
   stuckContests: [],
   brokenHandles: [],
+  pushErrors: [],
 };
 const runs = {
   'sync-solves': [{ createdAt: NOW - 300, conclusion: 'success' }],
@@ -47,6 +48,10 @@ describe('healthProblems', () => {
     expect(problems).toContain('cc has no upcoming');
     expect(problems).toContain('Round 1');
     expect(problems).toContain('cf:gone');
+  });
+
+  it('reports failing push notifications', () => {
+    expect(healthProblems({ ...healthy, pushErrors: ['InvalidCredentials'] }, runs, NOW)[0]).toContain('InvalidCredentials');
   });
 
   it('reports stale and failing jobs, ignoring cancelled runs', () => {

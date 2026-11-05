@@ -32,4 +32,5 @@ export type HealthReport = {
   latestContests: { platform: string; startAt: number }[];
   stuckContests: string[];
   brokenHandles: string[];
+  pushErrors: string[];
 };

@@ -43,7 +43,7 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 - **Username:** valid and invalid forms, reserved names, case-insensitive uniqueness. The second user change gets 403; an admin can still change it.
 - **Onboarding:** finishing needs a username, a year and both required handles; admins may skip handles.
 - **Streak reminder:** targets only `notify_streak = 1`, streak ≥ 1, no solve today.
-- **Health check:** stays quiet when healthy; reports a stalled fetch, silent platforms (5+ students only), missing contests, stuck attendance, broken handles, late jobs and mostly failing jobs; ignores cancelled runs.
+- **Health check:** stays quiet when healthy; reports a stalled fetch, silent platforms (5+ students only), missing contests, stuck attendance, broken handles, push errors, late jobs and mostly failing jobs; ignores cancelled runs.
 - **Daily reminders:** fire only at 9 AM, 1 PM, 5 PM and 9 PM IST; no line repeats within its pool; a solver gets a congratulating line at lunch, snacks and dinner; only `notify_meals = 1` users receive them.
 - **Leaderboard extras:** climbers and year totals on a small fixture; history at 0 points is excluded.
 - **Privacy:** another student's `/users/:id` has no attendance; an admin's does.
