@@ -48,6 +48,43 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 - **Leaderboard extras:** climbers and year totals on a small fixture; history at 0 points is excluded.
 - **Privacy:** another student's `/users/:id` has no attendance; an admin's does.
 
+### add-ons
+
+- **`upsolveTarget`**
+  - Every row and column of the `PRD_ADDONS.md` table: Div. 4, Div. 3, Div. 2, Educational, Div. 1 + 2, Global and Starters.
+  - Boundary ratings: 1199/1200, 1299/1300, 1399/1400, 1599/1600, 1899/1900, 2099/2100.
+  - An unrated member counts as under 1200.
+  - Sub-problems D1/D2 count separately.
+  - The result is never below 2 or above n.
+  - `contestType` reads each type from a real contest name, and gives null for anything else.
+- **Upsolve lists:** problems solved in the contest are excluded; a Div. 1 solve of the parallel problem counts; a member who skipped the contest gets the same list; a later solve marks the item done; the 2-day and 6-day reminders stop when nothing remains.
+- **Problem of the day**
+  - `potdBand` and `potdRating` at every band edge.
+  - The pick excludes problems anyone in the band has solved, and rounds from the last 3 months.
+  - +5 without a reveal and +2 with a reveal before the solve.
+  - A reveal after the solve doesn't reduce the bonus.
+  - A solve on another IST day gets no bonus.
+  - A reveal persists across devices (a second session reads it).
+- **`decideDuel`**
+  1. A's earlier Accepted wins even when only B pressed "check now".
+  2. A pending earlier submission blocks the decision (`judging`), then resolves either way.
+  3. An exact-second tie goes to the lower submission id.
+  4. Submissions before the start or at/after the end are ignored.
+  5. A submission made before the end but judged after it still counts, with a 15-minute wait; after that, pending counts as not Accepted.
+  6. No Accepted → draw.
+  7. "Give up" → loss, unless that player has an Accepted from before giving up.
+  8. Only the duel problem counts.
+  9. The API being down (`null`) → `checking` with no decision, then the correct decision later.
+- **Duels, other:** `duelRange` for all three difficulties; problem selection (unsolved by both, older than 3 months); the 10-live-duel cap queues further accepts; the 20 s check-now cooldown; a check-now request never calls Codeforces from the request; `elo` for a win, a loss and a draw; Elo applies once if a decision runs twice.
+- **Codeforces queue:** duels come before virtuals, and virtuals before solve sync; the run stops at its budget; a failed read leaves a duel `checking`.
+- **Weekly goal:** counts scored solves at or above the rating within the IST week; editable until Wednesday 23:59 IST and refused from Thursday 00:00 IST.
+- **Rivals:** "passed you" fires only on a change and at most once a day; the rival can't be changed within 7 days.
+- **Badges:** every one of the 12 rules at and just below its threshold; each is awarded exactly once when the event and the sweep both see it; the first sweep is silent.
+- **Virtual standings:** only virtuals started within 15 minutes count; wrong tries and solve times are correct; `counts = 0` writes no attendance.
+- **Digest:** the numbers match the admin queries.
+- **App version:** `appVersionAction` gives none, optional and required correctly, comparing versions as numbers (1.10 > 1.9).
+- **Pushes:** each new type respects its switch; duel and announcement pushes ignore switches; a second push of the same event-driven type in a minute is dropped.
+
 ## Manual checks per task
 
 Set up local data first:
@@ -74,6 +111,13 @@ curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
 | Leaderboard | Today / Week / Month totals match a hand-written `SELECT SUM(points)` with the same boundaries |
 | Admin grid | Grid and CSV agree with the `attendance` table for the range |
 | CPU | `wrangler tail` during cron runs shows no `exceededCpu` outcome |
+| Over-the-air update | Publish an update to a real phone; "Restart to update" appears within one foreground cycle, and tapping it restarts into the new version |
+| Announcements | Schedule one to a single year with a test account in and out of that year; only the right one gets it, unread shows, and the seen count rises after opening the inbox |
+| Upsolves | After a real Codeforces round, check two members of different ratings against the table |
+| Problem of the day | Solve with a test account with and without a reveal; points match normal + 5 and + 2 |
+| Duels | Three real duels between two test accounts: the slower player clicks, nobody clicks, and an earlier pending verdict |
+| Club virtual | Start a real virtual with a test handle; it shows within 2 minutes of a submission, and a handle that didn't start doesn't |
+| Queue | `wrangler tail` for a full day shows no Codeforces "Call limit exceeded" |
 
 ## Before onboarding the club
 

@@ -5,8 +5,9 @@ Read these before writing any code, in this order:
 1. `PRD.md`: what we are building and the rules (attendance, scoring).
 2. `ARCHITECTURE.md`: how it works internally: schema, jobs, API, adapters.
 3. `DESIGN.md`: how the app and website look.
-4. `IMPLEMENTATION_PLAN.md`: the order to build in. Work top to bottom.
-5. `TESTING.md`: how to verify each task.
+4. `PRD_ADDONS.md` and `DESIGN_ADDONS.md`: the rules and looks for the add-ons, which build on the files above.
+5. `IMPLEMENTATION_PLAN.md`: the order to build in. Work top to bottom.
+6. `TESTING.md`: how to verify each task.
 
 ## Prime rule: the least code that works
 

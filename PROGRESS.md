@@ -4,6 +4,10 @@ Last updated: 2026-11-05. `IMPLEMENTATION_PLAN.md` has the full detail of each t
 
 **Where it stands:** the redesign, one-page sign-up, per-minute fetch, meal-time pushes and daily health check are built. Website, API and app updates are deployed from `main`; the APK download link serves the newest release. Still to check on a real phone: push arrival, RSVP buttons with the app closed, and sign-up.
 
+## Add-ons
+
+Docs written (`PRD_ADDONS.md`, `DESIGN_ADDONS.md`, `ARCHITECTURE.md → Add-ons`). Building hasn't started. Two decisions are open: a new APK, and the digest email service.
+
 ## Phase 4: redesign + accounts
 
 | Task | Status |

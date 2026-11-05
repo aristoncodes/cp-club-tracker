@@ -69,6 +69,54 @@ Build in this order. Each task ends with its "Done when" verified (see `TESTING.
 32. [ ] **Streak reminder and preference checks.** Done when: each notification respects its switch.
 33. [ ] **Final check.** Done when: `TESTING.md` passes, every web page works at 375 px and desktop, one sign-up works on a real phone, and `wrangler tail` shows no `exceededCpu`.
 
+## Add-ons
+
+Rules are in `PRD_ADDONS.md`, looks in `DESIGN_ADDONS.md` and the design in `ARCHITECTURE.md → Add-ons`. One task at a time: state its "Done when" and files, build, run `pnpm -r typecheck` and `pnpm -r test`, give the manual check, tick and commit, then wait. Ask before every deploy, production migration, over-the-air update or APK build.
+
+### Phase A — Quick wins
+
+34. [ ] **In-app updates.** Update card, foreground check, `/app-version`, optional sheet and required screen, web toast. The APK step depends on the open decision in `PRD_ADDONS.md`.
+    - Done when: publishing an update makes the card appear on a running phone within one foreground cycle, and tapping it restarts into the new version.
+35. [ ] **Announcements.** Admin composer, scheduled send, push, app inbox, web bell dropdown, pin on Home, seen counts.
+    - Done when: a scheduled announcement to one year of study reaches only that year's members at the right time, shows as unread, and the seen count goes up when they open the inbox.
+36. [ ] **Codeforces call queue.** `cf-queue.ts`, approval stops calling Codeforces, `sync-solves` reads Codeforces hourly.
+    - Done when: the Worker has one Codeforces caller, solve sync behaves as before, and approving a handle syncs it on the next run.
+37. [ ] **Upsolve tracker.** `upsolveTarget`, `contestType`, list generation on verify, Practice list, Home tile, reminders. CodeChef stays a follow-up until its adapter returns per-problem results.
+    - Done when: for a verified Codeforces round, each member's list matches the table for their rating, excludes problems they solved during the contest, and an item solved later in practice is marked done within one sync.
+38. [ ] **Problem of the day.** `sync-problemset`, history import, picks, reveal, bonus, streak, Practice and Home cards, "Your band today", 08:00 push.
+    - Done when: at 00:00 IST each band gets a fresh unsolved problem. Solving without revealing adds normal points + 5; revealing first and then solving adds normal points + 2.
+39. [ ] **Navigation.** App tabs, Feed under Board, web nav and bell, phone-width bottom tabs, push routing.
+    - Done when: both clients match `DESIGN_ADDONS.md → Navigation changes`, and the Feed tab file is gone.
+
+### Phase B — Habits
+
+40. [ ] **Weekly goal.** Editor, suggestion, ring, Thursday lock.
+    - Done when: qualifying solves fill the ring, and the goal locks on Thursday.
+41. [ ] **Rivals.** Set from a profile, Home card, pushes.
+    - Done when: the card updates as both people solve, and the "passed you" push fires at most once a day.
+42. [ ] **Badges.** Rules, event hooks, nightly sweep, silent first sweep, page, celebration, profile section.
+    - Done when: each badge is awarded exactly once when its rule is met, including by the nightly sweep for missed events.
+
+### Phase C — Duels
+
+43. [ ] **`decideDuel`, `duelRange`, `elo`** in `shared/`, with every duel test passing before any endpoint exists.
+    - Done when: the `TESTING.md → decideDuel` cases all pass.
+44. [ ] **Duel backend.** Challenge, invite expiry, problem selection, queue checks, judging wait, result, Elo, feed items.
+    - Done when: a full duel between two test accounts can be played over the API, and all three decision cases come out right.
+45. [ ] **Duel UI.** Hub, new duel, live view with all status states, result, Accept/Decline push, duel board.
+    - Done when: two test accounts can play a full duel on a real problem; the winner is decided correctly in all three cases (no click, the slower player clicks, an earlier pending verdict); and ratings update correctly.
+
+### Phase D — Wrap-ups
+
+46. [ ] **Sunday recap.** Query, 21:00 push, 3-page story on app and web.
+    - Done when: every active member gets a recap built from that week's data.
+47. [ ] **Club virtual contests.** Scheduler, Contests integration, RSVP and reminders, live standings, optional attendance.
+    - Done when: virtual participants appear in club standings within 2 minutes of a submission, and non-participants don't.
+48. [ ] **Coordinator digest.** Admin → Digest, then the Monday email once a service is chosen.
+    - Done when: admins can read it at Admin → Digest with figures that match the admin pages, and receive it by email on Monday once a service is chosen.
+49. [ ] **Final check.**
+    - Done when: everything in `TESTING.md` passes, every add-on page works at 375 px and desktop, duels on two real phones cover both decision scenarios, and `wrangler tail` shows no `exceededCpu` and no Codeforces "Call limit exceeded" over a full day.
+
 ## Later (don't build until asked)
 
-Duels, weekly club problem set, admin-editable challenge, upsolve tracker.
+Weekly club problem set, admin-editable challenge, best-of-three duels, admin-editable badge rules.

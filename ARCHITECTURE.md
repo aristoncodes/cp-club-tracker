@@ -293,3 +293,277 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 
 - **Android:** the `build-apk` workflow runs the EAS `preview` profile locally on GitHub Actions, avoiding Expo's free queue, and publishes the APK as a GitHub Release. The website's `/download` links to the latest release. JS updates go over the air via `expo-updates` (EAS Update).
 - **Web:** `vite build`, deployed as a static-assets Worker (`web/wrangler.toml`), because new Cloudflare Pages projects are now Workers. The API Worker has its own `workers.dev` domain, with CORS for the website's origin. Don't run `wrangler pages project create` from `api/`: it deploys that folder as a second Worker, cron included.
+
+## Add-ons
+
+Rules are in `PRD_ADDONS.md` and screens in `DESIGN_ADDONS.md`. This section is the design for them. No new dependencies. Each block of schema below becomes one migration file, written and tested locally in its task, and shown for approval before it touches production.
+
+### New files
+
+```
+shared/  upsolve.ts  duel.ts  potd.ts  app-version.ts  *.test.ts
+api/     src/announcements.ts  src/practice.ts  src/rivals.ts  src/badges.ts  src/duels.ts  src/virtuals.ts  src/digest.ts
+         src/cf-queue.ts       the only code in the Worker that calls Codeforces
+jobs/    sync-problemset.ts    problemset refresh + full history import
+app/     app/(tabs)/practice.tsx  app/(tabs)/duels.tsx  app/announcements.tsx  app/badges.tsx  app/recap.tsx
+         app/duel/new.tsx  app/duel/[id].tsx  app/virtual/[id].tsx  lib/update-card.tsx
+web/     src/pages/{practice,duels,duel,badges,recap,virtual}.tsx
+.github/workflows/sync-problemset.yml
+```
+
+`app/app/(tabs)/feed.tsx` is folded into the Board tab and deleted.
+
+### Schema
+
+```sql
+-- Announcements
+CREATE TABLE announcements (
+  id INTEGER PRIMARY KEY,
+  author_id INTEGER NOT NULL REFERENCES users(id),
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  audience TEXT NOT NULL CHECK (audience IN ('all','batch','admins')),
+  batch_year INTEGER,                        -- for 'batch': the chosen year of study, converted when sending
+  link TEXT,
+  send_at INTEGER NOT NULL,
+  sent_at INTEGER,                           -- NULL = still scheduled
+  pinned INTEGER NOT NULL DEFAULT 0
+);
+ALTER TABLE users ADD COLUMN inbox_seen_at INTEGER NOT NULL DEFAULT 0; -- unread and "seen by N of M" both compare this with sent_at
+
+-- Upsolves. "Done" is never stored: it's a join on solves, so a practice solve completes the item with no extra write.
+CREATE TABLE upsolves (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  contest_id INTEGER NOT NULL REFERENCES contests(id),
+  problem_id TEXT NOT NULL,
+  alt_problem_id TEXT,                       -- the same problem in a parallel Div. 1 round
+  PRIMARY KEY (user_id, contest_id, problem_id)
+) WITHOUT ROWID;
+ALTER TABLE contests ADD COLUMN upsolve_pushes INTEGER NOT NULL DEFAULT 0; -- 0, 1 or 2 reminders sent
+
+-- Problem of the day
+ALTER TABLE problems ADD COLUMN contest_at INTEGER; -- round's start; NULL = not eligible for picks
+CREATE TABLE cf_rounds (                     -- finished rounds, so a virtual can be looked up without a Codeforces call in the request
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  duration INTEGER NOT NULL
+);
+CREATE INDEX problems_pick ON problems (platform, rating, contest_at);
+CREATE TABLE cf_history (                    -- every problem a member has ever solved on Codeforces
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  problem_id TEXT NOT NULL,
+  PRIMARY KEY (user_id, problem_id)
+) WITHOUT ROWID;
+ALTER TABLE handles ADD COLUMN history_imported_at INTEGER;
+CREATE TABLE potd (
+  day INTEGER NOT NULL,                      -- istDay
+  band INTEGER NOT NULL,                     -- the band's lower edge; 0 for under 1200
+  problem_id TEXT NOT NULL,
+  PRIMARY KEY (day, band)
+) WITHOUT ROWID;
+CREATE TABLE potd_reveals (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  day INTEGER NOT NULL,
+  revealed_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, day)
+) WITHOUT ROWID;
+ALTER TABLE solves ADD COLUMN potd_bonus INTEGER NOT NULL DEFAULT 0; -- already included in points; > 0 marks a problem-of-the-day solve
+
+-- Weekly goal
+CREATE TABLE goals (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  week_start INTEGER NOT NULL,               -- periodStart('week')
+  target INTEGER NOT NULL CHECK (target IN (3,5,7,10)),
+  min_rating INTEGER NOT NULL CHECK (min_rating IN (1000,1200,1300,1400)),
+  PRIMARY KEY (user_id, week_start)
+) WITHOUT ROWID;
+
+-- Rivals
+ALTER TABLE users ADD COLUMN rival_id INTEGER REFERENCES users(id);
+ALTER TABLE users ADD COLUMN rival_set_at INTEGER;
+ALTER TABLE users ADD COLUMN rival_ahead INTEGER NOT NULL DEFAULT 0;  -- last seen state, so a push fires only on a change
+ALTER TABLE users ADD COLUMN rival_pushed_day INTEGER;                -- istDay of the last "passed you"
+
+-- Badges
+CREATE TABLE badges (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  badge TEXT NOT NULL,
+  earned_at INTEGER NOT NULL,
+  seen_at INTEGER,                           -- NULL = celebration still to show
+  PRIMARY KEY (user_id, badge)               -- this is what makes each badge once-only
+) WITHOUT ROWID;
+
+-- Duels
+ALTER TABLE users ADD COLUMN duel_rating INTEGER NOT NULL DEFAULT 1200;
+CREATE TABLE duels (
+  id INTEGER PRIMARY KEY,
+  challenger_id INTEGER NOT NULL REFERENCES users(id),
+  opponent_id INTEGER NOT NULL REFERENCES users(id),
+  rating_min INTEGER NOT NULL,
+  rating_max INTEGER NOT NULL,
+  minutes INTEGER NOT NULL CHECK (minutes IN (30,45,60)),
+  status TEXT NOT NULL CHECK (status IN ('invited','queued','live','judging','won','draw','declined','expired')),
+  created_at INTEGER NOT NULL,
+  problem_id TEXT,
+  start_at INTEGER,                          -- S
+  end_at INTEGER,                            -- E
+  winner_id INTEGER REFERENCES users(id),
+  winning_submission_id INTEGER,
+  winning_time INTEGER,                      -- creationTimeSeconds − S
+  gave_up_id INTEGER REFERENCES users(id),
+  gave_up_at INTEGER,
+  check_requested_at INTEGER,                -- "check now"; picked up by the queue
+  last_check_at INTEGER,
+  last_check_ok INTEGER NOT NULL DEFAULT 1,  -- 0 shows "Checking…"
+  player_status TEXT,                        -- JSON for the status rows
+  challenger_delta INTEGER,
+  opponent_delta INTEGER
+);
+CREATE INDEX duels_by_status ON duels (status, start_at);
+
+-- Club virtuals. Each virtual is also a contests row, so RSVP, reminders and the attendance grid need no second copy.
+ALTER TABLE contests ADD COLUMN kind TEXT NOT NULL DEFAULT 'round' CHECK (kind IN ('round','virtual')); -- external_id is 'v<cfId>-<start>', so it can't clash with the real round
+CREATE TABLE virtual_contests (
+  contest_id INTEGER PRIMARY KEY REFERENCES contests(id),
+  cf_contest_id INTEGER NOT NULL,
+  problems TEXT NOT NULL                     -- JSON [{ index, name }]
+);
+CREATE TABLE virtual_results (               -- a row exists only for someone who started within 15 minutes
+  contest_id INTEGER NOT NULL REFERENCES contests(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  started_at INTEGER NOT NULL,
+  results TEXT NOT NULL,                     -- JSON { [index]: { solvedAt?, wrong } }
+  PRIMARY KEY (contest_id, user_id)
+) WITHOUT ROWID;
+
+-- Notifications
+ALTER TABLE users ADD COLUMN notify_practice INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE users ADD COLUMN notify_rival INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE users ADD COLUMN notify_badges INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE users ADD COLUMN notify_recap INTEGER NOT NULL DEFAULT 1;
+CREATE TABLE push_log (                      -- event-driven pushes only; scheduled ones fire once per tick by design
+  user_id INTEGER NOT NULL,
+  type TEXT NOT NULL,
+  minute INTEGER NOT NULL,
+  PRIMARY KEY (user_id, type, minute)
+) WITHOUT ROWID;
+```
+
+The recap and digest have no tables; they are computed from existing data when read.
+
+### Pure functions (`shared/`)
+
+```ts
+upsolveTarget(contestType, n, rating, divisionPercentile?): number // PRD table, clamped to 2…n
+contestType(name): 'div4' | 'div3' | 'div2' | 'educational' | 'div1+2' | 'global' | 'starters' | null
+potdBand(rating): number                                           // lower edge of the band; unrated → 0
+potdRating(band): number                                           // lower edge + 200; band 0 → 1000
+potdBonus(revealedBeforeSolve): 5 | 2
+decideDuel({ start, end, problem, a, b, now, gaveUp? }): { status: 'live' | 'checking' | 'judging' | 'won' | 'draw', winner?, submissionId?, time? }
+duelRange(difficulty, ratingA, ratingB): { min, max }
+elo(rA, rB, outcome): { a, b }
+appVersionAction(current, latest, min): 'none' | 'optional' | 'required'
+```
+
+`decideDuel` takes more than the five arguments first planned, because its tests need them: `problem` (only the duel problem counts), `a` / `b` as `null` when Codeforces didn't answer (returns `checking`, never a decision) and `gaveUp` as `{ player, at }` (an Accepted by that player before `at` still counts; otherwise the other player wins). Elo is applied once, in the same `D1.batch` that moves a duel to a final status, guarded by `WHERE status IN ('live','judging')`.
+
+### Codeforces call queue (`api/src/cf-queue.ts`)
+
+The hard limit is 30 calls a minute. Each cron run has a 48 s budget at 2 s a call, so 24 calls. Module state doesn't reach across isolates, so the only safe gap is having one caller: **only the cron run calls Codeforces from the Worker.** Request handlers record what they want and return.
+
+Before every call, the run picks the most urgent work by reading D1:
+
+1. **Duels:** any `live` or `judging` duel with a requested check (cooldown of 20 s), an automatic check due (60 s since the last), or `now ≥ end_at` with no check since. A check is 2 `contest.status` calls, one per player.
+2. **Club virtuals in progress:** every approved handle during the first 15 minutes, then only those with a `virtual_results` row, each at most once per 2 minutes. These are `user.status?count=10` reads, so they also count as that handle's solve sync. `contest.standings` with any parameter is refused, so it can't be used here.
+3. **Solve sync:** the existing oldest-first loop gets whatever is left.
+
+Consequences:
+
+- "Check now" returns straight away and the client polls `GET /duels/:id` every 5 s. A check normally starts within seconds, or up to about 12 s if no run is active.
+- Approving a handle stops calling Codeforces in the request. It already resets `synced_at`, which puts the handle first in the queue.
+- At the 10-duel cap, automatic checks take 20 of the 24 calls, so "check now" has little room and solve sync stops until duels end. A live duel lasts at most 75 minutes. The health check's 30-minute "stalled fetch" alert may fire in that rare case.
+- 10 duels during the first 15 minutes of a virtual won't fit. Duels stay on time and standings can run late.
+
+**Actions** run from a different IP, so they keep their own 2 s gap and aren't counted against the Worker's budget. `sync-solves` reads Codeforces only in its first run of each hour, instead of every 5 minutes.
+
+| Source | Calls per minute at 50 handles |
+|---|---|
+| Live duel, automatic | 2 per duel (20 at the cap) |
+| "Check now" | Up to 4 more per duel, when there's room |
+| Virtual, first 15 min | About 25 |
+| Virtual, after that | About half the number of participants |
+| Solve sync | Whatever is left, up to 24 |
+| Rating history | About 1 on average |
+
+### D1 write budget
+
+The limit is 100k rows written a day, and handle syncing already uses about 35k. The first problemset load is about 25k writes and full histories perhaps 30–60k, so `sync-problemset` loads the problemset first and stops each history run at 20k rows, continuing the next day. Check D1's usage page before the first run.
+
+### Worker cron additions (`api/src/cron.ts`)
+
+All IST times below are daily unless noted, and fire through `isDailyTick`.
+
+| When | Step |
+|---|---|
+| Every minute | Send due announcements; expire invites older than 10 minutes; start `queued` duels when a slot is free; move finished virtuals on; process the queue above |
+| Every 5 minutes | Rival check: push on a change to "rival ahead this week", at most once a day |
+| 00:00 | After the rating refresh, pick each band's problem for the new day with one SQL statement per band: rated exactly `potdRating(band)`, `contest_at` older than 3 months, and not in `cf_history` for anyone in the band |
+| 00:10 | Nightly badge sweep; clear old `push_log` rows |
+| 08:00 | Problem-of-the-day push (`notify_practice`) |
+| Every 5 minutes | Upsolve reminders at end + 2 days and + 6 days (`notify_practice`), using `contests.upsolve_pushes` |
+| Sunday 21:00 | Recap push (`notify_recap`); those people skip dinner's line |
+| Monday 09:00 | Digest email, once a service is chosen |
+| 22:00 | Dispatch `sync-problemset.yml` |
+
+Picks run in the Worker, not an Action, because GitHub's timing is unreliable and the work is only SQL. The health check also reports a day with no problem picked.
+
+**Upsolve lists** are generated when `/ingest/participation` finishes a Codeforces contest. `participation.ts` already reads each handle's contest submissions, so it also posts the round's problems and each handle's in-contest solves. The list comes from `problemset.problems`, falling back to the unparameterised `contest.standings?contestId=<id>` if the round isn't listed yet. The rating at contest time is read in SQL from `cf_rating_history`, so the Worker doesn't parse 50 JSON histories. `insertSolves` also writes `cf_history` and applies the problem-of-the-day bonus.
+
+**Virtual attendance:** a virtual with `counts = 0` still gets reminders and RSVPs but no attendance result. With `counts = 1`, it finishes through `finishContest` using the handles in `virtual_results`, with no GitHub dispatch.
+
+### API additions
+
+| Method | Path | Role | Notes |
+|---|---|---|---|
+| GET | /app-version | none | `{ latest, min, url, notes }` from `wrangler.toml` vars |
+| GET | /announcements | student | Inbox for my audience, plus `unread` and `pinned` |
+| POST | /announcements/seen | student | Sets `inbox_seen_at` |
+| GET, POST | /admin/announcements | admin | List with seen counts; create |
+| PATCH, DELETE | /admin/announcements/:id | admin | Edit or cancel a scheduled one; set or clear the pin |
+| GET | /practice/potd | student | My band's problem, N of M, bonus left, next time, 7-day strip, band members' status. Tags only if revealed |
+| POST | /practice/potd/reveal | student | Saved once with `INSERT OR IGNORE` |
+| GET | /practice/upsolves | student | Lists grouped by contest, with done state |
+| GET, PUT | /practice/goal | student | Current goal, progress and suggestion; 409 from Thursday |
+| PUT | /me/rival | student | `{ userId }`; 409 within 7 days of the last change |
+| GET | /me/rival | student | This week's side-by-side |
+| GET | /badges?user= | student | All 12 with earned date or progress |
+| POST | /badges/seen | student | Marks celebrations as shown |
+| GET | /duels | student | Hub: my rating and record, invites, live now, recent, board |
+| GET | /duels/opponents?q= | student | Selectable members with approved CF handles |
+| POST | /duels | student | Create invite; 409 past 3 open invites |
+| GET | /duels/:id | student | State; the problem is hidden from spectators until the end |
+| POST | /duels/:id/accept, /decline | student | Opponent only. Accept picks the problem, or queues past 10 live |
+| POST | /duels/:id/check | student | Player only; records a request. Never calls Codeforces |
+| POST | /duels/:id/give-up | student | Player only; records it, and the next check decides |
+| GET | /recap?week= | student | My 3 pages |
+| GET, POST | /admin/virtuals | admin | List; create from a contest id and start |
+| GET | /admin/virtuals/lookup?contestId= | admin | Name, length and problem count, read from `cf_rounds` and `problems` |
+| GET | /virtuals/:contestId/standings | student | Club-only table |
+| GET | /admin/digest | admin | Same data as the email |
+| POST | /ingest/problemset | secret | `{ rounds, problems }`, up to 500 of each, with `json_each` upserts that write only changed rows |
+| GET | /ingest/history-missing | secret | Handles with no `history_imported_at` |
+| POST | /ingest/cf-history | secret | `{ handle, problemIds, done }` |
+
+`/ingest/participation` gains optional `problems` and `solved`. `/feed` becomes solves plus finished duels. `/contests/upcoming` and `/contests/past` include virtuals. `PATCH /me/notifications` accepts `notifyPractice`, `notifyRival`, `notifyBadges` and `notifyRecap`.
+
+### Jobs
+
+| Script | When | Does |
+|---|---|---|
+| `sync-problemset.ts` | Daily, dispatched by the Worker | `problemset.problems` + `contest.list` → drop special rounds and non-`PROGRAMMING` problems, set `contest_at`, keep finished rounds → `/ingest/problemset` in chunks. Then full `user.status` for handles missing history → `/ingest/cf-history`, stopping at 20k rows |
+
+### App and web
+
+- **Over the air:** everything uses existing native modules. Check on open and on foreground with `Updates.checkForUpdateAsync` and `fetchUpdateAsync`, then show the card from `isUpdatePending`. Whether to also set `checkAutomatically: NEVER`, which needs an APK, is an open decision in `PRD_ADDONS.md`. Because `runtimeVersion` follows the app version, a version bump stops over-the-air updates reaching older APKs, so those phones must first get an update containing the install prompt.
+- **Notifications:** a new `duel` category with `accept` and `decline` actions, set up through the same JS calls as `rsvp`. The response handler also routes `screen` values `practice`, `duel`, `badges`, `recap`, `announcements` and `contests`.
+- **Web toast:** on focus, fetch `/index.html` with `no-store` and compare its script name with the running one. No build changes.

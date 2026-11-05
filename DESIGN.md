@@ -94,8 +94,8 @@ Build only these. Each lives in the file that uses it unless 2+ screens need it.
 
 - **Button.** Primary: `lime` fill, `ink` text, 800 weight, pill; height 40–44 on web, 48 on app. Secondary: transparent with a 2 px outline (`violet-soft` on violet cards, `line` elsewhere). Warning: `sun` fill, `ink` text.
 - **Segmented tabs** (Today / Week / Month): a pill track (`card` with a `line` border, 4–5 px padding). The active segment has a `lime` fill and `ink` text; inactive segments use `muted` text.
-- **Nav (web):** logo tile (the app icon at 34 px, radius 10, rotated −6°) + wordmark "OOPS" + lime "." + "Grind" in Space Grotesk. Links, in order: **Home · Leaderboard · Contests · Feed · Admin** (admins only). Links are pills; the active one has a `text` fill and `ink` text. Right side: streak pill (`sun`, flame icon + mono number) and the **avatar, which links to your Profile**; on the Profile page it gets a 2 px `lime` outline. There is no "Me" or "Settings" link in the nav.
-- **Bottom tabs (app):** **Home · Board · Contests · Feed**. No "Me" tab. Stroke icons at 22 px; the active tab is `lime`, inactive ones `muted`. 1 px top border. Profile and Settings are pushed screens: none of the four tabs is active on them.
+- **Nav (web):** logo tile (the app icon at 34 px, radius 10, rotated −6°) + wordmark "OOPS" + lime "." + "Grind" in Space Grotesk. Links, in order: **Home · Leaderboard · Practice · Duels · Contests · Feed · Admin** (admins only), with a bell before the streak pill (see `DESIGN_ADDONS.md`). Links are pills; the active one has a `text` fill and `ink` text. Right side: streak pill (`sun`, flame icon + mono number) and the **avatar, which links to your Profile**; on the Profile page it gets a 2 px `lime` outline. There is no "Me" or "Settings" link in the nav.
+- **Bottom tabs (app):** **Home · Board · Practice · Duels · Contests**. No "Me" tab. Feed sits inside Board. Stroke icons at 22 px; the active tab is `lime`, inactive ones `muted`. 1 px top border. Profile and Settings are pushed screens: none of the five tabs is active on them.
 - **Avatar button (app):** a 44 px avatar at the top right of Home and Board that opens Profile.
 - **Screen header (app, pushed screens):** a 44 px back chevron on the left and the title. On Profile, the title is centred with a 44 px settings gear on the right; on Settings, the title is in display 24 next to the back chevron.
 - **Pending-reason banner:** `sun-tint` card with a `sun` "!" tile, a bold line naming the contest, one helper line, and an "Add reason" warning button. On the app the whole banner is the button.
@@ -164,15 +164,19 @@ The web is a fluid page: max width 1200 (880 for Settings), the sidebar wraps un
 ### App (Android)
 
 - **Sign in:** logo top left. In the middle, the display headline (44) "Welcome back. Let's grind.", a sub-line, and a white "Continue with Google" pill.
-- **Update banner:** when an over-the-air update has downloaded, every screen shows a `lime` pill above the tab bar, "Update available, tap to restart"; tapping restarts into the update.
+- **Update card:** when an over-the-air update has downloaded, every screen shows the Update ready card (see `DESIGN_ADDONS.md`).
 - **Onboarding:** one screen with the same fields as web `/signup`. Username: "@" prefix and "✓ free". Year: a 4-column grid of 48 px tiles. **Continue** goes to Home, which asks for notification permission.
 - **Home (tab):** date + greeting with streak pill and avatar button; pending banner; next-contest card with inline RSVP; two stat cards; streak card; chase card linking to Board.
 - **Board (tab):** title + avatar button, full-width segmented tabs, 2-1-3 podium, rows, pinned `lime` "You" bar. Tapping a row opens that student's Profile.
 - **Contests (tab):** the "Coming up" list, then past contests.
-- **Feed (tab):** the full feed.
+- **Feed (inside Board):** the full feed, behind a "Rankings / Feed" switch.
 - **Profile (pushed):** screen header with back and settings gear; centred header; 2×2 stat tiles (this month in `lime`, streak, solves, attendance); Activity card (21-week heatmap at 11 px squares with M/W/F labels and a legend); CF rating chart; top 4 topics as inline bars; recent 4 contests.
 - **Settings (pushed):** back + "Settings"; grouped sections with uppercase labels: Coding handles, Notifications (switches), About you (username with one-time change, name, year); then a full-width Sign out outline button in `pink`.
 - **Reason:** the reason chips + optional text field, opened from a push or the banner.
+
+## Add-ons
+
+Practice, Duels, Badges, recap, club virtuals, announcements and the new admin pages are specified in `DESIGN_ADDONS.md`. Home, Contests and Admin gain the sections it lists.
 
 ## Copy
 

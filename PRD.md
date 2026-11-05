@@ -19,7 +19,7 @@ The college competitive programming club (40–50 students across all years) has
 | Admin | 4–5 coordinators | Everything a student can, plus: see attendance and reasons, approve handles, add admins, deactivate students |
 
 - The first admin comes from the `ADMIN_EMAILS` secret; other admins are added from the admin page.
-- Attendance data (RSVPs, statuses, reasons) is **visible only to admins**. Students see only their own, plus an anonymous count of how many said they're going. Another student's profile never shows attendance; admins see it on any profile. Leaderboard, feed and profiles are visible to every signed-in student.
+- Attendance data (RSVPs, statuses, reasons) is **visible only to admins**. Students see only their own, plus an anonymous count of how many said they're going. Another student's profile never shows attendance; admins see it on any profile. Leaderboard, feed and profiles are visible to every signed-in student. Rival cards and badges may show "present" counts, never RSVPs or reasons.
 
 ## Accounts
 
@@ -47,7 +47,7 @@ The college competitive programming club (40–50 students across all years) has
 
 - Every counted contest creates one attendance entry per active user, students and admins alike, with an approved handle on that contest's platform.
 - **Present** = the student made a submission in the contest as a live participant, during the contest. On Codeforces, `CONTESTANT` and `OUT_OF_COMPETITION` both count.
-- **Absent** = no live submission. A reason is required. A virtual or practice attempt later still counts as absent, but its solves count on the leaderboard.
+- **Absent** = no live submission. A reason is required. A virtual or practice attempt later still counts as absent, but its solves count on the leaderboard. The one exception is a club virtual an admin has set to count (see `PRD_ADDONS.md`).
 - Present or absent is decided by the platform's data, not by what the student answered. A student who said No but took part is present.
 - The RSVP answer is kept separately so admins can see "said Yes, didn't show". RSVPs are accepted until the contest is verified.
 - Reason types: `exams`, `travel`, `illness`, `clash` (other commitment), `forgot`, `other`, plus optional free text. Text is required for `other`.
@@ -97,7 +97,7 @@ The college competitive programming club (40–50 students across all years) has
 
 ## Out of scope
 
-Duels, an in-app problem set, an upsolve tracker, iOS app, Play Store listing, chat, comments, email notifications, password sign-in, and automatic cheating detection.
+An in-app problem set, iOS app, Play Store listing, chat, comments, email notifications to students, password sign-in, and automatic cheating detection. Duels, upsolves and the coordinator digest are specified in `PRD_ADDONS.md`.
 
 ## Constraints
 
