@@ -19,6 +19,8 @@ const SWITCHES = [
   { key: 'notifyStreak', title: 'Streak about to break', detail: "At 9 PM, if you haven't solved today." },
   { key: 'notifyMeals', title: 'Meal-time nudges', detail: 'At 9 AM, 1 PM, 5 PM and 9 PM.' },
   { key: 'notifyPractice', title: 'Practice reminders', detail: 'Problem of the day and upsolves.' },
+  { key: 'notifyRival', title: 'Rival alerts', detail: 'When your rival picks you or passes you.' },
+  { key: 'notifyBadges', title: 'Badges', detail: 'When you earn a new badge.' },
 ] as const;
 
 function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[number]; me: Me; onChange: () => void }) {

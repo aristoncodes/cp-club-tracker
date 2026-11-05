@@ -5,6 +5,7 @@ import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useLocat
 import { api, getSession, type Announcement, type Me } from './api';
 import './index.css';
 import { Admin } from './pages/admin';
+import { Badges, Celebration } from './pages/badges';
 import { Contests } from './pages/contests';
 import { Download } from './pages/download';
 import { Feed } from './pages/feed';
@@ -123,6 +124,7 @@ function Shell() {
           </div>
         </div>
       </header>
+      {me.newBadges[0] && <Celebration id={me.newBadges[0]} onDone={() => api('/badges/seen', 'POST').finally(reload)} />}
       <main className="mx-auto flex max-w-[1200px] flex-col gap-4 px-4 py-6 sm:px-6">
         {waiting && pathname === '/' && (
           <Banner
@@ -226,10 +228,12 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/practice" element={<Practice />} />
+            <Route path="/badges" element={<Badges />} />
             <Route path="/contests" element={<Contests />} />
             <Route path="/feed" element={<Feed />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/u/:id" element={<Profile />} />
+            <Route path="/user/:id" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/reason/:contestId" element={<Reason />} />

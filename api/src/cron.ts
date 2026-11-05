@@ -1,10 +1,12 @@
 import { IST_OFFSET, formatIST, istDay } from 'shared/time';
 import { sendDueAnnouncements } from './announcements';
+import { sweepBadges } from './badges';
 import { refreshRatings, runCfQueue } from './cf-queue';
 import type { Bindings } from './auth';
 import { mealAt, mealPush, type Meal } from './meal-pushes';
 import { pickMissingPotd, pickPotd, sendPotdPush, sendUpsolveReminders } from './practice';
 import { sendPushes, type PushMessage } from './push';
+import { checkRivals } from './rivals';
 import { createAttendanceRows } from './records';
 
 const REMINDER_LEAD = 3600;
@@ -202,12 +204,14 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
   for (const contest of results) {
     await attempt(`contest ${contest.id}`, () => advanceContest(env, contest, now));
   }
+  await attempt('badge sweep', () => sweepBadges(env, now));
   await attempt('announcements', () => sendDueAnnouncements(env, now));
   if (isStreakReminderTick(now)) await attempt('streak reminder', () => sendStreakReminders(env, now));
   const meal = mealAt(now);
   if (meal) await attempt('meal push', () => sendMealPushes(env, meal, now));
   if (isSolveJobTick(now)) {
     await attempt('solve job', () => dispatchWorkflow(env, 'sync-solves.yml'));
+    await attempt('rivals', () => checkRivals(env, now));
     await attempt('upsolve reminders', () => sendUpsolveReminders(env, now));
     await attempt('missing problem of the day', () => pickMissingPotd(env.DB, now));
   }

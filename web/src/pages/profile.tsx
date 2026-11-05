@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { studyYearLabel } from 'shared/batch';
 import { ratingColor } from 'shared/rating-color';
@@ -170,9 +170,25 @@ function RatingChart({ history }: { history: RatingPoint[] }) {
   );
 }
 
+function RivalButton({ id, current, onChange }: { id: number; current: boolean; onChange: () => void }) {
+  const [error, setError] = useState('');
+  if (current) return <span className="inline-flex h-11 items-center rounded-full bg-pink-tint px-5 font-bold text-pink-text">Your rival</span>;
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <button
+        className="lift h-11 cursor-pointer rounded-full border-2 border-line px-5 font-bold"
+        onClick={() => api('/me/rival', 'PUT', { userId: id }).then(onChange).catch((err: Error) => setError(err.message))}
+      >
+        Set as rival
+      </button>
+      {error && <ErrorText>{error}</ErrorText>}
+    </div>
+  );
+}
+
 export function Profile() {
   const { id: routeId } = useParams();
-  const { me } = useMe();
+  const { me, reload: reloadMe } = useMe();
   const id = routeId ?? String(me.user.id);
   const { data: profile, error } = useLoad(() => api<UserProfile>(`/users/${id}`), [id]);
 
@@ -205,9 +221,11 @@ export function Profile() {
             ))}
           </div>
         </div>
+        {!own && <RivalButton id={profile.id} current={me.user.rivalId === profile.id} onChange={reloadMe} />}
         {own && <Link to="/settings" className="lift inline-flex h-11 items-center gap-2 rounded-full border-2 border-line px-5 font-bold"><Gear />Settings</Link>}
         {own && me.user.role === 'admin' && <Link to="/admin" className="lift inline-flex h-11 items-center rounded-full border-2 border-line px-5 font-bold sm:hidden">Admin</Link>}
       </div>
+      <Link to={own ? '/badges' : `/badges?user=${profile.id}`} className="font-bold text-lime hover:underline">Badges →</Link>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <StatTile label="Points this month" detail={solvesText(stats.monthSolves)} filled>{round(stats.monthPoints)}</StatTile>
         <StatTile label="Total solves" detail="Including from before joining">{stats.totalSolves}</StatTile>

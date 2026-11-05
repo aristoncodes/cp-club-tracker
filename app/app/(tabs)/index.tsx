@@ -5,7 +5,8 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { RSVP_REASONS } from 'shared/reasons';
 import { solvePoints } from 'shared/scoring';
 import { formatIST, istDay, solvesText, weekStrip } from 'shared/time';
-import { ApiError, api, clearSession, getSession, type Announcement, type Goal, type Me, type Potd, type Upsolve } from '../../lib/api';
+import { ApiError, api, clearSession, getSession, type Announcement, type Goal, type Me, type Potd, type Rival, type Upsolve } from '../../lib/api';
+import { Celebration } from '../../lib/badge-tile';
 import { GoalRing, PotdCard } from '../../lib/practice-cards';
 import { registerPushToken } from '../../lib/push';
 import { AvatarButton, BellButton, Button, openLink, StreakPill } from '../../lib/ui';
@@ -13,6 +14,7 @@ import { theme } from '../../theme';
 
 type Contest = { id: number; platform: string; name: string; startAt: number; rsvp: string | null; goingCount: number; participantCount: number };
 type Destination = 'login' | 'signup' | null;
+type LiveRival = Extract<Rival, { me: unknown }>;
 type Standing = { userId: number; name: string; rank: number; points: number; solves: number; cfRating: number | null };
 type Profile = { heatmap: { day: number; count: number }[]; today: number };
 
@@ -111,6 +113,27 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
   );
 }
 
+function RivalCard({ data }: { data: LiveRival }) {
+  const lead = Math.round((data.me.points - data.them.points) * 10) / 10;
+  const first = data.rival.name.split(' ')[0];
+  const rows = [['Points', data.me.points, data.them.points], ['Solves', data.me.solves, data.them.solves], ['Contests', data.me.contests, data.them.contests]] as const;
+  return (
+    <Pressable accessibilityRole="button" style={styles.card} onPress={() => router.push({ pathname: '/user/[id]', params: { id: String(data.rival.id) } })}>
+      <View style={styles.between}>
+        <Text style={styles.cardTitle}>You vs @{data.rival.username ?? first}</Text>
+        <Text style={[styles.rivalLead, { color: lead >= 0 ? theme.lime : theme.pink }]}>{lead === 0 ? 'Level' : lead > 0 ? `You lead by ${lead}` : `${first} leads by ${-lead}`}</Text>
+      </View>
+      {rows.map(([label, mine, theirs]) => (
+        <View key={label} style={styles.rivalRow}>
+          <Text style={[styles.rivalValue, { color: mine >= theirs ? theme.lime : theme.muted }]}>{Math.round(mine * 10) / 10}</Text>
+          <Text style={styles.statLabel}>{label}</Text>
+          <Text style={[styles.rivalValue, { color: theirs > mine ? theme.pinkText : theme.muted }]}>{Math.round(theirs * 10) / 10}</Text>
+        </View>
+      ))}
+    </Pressable>
+  );
+}
+
 function StatCard({ label, standing, accent }: { label: string; standing?: Standing; accent?: boolean }) {
   return (
     <View style={[styles.card, styles.flexOne]}>
@@ -131,6 +154,7 @@ export default function Home() {
   const [potd, setPotd] = useState<Potd | null>(null);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [upsolves, setUpsolves] = useState<Upsolve[]>([]);
+  const [rival, setRival] = useState<Rival | null>(null);
   const [destination, setDestination] = useState<Destination>(null);
   const [error, setError] = useState('');
 
@@ -141,7 +165,7 @@ export default function Home() {
       const meData = await api<Me>('/me');
       if (meData.user.onboardingStep !== 'done') return setDestination('signup');
       registerPushToken().catch(console.warn);
-      const [upcoming, day, week, userProfile, inbox, nextPotd, nextGoal, nextUpsolves] = await Promise.all([
+      const [upcoming, day, week, userProfile, inbox, nextPotd, nextGoal, nextUpsolves, nextRival] = await Promise.all([
         api<Contest[]>('/contests/upcoming'),
         api<Standing[]>('/leaderboard?period=day'),
         api<Standing[]>('/leaderboard?period=week'),
@@ -150,7 +174,9 @@ export default function Home() {
         api<Potd>('/practice/potd'),
         api<Goal>('/practice/goal'),
         api<Upsolve[]>('/practice/upsolves'),
+        api<Rival>('/me/rival'),
       ]);
+      setRival(nextRival);
       setPinned(inbox.pinned);
       setPotd(nextPotd);
       setGoal(nextGoal);
@@ -198,6 +224,7 @@ export default function Home() {
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
+      {me.newBadges[0] ? <Celebration id={me.newBadges[0]} onDone={() => api('/badges/seen', 'POST').finally(load)} /> : null}
       <View style={styles.between}>
         <View style={styles.flexOne}>
           <Text style={styles.muted}>{formatIST(Date.now() / 1000).split(' · ')[0]}</Text>
@@ -249,6 +276,7 @@ export default function Home() {
           <Text style={styles.statLabel} numberOfLines={2}>{upsolvesLeft.length ? `Upsolves left from ${upsolvesLeft[0].contestName}` : 'No upsolves left'}</Text>
         </Pressable>
       </View>
+      {rival && 'me' in rival ? <RivalCard data={rival} /> : null}
       <View style={styles.row}>
         <StatCard label="Today" accent standing={dayRows.find((row) => row.userId === me.user.id)} />
         <StatCard label="This week" standing={mine} />
@@ -295,6 +323,9 @@ const styles = StyleSheet.create({
   greeting: { color: theme.text, fontFamily: theme.font.display, fontSize: 28, letterSpacing: -0.8 },
   muted: { color: theme.muted, fontFamily: theme.font.regular, fontSize: 13 },
   error: { color: theme.pink, fontFamily: theme.font.regular, fontSize: 14 },
+  rivalLead: { fontFamily: theme.font.bold, fontSize: 12 },
+  rivalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  rivalValue: { width: 72, textAlign: 'center', fontFamily: theme.font.monoHeavy, fontSize: 15 },
   upsolveTile: { width: 64, height: 64, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.pink },
   upsolveCount: { color: theme.ink, fontFamily: theme.font.monoHeavy, fontSize: 26 },
   pinned: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 16, backgroundColor: theme.violetTint },

@@ -4,7 +4,8 @@ import type { Bindings } from './auth';
 import { potdBonuses } from './practice';
 import { sendPushes, type PushMessage } from './push';
 
-export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promise<void> {
+// Returns who got a new solve, so the caller can check their badges.
+export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promise<number[]> {
   const { results: handles } = await db
     .prepare(
       `SELECT h.platform, lower(h.handle) AS handle, h.user_id AS userId, h.approved_at AS approvedAt, u.cf_rating AS cfRating
@@ -34,9 +35,11 @@ export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promi
     return s.platform === 'cf' && owner && s.solvedAt >= owner.approvedAt ? [{ userId: owner.userId, rating: owner.cfRating, problemId: s.problemId, solvedAt: s.solvedAt }] : [];
   });
   const bonuses = await potdBonuses(db, scoringCf);
+  const solvers: (number | null)[] = [];
   const statements = oldestFirst.flatMap((s) => {
     const owner = byHandle.get(`${s.platform}:${s.handle.toLowerCase()}`);
     if (!owner) return [];
+    solvers.push(null, owner.userId, ...(s.platform === 'cf' ? [null] : []));
     const rp = problemRp(s.platform, s.rating ?? null);
     const scores = s.solvedAt >= owner.approvedAt;
     const bonus = scores && s.platform === 'cf' ? (bonuses.get(`${owner.userId}:${s.problemId}`) ?? 0) : 0;
@@ -46,7 +49,9 @@ export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promi
       ...(s.platform === 'cf' ? [remember.bind(owner.userId, s.problemId)] : []),
     ];
   });
-  if (statements.length) await db.batch(statements);
+  if (!statements.length) return [];
+  const results = await db.batch(statements);
+  return [...new Set(solvers.filter((userId, index): userId is number => userId !== null && results[index].meta.changes > 0))];
 }
 
 export function markHandleBroken(db: D1Database, platform: string, handle: string): D1PreparedStatement {

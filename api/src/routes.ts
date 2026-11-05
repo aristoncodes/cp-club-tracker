@@ -23,6 +23,8 @@ const NOTIFY_COLUMNS: Record<string, string> = {
   notifyStreak: 'notify_streak',
   notifyMeals: 'notify_meals',
   notifyPractice: 'notify_practice',
+  notifyRival: 'notify_rival',
+  notifyBadges: 'notify_badges',
 };
 
 type ReasonBody = { reasonType?: string; reasonText?: string };
@@ -81,7 +83,7 @@ studentRoutes.use(requireUser);
 studentRoutes.get('/me', async (c) => {
   const user = c.get('user');
   const now = Math.floor(Date.now() / 1000);
-  const [handles, pendingReasons, days, unread] = await c.env.DB.batch([
+  const [handles, pendingReasons, days, unread, newBadges] = await c.env.DB.batch([
     c.env.DB.prepare(
       `SELECT platform, handle, approved_at IS NOT NULL AS approved FROM handles WHERE user_id = ?`,
     ).bind(user.id),
@@ -97,9 +99,10 @@ studentRoutes.get('/me', async (c) => {
       `SELECT COUNT(*) AS n FROM announcements a JOIN users u ON u.id = ?
        WHERE a.sent_at > u.inbox_seen_at AND (a.audience = 'all' OR (a.audience = 'admins' AND u.role = 'admin') OR (a.audience = 'batch' AND u.batch_year = a.batch_year))`,
     ).bind(user.id),
+    c.env.DB.prepare('SELECT badge FROM badges WHERE user_id = ? AND seen_at IS NULL ORDER BY earned_at').bind(user.id),
   ]);
   const streak = solveStreak((days.results as { day: number }[]).map((d) => d.day), istDay(now));
-  return c.json({ user, handles: handles.results, pendingReasons: pendingReasons.results, streak, unreadAnnouncements: (unread.results[0] as { n: number }).n });
+  return c.json({ user, handles: handles.results, pendingReasons: pendingReasons.results, streak, unreadAnnouncements: (unread.results[0] as { n: number }).n, newBadges: (newBadges.results as { badge: string }[]).map((row) => row.badge) });
 });
 
 studentRoutes.put('/me', async (c) => {

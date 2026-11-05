@@ -4,9 +4,11 @@ import { adminRoutes } from './admin';
 import { accountRoutes } from './accounts';
 import { adminAnnouncementRoutes, announcementRoutes } from './announcements';
 import type { AppEnv, Bindings } from './auth';
+import { badgeRoutes } from './badges';
 import { runCron } from './cron';
 import { ingestRoutes } from './ingest';
 import { practiceRoutes } from './practice';
+import { rivalRoutes } from './rivals';
 import { studentRoutes } from './routes';
 
 const app = new Hono<AppEnv>().basePath('/api');
@@ -36,6 +38,8 @@ app.route('/admin/announcements', adminAnnouncementRoutes);
 app.route('/admin', adminRoutes);
 app.route('/announcements', announcementRoutes);
 app.route('/practice', practiceRoutes);
+app.route('/me/rival', rivalRoutes);
+app.route('/badges', badgeRoutes);
 app.route('/', studentRoutes);
 
 export default {

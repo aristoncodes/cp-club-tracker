@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { RSVP_REASONS } from 'shared/reasons';
 import { solvePoints } from 'shared/scoring';
 import { formatIST, IST_OFFSET, timeAgo, weekStrip } from 'shared/time';
-import { api, type Announcement, type Contest } from '../api';
+import { api, type Announcement, type Contest, type Rival } from '../api';
 import { GoalRing, PotdCard, type Goal, type Potd, type Upsolve } from './practice';
 import { Avatar, Button, Card, ContestRow, ErrorText, inputClass, PinnedAnnouncement, platformLabel, ProgressBar, Rating, RatingChip, useLoad, useMe } from '../ui';
 
@@ -120,6 +120,33 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
   );
 }
 
+function RivalCard({ data }: { data: Extract<Rival, { me: unknown }> }) {
+  const lead = round(data.me.points - data.them.points);
+  const first = data.rival.name.split(' ')[0];
+  const rows = [['Points', data.me.points, data.them.points], ['Solves', data.me.solves, data.them.solves], ['Contests', data.me.contests, data.them.contests]] as const;
+  return (
+    <Card className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="display text-lg">You vs your rival</h2>
+        {lead === 0 ? <span className="text-xs font-bold text-muted">Level</span> : lead > 0 ? <span className="text-xs font-bold text-lime">You lead by <span className="num">{Math.abs(lead)}</span></span> : <span className="text-xs font-bold text-pink">{first} leads by <span className="num">{Math.abs(lead)}</span></span>}
+      </div>
+      <Link to={`/u/${data.rival.id}`} className="flex items-center justify-center gap-3">
+        <span className="handle text-xs text-muted">You</span>
+        <span className="display text-muted">VS</span>
+        <Avatar userId={data.rival.id} name={data.rival.name} size={36} />
+        <span className="handle min-w-0 truncate text-xs">@{data.rival.username ?? first}</span>
+      </Link>
+      {rows.map(([label, mine, theirs]) => (
+        <div key={label} className="grid grid-cols-3 items-center text-center">
+          <span className={`num ${mine >= theirs ? 'text-lime' : 'text-muted'}`}>{round(mine)}</span>
+          <span className="text-xs text-muted">{label}</span>
+          <span className={`num ${theirs > mine ? 'text-pink-text' : 'text-muted'}`}>{round(theirs)}</span>
+        </div>
+      ))}
+    </Card>
+  );
+}
+
 function StatTile({ label, value, detail, accent, children }: { label: string; value?: string | number; detail: string; accent?: boolean; children?: React.ReactNode }) {
   return (
     <Card>
@@ -140,6 +167,7 @@ export function Home() {
   const feed = useLoad(() => api<Solve[]>('/feed'), []);
   const inbox = useLoad(() => api<{ pinned: Announcement | null }>('/announcements'), []);
   const potd = useLoad(() => api<Potd>('/practice/potd'), []);
+  const rival = useLoad(() => api<Rival>('/me/rival'), []);
   const goal = useLoad(() => api<Goal>('/practice/goal'), []);
   const upsolves = useLoad(() => api<Upsolve[]>('/practice/upsolves'), []);
 
@@ -207,6 +235,7 @@ export function Home() {
           </Card>
         </div>
         <aside className="flex flex-col gap-3">
+          {rival.data && 'me' in rival.data && <RivalCard data={rival.data} />}
           <Link to="/leaderboard" className="lift block">
             <Card className="flex flex-col gap-2">
               <div className="flex items-center justify-between">

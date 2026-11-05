@@ -1,5 +1,6 @@
 import { brokenHandle, cfSolves, type CfSubmission } from 'shared/cf';
 import type { Bindings } from './auth';
+import { checkBadges } from './badges';
 import { CfError, fetchRatingHistory, fetchUserInfo, fetchUserStatus } from './cf';
 import { insertSolves, markHandleBroken } from './records';
 
@@ -32,7 +33,7 @@ async function syncCfHandle(env: Bindings, row: CfHandleRow, now: number): Promi
     const submissions = await fetchUserStatus(row.handle, row.syncedAt === null ? FIRST_SYNC_SUBMISSIONS : RECENT_SUBMISSIONS);
     const since = row.syncedAt === null ? 0 : row.syncedAt - JUDGING_MARGIN;
     const solves = cfSolves(row.handle, submissions).filter((solve) => solve.solvedAt >= since);
-    if (solves.length) await insertSolves(db, solves);
+    if (solves.length) await checkBadges(env, await insertSolves(db, solves));
     if (ratingHistoryIsDue(row.syncedAt, now)) {
       const history = await fetchRatingHistory(row.handle);
       await db

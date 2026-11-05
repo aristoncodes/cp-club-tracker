@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { HealthReport, IngestContest, IngestSolve } from 'shared/types';
 import type { AppEnv } from './auth';
+import { checkBadges } from './badges';
 import { createUpsolves, type ContestProblem } from './practice';
 import { finishContest, insertSolves, markHandleBroken } from './records';
 
@@ -66,7 +67,8 @@ ingestRoutes.post('/contests', async (c) => {
 });
 
 ingestRoutes.post('/solves', async (c) => {
-  await insertSolves(c.env.DB, await c.req.json<IngestSolve[]>());
+  const solvers = await insertSolves(c.env.DB, await c.req.json<IngestSolve[]>());
+  c.executionCtx.waitUntil(checkBadges(c.env, solvers).catch((err) => console.error('Badge check failed:', err)));
   return c.json({ ok: true });
 });
 
@@ -91,6 +93,8 @@ ingestRoutes.post('/participation', async (c) => {
   if (brokenHandles.length) await c.env.DB.batch(brokenHandles.map((h) => markHandleBroken(c.env.DB, platform, h)));
   if (platform === 'cf') await createUpsolves(c.env.DB, contest, problems, altProblems, solved);
   await finishContest(c.env, contest, presentHandles);
+  const { results: present } = await c.env.DB.prepare(`SELECT user_id AS id FROM attendance WHERE contest_id = ? AND status = 'present'`).bind(contest.id).all<{ id: number }>();
+  c.executionCtx.waitUntil(checkBadges(c.env, present.map((row) => row.id)).catch((err) => console.error('Badge check failed:', err)));
   return c.json({ ok: true });
 });
 

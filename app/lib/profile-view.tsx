@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Polyline, Rect } from 'react-native-svg';
 import { studyYearLabel } from 'shared/batch';
@@ -8,8 +8,8 @@ import { ratingColor } from 'shared/rating-color';
 import { contestResult, type ContestOutcome } from 'shared/reasons';
 import { formatIST, heatmapWeeks, solvesText } from 'shared/time';
 import { theme } from '../theme';
-import { api } from './api';
-import { Avatar, CellMark, common, platformColor, Rating, ScreenHeader } from './ui';
+import { api, type Me } from './api';
+import { Avatar, Button, CellMark, common, Pill, platformColor, Rating, ScreenHeader } from './ui';
 
 type RatingPoint = { rating: number };
 type UserProfile = {
@@ -74,6 +74,21 @@ function Tile({ label, children, detail, filled }: { label: string; children: Re
   );
 }
 
+function RivalButton({ id }: { id: number }) {
+  const [current, setCurrent] = useState(false);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api<Me>('/me').then((me) => setCurrent(me.user.rivalId === id)).catch(console.warn);
+  }, [id]);
+  if (current) return <Pill tone="pink" label="Your rival" />;
+  return (
+    <View>
+      <Button title="Set as rival" variant="secondary" onPress={() => api('/me/rival', 'PUT', { userId: id }).then(() => setCurrent(true)).catch((err) => setError(err.message))} />
+      {error ? <Text style={common.error}>{error}</Text> : null}
+    </View>
+  );
+}
+
 export function ProfileView({ id, own }: { id: number; own?: boolean }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState('');
@@ -120,6 +135,10 @@ export function ProfileView({ id, own }: { id: number; own?: boolean }) {
           ))}
         </View>
       </View>
+      {own ? null : <RivalButton id={profile.id} />}
+      <Pressable accessibilityRole="link" onPress={() => router.push({ pathname: '/badges', params: own ? {} : { user: String(profile.id) } })}>
+        <Text style={common.link}>Badges →</Text>
+      </Pressable>
       <View style={styles.grid}>
         <Tile label="This month" detail={solvesText(profile.stats.monthSolves)} filled>{round(profile.stats.monthPoints)}</Tile>
         <Tile label="Streak" detail="days"><Text style={{ color: theme.sun }}>{profile.streak}</Text></Tile>

@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import type { BadgeId } from 'shared/badges';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const SESSION_KEY = 'session';
@@ -21,6 +22,9 @@ export type User = {
   notifyStreak: number;
   notifyMeals: number;
   notifyPractice: number;
+  notifyRival: number;
+  notifyBadges: number;
+  rivalId: number | null;
 };
 
 export type Me = {
@@ -29,7 +33,11 @@ export type Me = {
   pendingReasons: { id: number; name: string }[];
   streak: number;
   unreadAnnouncements: number;
+  newBadges: BadgeId[];
 };
+
+export type RivalStats = { points: number; solves: number; contests: number };
+export type Rival = { rival: null } | { rival: { id: number; name: string; username: string | null }; me: RivalStats; them: RivalStats; changeAt: number };
 
 export type Announcement = {
   id: number;
