@@ -4,13 +4,13 @@ INSERT INTO users (id, email, name, username, batch_year, role, cf_rating, onboa
   (2, 'student1@example.com', 'Test Student One', 'student_one', 2025, 'student', NULL, 'done', strftime('%s', 'now')),
   (3, 'student2@example.com', 'Test Student Two', 'student_two', 2026, 'student', 1200, 'done', strftime('%s', 'now'));
 
-INSERT INTO handles (user_id, platform, handle, approved_at) VALUES
-  (1, 'cf', 'tourist', 1),
-  (1, 'cc', 'gennady.korotkevich', 1),
-  (2, 'cf', 'jiangly', 1),
-  (2, 'cc', 'jiangly', 1),
-  (3, 'cf', 'Benq', 1),
-  (3, 'cc', 'benq', NULL);
+INSERT INTO handles (user_id, platform, handle, approved_at, status) VALUES
+  (1, 'cf', 'tourist', 1, 'approved'),
+  (1, 'cc', 'gennady.korotkevich', 1, 'approved'),
+  (2, 'cf', 'jiangly', 1, 'approved'),
+  (2, 'cc', 'jiangly', 1, 'approved'),
+  (3, 'cf', 'Benq', 1, 'approved'),
+  (3, 'cc', 'benq', NULL, 'waiting');
 
 INSERT INTO push_tokens (token, user_id, kind) VALUES
   ('ExponentPushToken[REPLACE_WITH_YOUR_TOKEN]', 1, 'expo');

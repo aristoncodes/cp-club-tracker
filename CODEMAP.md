@@ -73,6 +73,8 @@ Current state and what's left: `PROGRESS.md`.
 
 Migrations: `0000` baseline, `0001` accounts, `0002` meals, `0003` push errors, `0004` announcements + `push_log`, `0005` upsolves, `0006` problem of the day + `cf_history`, `0007` goals, `0008` rivals, `0009` badges, `0010` duels, `0011` recap switch, `0012` virtuals, `0013` admin redesign.
 
+Tests: pure logic sits next to each file as `*.test.ts`. `admin.integration.test.ts` runs the real Worker on a throwaway local D1, and adds about 2 minutes to `pnpm -r test`.
+
 ## jobs/ (GitHub Actions; `.github/workflows/` has one file per script)
 
 | File | Does |

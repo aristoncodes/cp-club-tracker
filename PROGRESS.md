@@ -6,7 +6,23 @@ Last updated: 2026-11-05. `IMPLEMENTATION_PLAN.md` has the full detail of each t
 
 ## Admin redesign
 
-Docs and migration `0013` written on the `admin-redesign` branch. Not applied to production. Building starts at task 51.
+All of it is written on the `admin-redesign` branch. **Nothing is pushed, deployed or migrated on production.**
+
+| Task | Status |
+|---|---|
+| 50. Docs and schema | Done. Migration `0013` passed on a populated copy of production's data |
+| 51. Shell and existing pages | Works on local D1 and in Chrome. Not on production |
+| 52. Run the club | Pages checked in Chrome; rules covered by `admin.integration.test.ts` |
+| 53. Engagement | Same. Member of the month and season freeze have no automated test |
+| 54. Reports and Rules | Done on local D1. PDF not printed to paper |
+| 55. Tests | 9 of 10 fully pass. Test 10 proves the nightly jobs run at 50 members and 90 days of solves, but not their CPU, which needs a Worker on Cloudflare |
+
+**Still to check:**
+
+- [ ] Measure the nightly jobs' CPU on a staging Worker. The live Worker already uses 16–30 ms against the documented 10 ms limit
+- [ ] Member-facing changes on a real phone
+- [ ] Exam-week muting with real pushes (only the SQL it uses is tested)
+- [ ] A real gym contest with a handle, and the behaviour for private groups
 
 ## Add-ons
 

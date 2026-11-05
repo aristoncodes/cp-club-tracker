@@ -129,7 +129,7 @@ Rules are in `PRD_ADMIN.md`, looks in `DESIGN_ADMIN.md` and the design in `ARCHI
     - Done when: each page's "Done when" in `PRD_ADMIN.md` holds.
 53. [ ] **Engagement.** `stats_daily`, Engagement, Fairness, Seasons.
     - Done when: each page's "Done when" holds.
-54. [ ] **Reports and Rules.**
+54. [x] **Reports and Rules.**
     - Done when: a Rules change applies the next day without a deploy, and Reports prints to A4 and exports CSV.
 55. [ ] **Tests.** `TESTING.md → admin`.
     - Done when: all 10 pass, including the CPU measurement.

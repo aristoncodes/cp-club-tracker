@@ -87,6 +87,8 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 
 ### admin
 
+These run in `api/src/admin.integration.test.ts`, which starts the real Worker on a throwaway local D1.
+
 1. A handle on Waiting or Rejected never adds points, attendance or a duel result. Remove approval stops its solves counting from the next sync.
 2. Every admin endpoint returns 403 for non-admins, and every successful write adds its `audit_log` row: one per thing changed.
 3. A manual attendance edit survives the automatic attendance job re-running.
@@ -96,7 +98,7 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 7. Fairness: voiding solves removes their points from every board and the season; undo restores them exactly.
 8. Changing a Rules value takes effect the next day, and the old value still applies today.
 9. You can't remove yourself, the last admin or an `ADMIN_EMAILS` admin.
-10. The nightly jobs finish within the CPU limit with 50 members and 90 days of solves, measured on a staging Worker.
+10. The nightly jobs finish with 50 members and 90 days of solves (`admin.integration.test.ts`). Their CPU within the limit is a manual check on a staging Worker, because local runs don't enforce it.
 
 **Migration `0013`:** run it on a copy of production's data with rows in `attendance`, `upsolves` and the virtual tables. Row counts must match, `PRAGMA foreign_key_check` must be empty, and an insert with an unknown contest must still fail.
 
