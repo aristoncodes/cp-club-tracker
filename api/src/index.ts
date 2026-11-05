@@ -6,6 +6,7 @@ import { adminAnnouncementRoutes, announcementRoutes } from './announcements';
 import type { AppEnv, Bindings } from './auth';
 import { runCron } from './cron';
 import { ingestRoutes } from './ingest';
+import { practiceRoutes } from './practice';
 import { studentRoutes } from './routes';
 
 const app = new Hono<AppEnv>().basePath('/api');
@@ -34,6 +35,7 @@ app.route('/ingest', ingestRoutes);
 app.route('/admin/announcements', adminAnnouncementRoutes);
 app.route('/admin', adminRoutes);
 app.route('/announcements', announcementRoutes);
+app.route('/practice', practiceRoutes);
 app.route('/', studentRoutes);
 
 export default {

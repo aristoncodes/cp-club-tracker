@@ -32,6 +32,12 @@ export async function getHandles(platform: string): Promise<string[]> {
   return response.json() as Promise<string[]>;
 }
 
+export async function getHistoryMissing(): Promise<string[]> {
+  const response = await fetch(ingestUrl('/history-missing'), { headers: secretHeader() });
+  if (!response.ok) throw new Error(`History list returned ${response.status}`);
+  return response.json() as Promise<string[]>;
+}
+
 export async function getHealth(): Promise<HealthReport> {
   const response = await fetch(ingestUrl('/health'), { headers: secretHeader() });
   if (!response.ok) throw new Error(`Health returned ${response.status}`);

@@ -3,6 +3,7 @@ import { sendDueAnnouncements } from './announcements';
 import { refreshRatings, runCfQueue } from './cf-queue';
 import type { Bindings } from './auth';
 import { mealAt, mealPush, type Meal } from './meal-pushes';
+import { pickMissingPotd, pickPotd, sendPotdPush, sendUpsolveReminders } from './practice';
 import { sendPushes, type PushMessage } from './push';
 import { createAttendanceRows } from './records';
 
@@ -17,6 +18,8 @@ const STREAK_REMINDER_SECOND_OF_DAY = 15.5 * HOUR;
 const SOLVE_JOB_SECONDS = 5 * 60;
 const CONTEST_JOB_SECONDS = 6 * HOUR;
 const HEALTH_JOB_SECOND_OF_DAY = 0.5 * HOUR;
+const POTD_PUSH_SECOND_OF_DAY = 2.5 * HOUR;
+const PROBLEMSET_JOB_SECOND_OF_DAY = 16.5 * HOUR;
 const DAY = 86400;
 
 type ContestRow = {
@@ -55,6 +58,8 @@ function isDailyTick(now: number, secondOfDay: number): boolean {
 export const isRatingRefreshTick = (now: number) => isDailyTick(now, RATING_REFRESH_SECOND_OF_DAY);
 export const isHealthJobTick = (now: number) => isDailyTick(now, HEALTH_JOB_SECOND_OF_DAY);
 export const isStreakReminderTick = (now: number) => isDailyTick(now, STREAK_REMINDER_SECOND_OF_DAY);
+export const isPotdPushTick = (now: number) => isDailyTick(now, POTD_PUSH_SECOND_OF_DAY);
+export const isProblemsetJobTick = (now: number) => isDailyTick(now, PROBLEMSET_JOB_SECOND_OF_DAY);
 export const isSolveJobTick = (now: number) => now % SOLVE_JOB_SECONDS < CRON_TICK;
 export const isContestJobTick = (now: number) => now % CONTEST_JOB_SECONDS < CRON_TICK;
 
@@ -201,11 +206,18 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
   if (isStreakReminderTick(now)) await attempt('streak reminder', () => sendStreakReminders(env, now));
   const meal = mealAt(now);
   if (meal) await attempt('meal push', () => sendMealPushes(env, meal, now));
-  if (isSolveJobTick(now)) await attempt('solve job', () => dispatchWorkflow(env, 'sync-solves.yml'));
+  if (isSolveJobTick(now)) {
+    await attempt('solve job', () => dispatchWorkflow(env, 'sync-solves.yml'));
+    await attempt('upsolve reminders', () => sendUpsolveReminders(env, now));
+    await attempt('missing problem of the day', () => pickMissingPotd(env.DB, now));
+  }
+  if (isPotdPushTick(now)) await attempt('problem of the day push', () => sendPotdPush(env, now));
+  if (isProblemsetJobTick(now)) await attempt('problemset job', () => dispatchWorkflow(env, 'sync-problemset.yml'));
   if (isContestJobTick(now)) await attempt('contest job', () => dispatchWorkflow(env, 'sync-contests.yml'));
   if (isHealthJobTick(now)) await attempt('health job', () => dispatchWorkflow(env, 'health.yml'));
   if (isRatingRefreshTick(now)) {
     await attempt('rating refresh', () => refreshRatings(env.DB));
+    await attempt('problem of the day', () => pickPotd(env.DB, istDay(now), now));
   }
   // Last, because it runs for most of a minute and shouldn't delay anything above.
   await attempt('codeforces queue', () => runCfQueue(env, now));

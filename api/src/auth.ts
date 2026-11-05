@@ -34,13 +34,14 @@ export type User = {
   notifyResult: number;
   notifyStreak: number;
   notifyMeals: number;
+  notifyPractice: number;
 };
 
 export type AppEnv = { Bindings: Bindings; Variables: { user: User } };
 
 export const USER_COLUMNS = `id, email, name, username, 1 - username_changes AS usernameChangesLeft, batch_year AS batchYear,
   role, active, onboarding_step AS onboardingStep,
-  cf_rating AS cfRating, notify_hour AS notifyHour, notify_rsvp AS notifyRsvp, notify_result AS notifyResult, notify_streak AS notifyStreak, notify_meals AS notifyMeals`;
+  cf_rating AS cfRating, notify_hour AS notifyHour, notify_rsvp AS notifyRsvp, notify_result AS notifyResult, notify_streak AS notifyStreak, notify_meals AS notifyMeals, notify_practice AS notifyPractice`;
 const SESSION_DAYS = 30;
 
 const sessionKey = (env: Bindings) => new TextEncoder().encode(env.SESSION_SECRET);

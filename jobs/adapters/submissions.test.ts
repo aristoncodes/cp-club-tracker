@@ -12,6 +12,7 @@ import lcQuestion from '../fixtures/leetcode-question.json';
 import lcRecent from '../fixtures/leetcode-recent.json';
 import { parseSubmissions as parseAtcoder } from './atcoder';
 import { parseRecent, parseTime, solveFrom as ccSolve, tookPartLive as ccTookPart } from './cc';
+import * as cf from './cf';
 import { parseSubmissions as parseCf, tookPartLive as cfTookPart } from './cf';
 import { parseRecentAc, solveFrom as lcSolve } from './leetcode';
 
@@ -145,5 +146,39 @@ describe('atcoder', () => {
 
   it('extracts the difficulty and name', () => {
     expect(solves[0]).toMatchObject({ platform: 'atcoder', problemId: 'agc074_a', rating: (acModels as Record<string, { difficulty?: number }>).agc074_a?.difficulty });
+  });
+});
+
+describe('upsolve and problem-of-the-day data', () => {
+  const submission = (index: string, verdict: string, participantType: string) => ({
+    id: 1,
+    creationTimeSeconds: 1,
+    verdict,
+    problem: { contestId: 2000, index, name: `Problem ${index}`, tags: [] },
+    author: { participantType },
+  });
+
+  it('counts only accepted live submissions as solved in the contest', () => {
+    expect(cf.liveSolvedNames([submission('A', 'OK', 'CONTESTANT'), submission('B', 'WRONG_ANSWER', 'CONTESTANT'), submission('C', 'OK', 'PRACTICE'), submission('D', 'OK', 'VIRTUAL'), submission('E', 'OK', 'OUT_OF_COMPETITION')])).toEqual(['Problem A', 'Problem E']);
+  });
+
+  it('lists each solved problem once for history', () => {
+    expect(cf.solvedProblemIds([submission('A', 'OK', 'PRACTICE'), submission('A', 'OK', 'CONTESTANT'), submission('B', 'WRONG_ANSWER', 'PRACTICE')])).toEqual(['2000A']);
+  });
+
+  it('keeps finished, normal rounds and programming problems for picks', () => {
+    const contest = (id: number, name: string, phase = 'FINISHED') => ({ id, name, phase, durationSeconds: 7200, startTimeSeconds: 1000 + id });
+    const data = cf.parsePicksData(
+      [
+        { contestId: 1, index: 'A', name: 'Keep', type: 'PROGRAMMING', rating: 1400, tags: ['dp'] },
+        { contestId: 1, index: 'B', name: 'Question', type: 'QUESTION', tags: [] },
+        { contestId: 2, index: 'A', name: 'Joke', type: 'PROGRAMMING', tags: [] },
+        { contestId: 3, index: 'A', name: 'Future', type: 'PROGRAMMING', tags: [] },
+        { index: 'A', name: 'No round', type: 'PROGRAMMING', tags: [] },
+      ],
+      { status: 'OK', result: [contest(1, 'Codeforces Round 1 (Div. 2)'), contest(2, 'April Fools Day Contest'), contest(3, 'Round 3', 'BEFORE')] },
+    );
+    expect(data.rounds.map((round) => round.id)).toEqual([1]);
+    expect(data.problems).toEqual([{ problemId: '1A', name: 'Keep', rating: 1400, tags: ['dp'], url: 'https://codeforces.com/contest/1/problem/A', contestAt: 1001 }]);
   });
 });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { brokenHandle, cfSolves, type CfSubmission } from './cf';
 
 const submission = (participantType: string, verdict = 'OK'): CfSubmission => ({
-  creationTimeSeconds: 100,
+  id: 1, creationTimeSeconds: 100,
   verdict,
   problem: { contestId: 1900, index: 'C', name: 'P', rating: 1400, tags: ['dp'] },
   author: { participantType },

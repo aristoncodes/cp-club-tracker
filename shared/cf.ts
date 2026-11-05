@@ -1,11 +1,13 @@
 import type { IngestSolve } from './types';
 
 export type CfSubmission = {
+  id: number;
   contestId?: number;
   creationTimeSeconds: number;
   verdict?: string;
+  passedTestCount?: number;
   problem: { contestId?: number; index: string; name: string; rating?: number; tags: string[] };
-  author: { participantType: string };
+  author: { participantType: string; startTimeSeconds?: number };
 };
 
 export function isLiveSubmission(submission: CfSubmission): boolean {

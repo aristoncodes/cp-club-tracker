@@ -22,6 +22,7 @@ const NOTIFY_COLUMNS: Record<string, string> = {
   notifyResult: 'notify_result',
   notifyStreak: 'notify_streak',
   notifyMeals: 'notify_meals',
+  notifyPractice: 'notify_practice',
 };
 
 type ReasonBody = { reasonType?: string; reasonText?: string };
@@ -175,7 +176,8 @@ studentRoutes.put('/me/handles/:platform', async (c) => {
          handle = excluded.handle,
          approved_at = CASE WHEN handle = excluded.handle THEN approved_at END,
          broken = CASE WHEN handle = excluded.handle THEN broken ELSE 0 END,
-         synced_at = CASE WHEN handle = excluded.handle THEN synced_at END`,
+         synced_at = CASE WHEN handle = excluded.handle THEN synced_at END,
+         history_imported_at = CASE WHEN handle = excluded.handle THEN history_imported_at END`,
     )
       .bind(c.get('user').id, platform, handle.trim())
       .run();

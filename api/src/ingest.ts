@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { HealthReport, IngestContest, IngestSolve } from 'shared/types';
 import type { AppEnv } from './auth';
+import { createUpsolves, type ContestProblem } from './practice';
 import { finishContest, insertSolves, markHandleBroken } from './records';
 
 const STUCK_CONTEST_SECONDS = 6 * 3600;
@@ -70,22 +71,71 @@ ingestRoutes.post('/solves', async (c) => {
 });
 
 ingestRoutes.post('/participation', async (c) => {
-  const { platform, externalId, presentHandles, brokenHandles = [] } = await c.req.json<{
+  const { platform, externalId, presentHandles, brokenHandles = [], problems = [], altProblems = [], solved = {} } = await c.req.json<{
     platform: string;
     externalId: string;
     presentHandles: string[];
     brokenHandles?: string[];
+    problems?: ContestProblem[];
+    altProblems?: ContestProblem[];
+    solved?: Record<string, string[]>;
   }>();
   const contest = await c.env.DB.prepare(
-    'SELECT id, platform, name, stage FROM contests WHERE platform = ? AND external_id = ? AND counts = 1',
+    'SELECT id, platform, name, stage, start_at AS startAt FROM contests WHERE platform = ? AND external_id = ? AND counts = 1',
   )
     .bind(platform, externalId)
-    .first<{ id: number; platform: string; name: string; stage: number }>();
+    .first<{ id: number; platform: string; name: string; stage: number; startAt: number }>();
   if (!contest) return c.json({ error: 'Contest not found' }, 404);
   if (contest.stage === 4) return c.json({ ok: true });
 
   if (brokenHandles.length) await c.env.DB.batch(brokenHandles.map((h) => markHandleBroken(c.env.DB, platform, h)));
+  if (platform === 'cf') await createUpsolves(c.env.DB, contest, problems, altProblems, solved);
   await finishContest(c.env, contest, presentHandles);
+  return c.json({ ok: true });
+});
+
+// The body is passed to SQLite unparsed, so a big chunk costs the Worker almost no CPU.
+ingestRoutes.post('/problemset', async (c) => {
+  const body = await c.req.text();
+  const db = c.env.DB;
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO cf_rounds (id, name, duration)
+         SELECT json_extract(value, '$.id'), json_extract(value, '$.name'), json_extract(value, '$.duration') FROM json_each(?, '$.rounds') WHERE true
+         ON CONFLICT (id) DO UPDATE SET name = excluded.name, duration = excluded.duration
+         WHERE name IS NOT excluded.name OR duration IS NOT excluded.duration`,
+      )
+      .bind(body),
+    db
+      .prepare(
+        `INSERT INTO problems (platform, problem_id, name, rating, tags, url, contest_at)
+         SELECT 'cf', json_extract(value, '$.problemId'), json_extract(value, '$.name'), json_extract(value, '$.rating'), json_extract(value, '$.tags'), json_extract(value, '$.url'), json_extract(value, '$.contestAt')
+         FROM json_each(?, '$.problems') WHERE true
+         ON CONFLICT (platform, problem_id) DO UPDATE SET name = excluded.name, rating = excluded.rating, tags = excluded.tags, url = excluded.url, contest_at = excluded.contest_at
+         WHERE rating IS NOT excluded.rating OR contest_at IS NOT excluded.contest_at OR tags IS NOT excluded.tags OR name IS NOT excluded.name`,
+      )
+      .bind(body),
+  ]);
+  return c.json({ ok: true });
+});
+
+ingestRoutes.get('/history-missing', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT h.handle FROM handles h JOIN users u ON u.id = h.user_id
+     WHERE h.platform = 'cf' AND h.approved_at IS NOT NULL AND h.broken = 0 AND u.active = 1 AND h.history_imported_at IS NULL`,
+  ).all<{ handle: string }>();
+  return c.json(results.map((r) => r.handle));
+});
+
+ingestRoutes.post('/cf-history', async (c) => {
+  const { handle, problemIds, done } = await c.req.json<{ handle: string; problemIds: string[]; done?: boolean }>();
+  const db = c.env.DB;
+  const owner = await db.prepare(`SELECT user_id AS userId FROM handles WHERE platform = 'cf' AND lower(handle) = lower(?)`).bind(handle).first<{ userId: number }>();
+  if (!owner) return c.json({ error: 'Handle not found' }, 404);
+  const statements = [db.prepare('INSERT OR IGNORE INTO cf_history (user_id, problem_id) SELECT ?, value FROM json_each(?)').bind(owner.userId, JSON.stringify(problemIds))];
+  if (done) statements.push(db.prepare(`UPDATE handles SET history_imported_at = unixepoch() WHERE user_id = ? AND platform = 'cf'`).bind(owner.userId));
+  await db.batch(statements);
   return c.json({ ok: true });
 });
 

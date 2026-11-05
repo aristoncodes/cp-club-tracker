@@ -8,6 +8,7 @@ if (!contest || (platform !== 'cf' && platform !== 'cc')) throw new Error('PLATF
 
 const presentHandles: string[] = [];
 const brokenHandles: string[] = [];
+const solved: Record<string, string[]> = {};
 const now = Math.floor(Date.now() / 1000);
 
 for (const handle of await getHandles(platform)) {
@@ -22,12 +23,27 @@ for (const handle of await getHandles(platform)) {
       brokenHandles.push(handle);
       break;
     }
-    if (cf.tookPartLive(cf.parseSubmissions(raw))) {
-      presentHandles.push(handle);
-      break;
-    }
+    const submissions = cf.parseSubmissions(raw);
+    if (cf.tookPartLive(submissions) && !presentHandles.includes(handle)) presentHandles.push(handle);
+    solved[handle] = [...(solved[handle] ?? []), ...cf.liveSolvedNames(submissions)];
   }
 }
 
-await postIngest('/participation', { platform, externalId: contest, presentHandles, brokenHandles });
+// Attendance must still finish if the problem list can't be read, so a failure here only skips upsolves.
+async function upsolveData() {
+  if (platform !== 'cf') return {};
+  try {
+    const problemset = await cf.fetchProblemset();
+    return {
+      problems: await cf.fetchContestProblems(contest!, problemset),
+      altProblems: alt ? await cf.fetchContestProblems(alt, problemset) : [],
+      solved,
+    };
+  } catch (err) {
+    console.error('Could not read the problem list, skipping upsolves:', err);
+    return {};
+  }
+}
+
+await postIngest('/participation', { platform, externalId: contest, presentHandles, brokenHandles, ...(await upsolveData()) });
 console.log(`${contest}: ${presentHandles.length} present, ${brokenHandles.length} broken handles`);

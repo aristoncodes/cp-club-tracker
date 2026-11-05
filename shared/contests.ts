@@ -1,7 +1,7 @@
 import type { ContestPlatform } from './types';
 
 const COUNTED_CF_ROUNDS = ['Div. 2', 'Div. 3', 'Div. 4', 'Educational'];
-const SPECIAL_CF_ROUNDS = ['Kotlin Heroes', 'April Fools', 'Testing Round', 'Q#'];
+export const SPECIAL_CF_ROUNDS = ['Kotlin Heroes', 'April Fools', 'Testing Round', 'Q#'];
 
 export function countsForAttendance(platform: ContestPlatform, name: string): boolean {
   if (platform === 'cc') return name.startsWith('Starters');

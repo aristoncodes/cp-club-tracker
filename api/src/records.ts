@@ -1,6 +1,7 @@
 import { problemRp, solvePoints } from 'shared/scoring';
 import type { IngestSolve } from 'shared/types';
 import type { Bindings } from './auth';
+import { potdBonuses } from './practice';
 import { sendPushes, type PushMessage } from './push';
 
 export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promise<void> {
@@ -23,18 +24,26 @@ export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promi
        url = COALESCE(excluded.url, url)`,
   );
   const insertSolve = db.prepare(
-    `INSERT OR IGNORE INTO solves (user_id, platform, problem_id, solved_at, live, rp, points) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR IGNORE INTO solves (user_id, platform, problem_id, solved_at, live, rp, points, potd_bonus) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   );
+  const remember = db.prepare('INSERT OR IGNORE INTO cf_history (user_id, problem_id) VALUES (?, ?)');
 
   const oldestFirst = [...solves].sort((a, b) => a.solvedAt - b.solvedAt);
+  const scoringCf = oldestFirst.flatMap((s) => {
+    const owner = byHandle.get(`cf:${s.handle.toLowerCase()}`);
+    return s.platform === 'cf' && owner && s.solvedAt >= owner.approvedAt ? [{ userId: owner.userId, rating: owner.cfRating, problemId: s.problemId, solvedAt: s.solvedAt }] : [];
+  });
+  const bonuses = await potdBonuses(db, scoringCf);
   const statements = oldestFirst.flatMap((s) => {
     const owner = byHandle.get(`${s.platform}:${s.handle.toLowerCase()}`);
     if (!owner) return [];
     const rp = problemRp(s.platform, s.rating ?? null);
     const scores = s.solvedAt >= owner.approvedAt;
+    const bonus = scores && s.platform === 'cf' ? (bonuses.get(`${owner.userId}:${s.problemId}`) ?? 0) : 0;
     return [
       upsertProblem.bind(s.platform, s.problemId, s.name ?? null, s.rating ?? null, s.tags ? JSON.stringify(s.tags) : null, s.url ?? null, owner.userId, s.platform, s.problemId),
-      insertSolve.bind(owner.userId, s.platform, s.problemId, s.solvedAt, s.live ? 1 : 0, rp, scores ? solvePoints(rp, owner.cfRating, s.live) : 0),
+      insertSolve.bind(owner.userId, s.platform, s.problemId, s.solvedAt, s.live ? 1 : 0, rp, scores ? solvePoints(rp, owner.cfRating, s.live) + bonus : 0, bonus),
+      ...(s.platform === 'cf' ? [remember.bind(owner.userId, s.problemId)] : []),
     ];
   });
   if (statements.length) await db.batch(statements);
