@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { IST_OFFSET, istDay } from 'shared/time';
 import { normalizeUsername, usernameError } from './accounts';
 import { requireAdmin, requireUser, type AppEnv } from './auth';
-import { syncNewlyApproved } from './cron';
+import { dispatchWorkflow } from './cron';
 
 const FLAG_SOLVES_PER_DAY = 30;
 const FLAG_WINDOW_SECONDS = 30 * 86400;
@@ -24,8 +24,11 @@ adminRoutes.patch('/handles/:userId/:platform', async (c) => {
     .run();
   if (!result.meta.changes) return c.json({ error: 'Handle not found' }, 404);
   if (approved) {
-    const sync = syncNewlyApproved(c.env, Number(c.req.param('userId')), c.req.param('platform'), Math.floor(Date.now() / 1000));
-    c.executionCtx.waitUntil(sync.catch((err) => console.error('Sync after approval failed:', err)));
+    const handle = await c.env.DB.prepare('SELECT handle FROM handles WHERE user_id = ? AND platform = ?')
+      .bind(Number(c.req.param('userId')), c.req.param('platform'))
+      .first<{ handle: string }>();
+    const backfill = dispatchWorkflow(c.env, 'backfill.yml', { platform: c.req.param('platform'), handle: handle?.handle ?? '' });
+    c.executionCtx.waitUntil(backfill.catch((err) => console.error('Backfill dispatch failed:', err)));
   }
   return c.json({ ok: true });
 });

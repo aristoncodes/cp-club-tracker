@@ -1,10 +1,10 @@
-import { brokenHandle, cfSolves } from 'shared/cf';
 import { IST_OFFSET, formatIST, istDay } from 'shared/time';
-import { CfError, fetchRatingHistory, fetchUserInfo, fetchUserStatus } from './cf';
+import { sendDueAnnouncements } from './announcements';
+import { refreshRatings, runCfQueue } from './cf-queue';
 import type { Bindings } from './auth';
 import { mealAt, mealPush, type Meal } from './meal-pushes';
 import { sendPushes, type PushMessage } from './push';
-import { createAttendanceRows, insertSolves, markHandleBroken } from './records';
+import { createAttendanceRows } from './records';
 
 const REMINDER_LEAD = 3600;
 const RSVP_LEAD = 300;
@@ -12,11 +12,6 @@ const VERIFY_DELAY = 900;
 const HOUR = 3600;
 const REDISPATCH_FOR = 86400;
 const CRON_TICK = 60;
-const SOLVE_SYNC_HANDLES = 25;
-const SOLVE_SYNC_BUDGET_MS = 48_000;
-const FIRST_SYNC_SUBMISSIONS = 50;
-const RECENT_SUBMISSIONS = 10;
-const JUDGING_MARGIN = 600;
 const RATING_REFRESH_SECOND_OF_DAY = 18.5 * HOUR;
 const STREAK_REMINDER_SECOND_OF_DAY = 15.5 * HOUR;
 const SOLVE_JOB_SECONDS = 5 * 60;
@@ -80,7 +75,7 @@ function setStage(db: D1Database, contest: ContestRow, stage: number): Promise<D
   return db.prepare('UPDATE contests SET stage = ? WHERE id = ?').bind(stage, contest.id).run();
 }
 
-async function dispatchWorkflow(env: Bindings, workflow: string, inputs: Record<string, string> = {}): Promise<void> {
+export async function dispatchWorkflow(env: Bindings, workflow: string, inputs: Record<string, string> = {}): Promise<void> {
   const response = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/${workflow}/dispatches`, {
     method: 'POST',
     headers: {
@@ -135,84 +130,6 @@ async function advanceContest(env: Bindings, contest: ContestRow, now: number): 
     await sendPushes(env, messages);
   }
   await setStage(db, contest, 2);
-}
-
-async function reportIfBroken(db: D1Database, err: unknown): Promise<boolean> {
-  const handle = err instanceof CfError ? brokenHandle(err.message) : null;
-  if (handle) await markHandleBroken(db, 'cf', handle).run();
-  return handle !== null;
-}
-
-type CfHandleRow = { userId: number; handle: string; syncedAt: number | null };
-
-export const ratingHistoryIsDue = (syncedAt: number | null, now: number) => syncedAt === null || Math.floor(syncedAt / HOUR) !== Math.floor(now / HOUR);
-
-// A handle's first fetch also reads its rating, so its first solves score correctly.
-// Later fetches only write submissions newer than the last one, which keeps a once-a-minute sync inside D1's free write limit.
-async function syncCfHandle(db: D1Database, row: CfHandleRow, now: number): Promise<void> {
-  try {
-    if (row.syncedAt === null) {
-      const [info] = await fetchUserInfo([row.handle]);
-      await db.prepare('UPDATE users SET cf_rating = ? WHERE id = ?').bind(info?.rating ?? null, row.userId).run();
-    }
-    const submissions = await fetchUserStatus(row.handle, row.syncedAt === null ? FIRST_SYNC_SUBMISSIONS : RECENT_SUBMISSIONS);
-    const since = row.syncedAt === null ? 0 : row.syncedAt - JUDGING_MARGIN;
-    const solves = cfSolves(row.handle, submissions).filter((solve) => solve.solvedAt >= since);
-    if (solves.length) await insertSolves(db, solves);
-    if (ratingHistoryIsDue(row.syncedAt, now)) {
-      const history = await fetchRatingHistory(row.handle);
-      await db
-        .prepare('UPDATE users SET cf_rating_history = ? WHERE id = ?')
-        .bind(
-          JSON.stringify(history.map((c) => ({ at: c.ratingUpdateTimeSeconds, rating: c.newRating, contestId: c.contestId, delta: c.newRating - c.oldRating }))),
-          row.userId,
-        )
-        .run();
-    }
-    await db.prepare(`UPDATE handles SET synced_at = ? WHERE user_id = ? AND platform = 'cf'`).bind(now, row.userId).run();
-  } catch (err) {
-    if (!(await reportIfBroken(db, err))) console.error(`Solve sync failed for ${row.handle}:`, err);
-  }
-}
-
-async function syncCfSolves(db: D1Database, now: number): Promise<void> {
-  const startedAt = Date.now();
-  const { results } = await db
-    .prepare(
-      `SELECT h.user_id AS userId, h.handle, h.synced_at AS syncedAt FROM handles h JOIN users u ON u.id = h.user_id
-       WHERE h.platform = 'cf' AND h.approved_at IS NOT NULL AND h.broken = 0 AND u.active = 1
-       ORDER BY h.synced_at IS NOT NULL, h.synced_at LIMIT ?`,
-    )
-    .bind(SOLVE_SYNC_HANDLES)
-    .all<CfHandleRow>();
-  for (const row of results) {
-    if (Date.now() - startedAt > SOLVE_SYNC_BUDGET_MS) return;
-    await syncCfHandle(db, row, now);
-  }
-}
-
-export async function syncNewlyApproved(env: Bindings, userId: number, platform: string, now: number): Promise<void> {
-  const row = await env.DB.prepare(`SELECT user_id AS userId, handle, synced_at AS syncedAt FROM handles WHERE user_id = ? AND platform = ?`)
-    .bind(userId, platform)
-    .first<CfHandleRow>();
-  if (!row) return;
-  if (platform === 'cf') await syncCfHandle(env.DB, row, now);
-  await dispatchWorkflow(env, 'backfill.yml', { platform, handle: row.handle });
-}
-
-async function refreshRatings(db: D1Database): Promise<void> {
-  const { results } = await db
-    .prepare(
-      `SELECT h.user_id AS userId, h.handle FROM handles h JOIN users u ON u.id = h.user_id
-       WHERE h.platform = 'cf' AND h.approved_at IS NOT NULL AND h.broken = 0 AND u.active = 1`,
-    )
-    .all<{ userId: number; handle: string }>();
-  if (!results.length) return;
-  const info = await fetchUserInfo(results.map((r) => r.handle));
-  const ratings = new Map(info.map((user) => [user.handle.toLowerCase(), user.rating ?? null]));
-  const update = db.prepare('UPDATE users SET cf_rating = ? WHERE id = ?');
-  const known = results.filter((r) => ratings.has(r.handle.toLowerCase()));
-  if (known.length) await db.batch(known.map((r) => update.bind(ratings.get(r.handle.toLowerCase()) ?? null, r.userId)));
 }
 
 export function streakReminderQuery(db: D1Database, now: number): D1PreparedStatement {
@@ -280,6 +197,7 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
   for (const contest of results) {
     await attempt(`contest ${contest.id}`, () => advanceContest(env, contest, now));
   }
+  await attempt('announcements', () => sendDueAnnouncements(env, now));
   if (isStreakReminderTick(now)) await attempt('streak reminder', () => sendStreakReminders(env, now));
   const meal = mealAt(now);
   if (meal) await attempt('meal push', () => sendMealPushes(env, meal, now));
@@ -287,14 +205,8 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
   if (isContestJobTick(now)) await attempt('contest job', () => dispatchWorkflow(env, 'sync-contests.yml'));
   if (isHealthJobTick(now)) await attempt('health job', () => dispatchWorkflow(env, 'health.yml'));
   if (isRatingRefreshTick(now)) {
-    await attempt('rating refresh', async () => {
-      try {
-        await refreshRatings(env.DB);
-      } catch (err) {
-        if (!(await reportIfBroken(env.DB, err))) throw err;
-      }
-    });
+    await attempt('rating refresh', () => refreshRatings(env.DB));
   }
   // Last, because it runs for most of a minute and shouldn't delay anything above.
-  await attempt('solve sync', () => syncCfSolves(env.DB, now));
+  await attempt('codeforces queue', () => runCfQueue(env, now));
 }

@@ -47,7 +47,7 @@ api/     migrations/  wrangler.toml  seed.dev.sql
          src/ingest.ts     /ingest/* routes
          src/cron.ts       per-minute dispatcher
          src/records.ts    writing solves and contest results, used by cron and ingest
-         src/cf.ts         Codeforces API client (user.status, user.info)
+         src/cf.ts         Codeforces API client (user.status, user.info), used only by cf-queue.ts
          src/push.ts       push sender for Expo and web
          src/web-push.ts   RFC 8291 encryption and VAPID for web push
 web/     wrangler.toml  src/main.tsx  src/api.ts  src/ui.tsx  src/pages/*.tsx  src/index.css  vite.config.ts
@@ -198,7 +198,7 @@ The contest steps make no Codeforces calls. Other Codeforces calls in a run are 
 
    If the window was missed, still create the rows and skip to verify.
 3. **Verify**, for counted contests with `stage < 3` and `now ≥ end_at + 900`: POST to GitHub `actions/workflows/participation.yml/dispatches` with inputs `platform`, `contest`, `alt`, `start` and `end`, and set `stage = 3`. The Action posts to `/ingest/participation`, which marks attendance (handles it lists as present → `present`, everyone else → `absent`), keeps any RSVP reason, sends result pushes (below) and sets `stage = 4`. A contest still at `stage = 3` is dispatched again every hour, up to 24 hours after `end_at + 900`. Codeforces no longer allows filtered `contest.standings` calls, and one call per student doesn't fit the Worker's 50 subrequests, so this runs in `jobs/`.
-4. **Codeforces solves.** Runs last in every minute's cron, stopping after 25 handles or 48 s, 2 s apart, oldest `handles.synced_at` first (not-yet-fetched handles come first). So every student refreshes every minute up to 25 students, about every 2 minutes at 50. A handle's first fetch reads its rating and `user.status?handle=…&from=1&count=50`; later fetches read `count=10` and only write submissions from the last fetch minus a 10-minute judging margin, so unchanged handles write nothing but `synced_at`. Keep `verdict = 'OK'`, upsert `problems`, and insert solves with `live = participantType is CONTESTANT or OUT_OF_COMPETITION`.
+4. **Codeforces solves.** Runs last in every minute's cron, inside the Codeforces queue (`api/src/cf-queue.ts`), stopping after 25 handles or 48 s, 2 s apart, oldest `handles.synced_at` first (not-yet-fetched handles come first). So every student refreshes every minute up to 25 students, about every 2 minutes at 50. A handle's first fetch reads its rating and `user.status?handle=…&from=1&count=50`; later fetches read `count=10` and only write submissions from the last fetch minus a 10-minute judging margin, so unchanged handles write nothing but `synced_at`. Keep `verdict = 'OK'`, upsert `problems`, and insert solves with `live = participantType is CONTESTANT or OUT_OF_COMPETITION`.
    `cf_rating_history` refreshes from `user.rating` once an hour per handle.
 5. **Daily at 18:30 UTC (00:00 IST):** refresh `cf_rating` for all students with one `user.info?handles=…` call.
 6. **Daily at 15:30 UTC (21:00 IST):** streak reminder to users with `notify_streak = 1`, a streak of at least 1 and no solve today.
@@ -244,7 +244,7 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | GET | /admin/attendance?from&to&platform&batch | admin | `{ contests, students, cells }`; the web builds the CSV |
 | PATCH | /admin/contests/:id | admin | `{ counts }` |
 | GET | /admin/students | admin | Students + handles + approval state |
-| PATCH | /admin/handles/:userId/:platform | admin | `{ approved }`. `true` sets `approved_at` to now if unset; `false` clears it. Approving fetches straight away: Codeforces recent solves and rating in the Worker, then `backfill.yml` for 6 months of history on any platform. A failed Codeforces fetch stays queued for the next minute |
+| PATCH | /admin/handles/:userId/:platform | admin | `{ approved }`. `true` sets `approved_at` to now if unset; `false` clears it. Approving resets `synced_at`, so the next cron run fetches Codeforces first, and dispatches `backfill.yml` for 6 months of history on any platform |
 | PATCH | /admin/users/:id | admin | `{ role?, active?, username? }` |
 | POST | /admin/admins | admin | `{ email }`. Promotes the user, or inserts a `users` row with `role = 'admin'` and an empty name, filled in at first sign-in |
 | GET | /admin/flags | admin | Users with > 30 solves in one IST day in the last 30 days, and handles with `broken = 1` |
@@ -264,7 +264,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 |---|---|---|
 | `sync-contests.ts` | Every 6 hours, dispatched by the Worker | CF `contest.list?gym=false` (future contests only) + CodeChef upcoming contests → apply `countsForAttendance` and parallel-round merge → `/ingest/contests` |
 | `health.ts` | Daily | Fails the run with a list of problems if anything looks wrong |
-| `sync-solves.ts` | Every 5 minutes, dispatched by the Worker | cc, atcoder, leetcode (and cf as a backstop) accepted submissions from the last 48 hours for approved handles → `/ingest/solves`, one post per handle |
+| `sync-solves.ts` | Every 5 minutes, dispatched by the Worker | cc, atcoder, leetcode (and cf as a backstop in the first run of each hour) accepted submissions from the last 48 hours for approved handles → `/ingest/solves`, one post per handle |
 | `backfill.ts` | `workflow_dispatch` (inputs `platform`, `handle`) | On approval: up to 6 months of accepted submissions → `/ingest/solves`, 50 at a time. Codeforces and AtCoder give full history; CodeChef gives about the last page and LeetCode the last 20 |
 | `participation.ts` | `workflow_dispatch` (inputs `platform`, `contest`, `alt`, `start`, `end`) | **cf:** `contest.status?contestId=…&handle=…` for each handle, and for `alt`; any submission with participantType `CONTESTANT` or `OUT_OF_COMPETITION` → present. A handle Codeforces says doesn't exist is reported in `brokenHandles`. **cc:** each handle's recent submissions; any submission linked to the contest or one of its divisions (`START263`, `START263A`…) with a time inside the contest → present. Any other failure stops the run without posting, so nobody is wrongly marked absent → `/ingest/participation` |
 
@@ -529,7 +529,7 @@ Picks run in the Worker, not an Action, because GitHub's timing is unreliable an
 | GET | /announcements | student | Inbox for my audience, plus `unread` and `pinned` |
 | POST | /announcements/seen | student | Sets `inbox_seen_at` |
 | GET, POST | /admin/announcements | admin | List with seen counts; create |
-| PATCH, DELETE | /admin/announcements/:id | admin | Edit or cancel a scheduled one; set or clear the pin |
+| PATCH, DELETE | /admin/announcements/:id | admin | PATCH sets or clears the pin; DELETE cancels one still scheduled |
 | GET | /practice/potd | student | My band's problem, N of M, bonus left, next time, 7-day strip, band members' status. Tags only if revealed |
 | POST | /practice/potd/reveal | student | Saved once with `INSERT OR IGNORE` |
 | GET | /practice/upsolves | student | Lists grouped by contest, with done state |

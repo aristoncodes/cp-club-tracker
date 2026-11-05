@@ -77,9 +77,9 @@ Rules are in `PRD_ADDONS.md`, looks in `DESIGN_ADDONS.md` and the design in `ARC
 
 34. [ ] **In-app updates.** Update card, foreground check, `/app-version`, optional sheet and required screen, web toast. The APK step depends on the open decision in `PRD_ADDONS.md`.
     - Done when: publishing an update makes the card appear on a running phone within one foreground cycle, and tapping it restarts into the new version.
-35. [ ] **Announcements.** Admin composer, scheduled send, push, app inbox, web bell dropdown, pin on Home, seen counts.
+35. [x] **Announcements.** Admin composer, scheduled send, push, app inbox, web bell dropdown, pin on Home, seen counts.
     - Done when: a scheduled announcement to one year of study reaches only that year's members at the right time, shows as unread, and the seen count goes up when they open the inbox.
-36. [ ] **Codeforces call queue.** `cf-queue.ts`, approval stops calling Codeforces, `sync-solves` reads Codeforces hourly.
+36. [x] **Codeforces call queue.** `cf-queue.ts`, approval stops calling Codeforces, `sync-solves` reads Codeforces hourly.
     - Done when: the Worker has one Codeforces caller, solve sync behaves as before, and approving a handle syncs it on the next run.
 37. [ ] **Upsolve tracker.** `upsolveTarget`, `contestType`, list generation on verify, Practice list, Home tile, reminders. CodeChef stays a follow-up until its adapter returns per-problem results.
     - Done when: for a verified Codeforces round, each member's list matches the table for their rating, excludes problems they solved during the contest, and an item solved later in practice is marked done within one sync.

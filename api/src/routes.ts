@@ -80,7 +80,7 @@ studentRoutes.use(requireUser);
 studentRoutes.get('/me', async (c) => {
   const user = c.get('user');
   const now = Math.floor(Date.now() / 1000);
-  const [handles, pendingReasons, days] = await c.env.DB.batch([
+  const [handles, pendingReasons, days, unread] = await c.env.DB.batch([
     c.env.DB.prepare(
       `SELECT platform, handle, approved_at IS NOT NULL AS approved FROM handles WHERE user_id = ?`,
     ).bind(user.id),
@@ -92,9 +92,13 @@ studentRoutes.get('/me', async (c) => {
     c.env.DB.prepare(
       `SELECT (solved_at + ${IST_OFFSET}) / 86400 AS day FROM solves WHERE user_id = ? AND solved_at >= ? GROUP BY day`,
     ).bind(user.id, now - HEATMAP_DAYS * 86400),
+    c.env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM announcements a JOIN users u ON u.id = ?
+       WHERE a.sent_at > u.inbox_seen_at AND (a.audience = 'all' OR (a.audience = 'admins' AND u.role = 'admin') OR (a.audience = 'batch' AND u.batch_year = a.batch_year))`,
+    ).bind(user.id),
   ]);
   const streak = solveStreak((days.results as { day: number }[]).map((d) => d.day), istDay(now));
-  return c.json({ user, handles: handles.results, pendingReasons: pendingReasons.results, streak });
+  return c.json({ user, handles: handles.results, pendingReasons: pendingReasons.results, streak, unreadAnnouncements: (unread.results[0] as { n: number }).n });
 });
 
 studentRoutes.put('/me', async (c) => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { contestAction, isContestJobTick, isHealthJobTick, isRatingRefreshTick, isSolveJobTick, ratingHistoryIsDue, isStreakReminderTick } from './cron';
+import { ratingHistoryIsDue } from './cf-queue';
+import { contestAction, isContestJobTick, isHealthJobTick, isRatingRefreshTick, isSolveJobTick, isStreakReminderTick } from './cron';
 import { biggestClimbers, withRanks } from './routes';
 
 const START = 2_000_000_000;
