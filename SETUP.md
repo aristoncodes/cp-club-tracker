@@ -157,7 +157,7 @@ Do these in order. Production D1 has real data, so read each migration in `api/m
 3. Apply the migrations: `cd api && pnpm exec wrangler d1 migrations apply cp-tracker --remote`.
 4. Deploy the Worker: `pnpm exec wrangler deploy`.
 5. Deploy the website: `pnpm --filter web build`, then `cd web && ../api/node_modules/.bin/wrangler deploy`.
-6. In `app/app.json`, set `extra.release` to the version and one line of notes, then publish the app: `cd app && eas update --channel preview --message "Add-ons"`.
+6. In `app/app.json`, set `extra.release` to the version and one line of notes. Then publish from `app/`, exporting `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID` with the values in `eas.json` first, because `eas update` doesn't read them from there and the app would ship with no server address: `eas update --channel preview --platform android --message "Add-ons"`.
 7. Run **sync-problemset** by hand under GitHub **Actions**. Problem of the day and duels have no problems until it has run. Its first history import stops at 20,000 rows and continues on later nights, to stay inside D1's free write limit. Check D1's usage page the next day.
 
 If a later step fails, the app and website keep working on the older Worker, because the migrations only add things.

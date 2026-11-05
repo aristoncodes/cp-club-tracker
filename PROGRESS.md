@@ -6,7 +6,7 @@ Last updated: 2026-11-05. `IMPLEMENTATION_PLAN.md` has the full detail of each t
 
 ## Add-ons
 
-All tasks are written on the `add-ons` branch. **Nothing is deployed, migrated on production, published over the air or pushed.**
+**Live for testing since 2026-11-05:** migrations applied, Worker and website deployed, over-the-air update published to `preview` (runtime 1.1.0), and the first problem and history import done. Not announced to the club yet.
 
 | Task | Status |
 |---|---|
@@ -27,11 +27,11 @@ All tasks are written on the `add-ons` branch. **Nothing is deployed, migrated o
 | 48. Digest | Admin → Digest works. No email, by decision |
 | 49. Final check | Web pages pass at 375 px and desktop with no console errors. Phones, a full day of `wrangler tail` and real duels are still to do |
 
-## Before the add-ons go live
+## Before announcing the add-ons
 
-- [ ] Review the migrations (`api/migrations/0004` to `0012`), then approve applying them to production
-- [ ] Merge `add-ons` into `main`; the Worker dispatches `sync-problemset.yml` from `main`
-- [ ] Follow `SETUP.md → Releasing the add-ons`
+- [ ] Test on real phones: the update, pushes, and three duels between two accounts
+- [ ] Watch `wrangler tail` for a full day. The first 5 cron runs took 16–30 ms CPU against the documented 10 ms limit, all with outcome `ok`, so check whether any hit `exceededCpu`
+- [ ] Announce it to the club
 
 ## Phase 4: redesign + accounts
 
