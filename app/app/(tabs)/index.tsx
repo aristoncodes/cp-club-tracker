@@ -5,9 +5,9 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { RSVP_REASONS } from 'shared/reasons';
 import { solvePoints } from 'shared/scoring';
 import { formatIST, istDay, solvesText, weekStrip } from 'shared/time';
-import { ApiError, api, clearSession, getSession, type Me } from '../../lib/api';
+import { ApiError, api, clearSession, getSession, type Announcement, type Me } from '../../lib/api';
 import { registerPushToken } from '../../lib/push';
-import { AvatarButton, Button, StreakPill } from '../../lib/ui';
+import { AvatarButton, BellButton, Button, openLink, StreakPill } from '../../lib/ui';
 import { theme } from '../../theme';
 
 type Contest = { id: number; platform: string; name: string; startAt: number; rsvp: string | null; goingCount: number; participantCount: number };
@@ -126,6 +126,7 @@ export default function Home() {
   const [dayRows, setDayRows] = useState<Standing[]>([]);
   const [weekRows, setWeekRows] = useState<Standing[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [pinned, setPinned] = useState<Announcement | null>(null);
   const [destination, setDestination] = useState<Destination>(null);
   const [error, setError] = useState('');
 
@@ -136,12 +137,14 @@ export default function Home() {
       const meData = await api<Me>('/me');
       if (meData.user.onboardingStep !== 'done') return setDestination('signup');
       registerPushToken().catch(console.warn);
-      const [upcoming, day, week, userProfile] = await Promise.all([
+      const [upcoming, day, week, userProfile, inbox] = await Promise.all([
         api<Contest[]>('/contests/upcoming'),
         api<Standing[]>('/leaderboard?period=day'),
         api<Standing[]>('/leaderboard?period=week'),
         api<Profile>(`/users/${meData.user.id}`),
+        api<{ pinned: Announcement | null }>('/announcements'),
       ]);
+      setPinned(inbox.pinned);
       setMe(meData);
       setContests(upcoming);
       setDayRows(day);
@@ -190,10 +193,20 @@ export default function Home() {
           <Text style={styles.greeting} numberOfLines={1}>Hey {me.user.name.split(' ')[0]}</Text>
         </View>
         <View style={styles.row}>
+          <BellButton unread={me.unreadAnnouncements} />
           <StreakPill streak={me.streak} />
           <AvatarButton userId={me.user.id} name={me.user.name} />
         </View>
       </View>
+      {pinned ? (
+        <Pressable accessibilityRole={pinned.link ? 'link' : undefined} disabled={!pinned.link} style={styles.pinned} onPress={() => pinned.link && openLink(pinned.link)}>
+          <Feather name="map-pin" size={16} color={theme.violetSoft} />
+          <View style={styles.flexOne}>
+            <Text style={styles.pinnedTitle} numberOfLines={1}>{pinned.title}</Text>
+            <Text style={styles.pinnedBody} numberOfLines={1}>{pinned.body}</Text>
+          </View>
+        </Pressable>
+      ) : null}
       {me.handles.some((h) => !h.approved) ? (
         <Pressable accessibilityRole="button" style={styles.banner} onPress={() => router.push('/settings')}>
           <View style={styles.bannerTile}><Text style={styles.bannerMark}>!</Text></View>
@@ -260,6 +273,9 @@ const styles = StyleSheet.create({
   greeting: { color: theme.text, fontFamily: theme.font.display, fontSize: 28, letterSpacing: -0.8 },
   muted: { color: theme.muted, fontFamily: theme.font.regular, fontSize: 13 },
   error: { color: theme.pink, fontFamily: theme.font.regular, fontSize: 14 },
+  pinned: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 16, backgroundColor: theme.violetTint },
+  pinnedTitle: { color: theme.text, fontFamily: theme.font.bold, fontSize: 14 },
+  pinnedBody: { color: theme.violetSoft, fontFamily: theme.font.regular, fontSize: 12 },
   banner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, minHeight: 44, borderRadius: 16, borderWidth: 1, borderColor: theme.sunLine, backgroundColor: theme.sunTint },
   bannerTile: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.sun },
   bannerMark: { color: theme.ink, fontFamily: theme.font.display, fontSize: 18 },

@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ratingColor } from 'shared/rating-color';
@@ -78,6 +78,20 @@ export function StreakPill({ streak }: { streak: number }) {
       <Text style={styles.streakText}>{streak}</Text>
     </View>
   );
+}
+
+export function BellButton({ unread }: { unread: number }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Announcements, ${unread} unread` : 'Announcements'} style={styles.bell} onPress={() => router.push('/announcements')}>
+      <Feather name="bell" size={20} color={theme.text} />
+      {unread > 0 ? <View style={styles.bellDot} /> : null}
+    </Pressable>
+  );
+}
+
+export function openLink(link: string): void {
+  if (link.startsWith('/')) router.push(link as Href);
+  else Linking.openURL(link);
 }
 
 export function ProgressBar({ percent, color = theme.lime }: { percent: number; color?: string }) {
@@ -189,6 +203,8 @@ const styles = StyleSheet.create({
   avatarText: { color: theme.ink, fontFamily: theme.font.bold },
   streak: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 38, paddingHorizontal: 12, borderRadius: 999, backgroundColor: theme.sun },
   streakText: { color: theme.ink, fontFamily: theme.font.monoHeavy, fontSize: 14 },
+  bell: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card },
+  bellDot: { position: 'absolute', top: 9, right: 10, width: 8, height: 8, borderRadius: 4, backgroundColor: theme.pink },
   track: { height: 10, borderRadius: 999, backgroundColor: theme.card2, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 999 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 4 },

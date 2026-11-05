@@ -1,8 +1,8 @@
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { api, getSession, type Me } from './api';
+import { api, getSession, type Announcement, type Me } from './api';
 import './index.css';
 import { Admin } from './pages/admin';
 import { Contests } from './pages/contests';
@@ -15,7 +15,7 @@ import { Profile } from './pages/profile';
 import { Reason } from './pages/reason';
 import { Settings } from './pages/settings';
 import { Signup } from './pages/signup';
-import { Avatar, Button, ErrorText, Flame, Logo, useLoad, type ShellContext } from './ui';
+import { Avatar, Button, ErrorText, Flame, InboxList, Logo, useLoad, type ShellContext } from './ui';
 
 function Banner({ title, helper, action, to }: { title: string; helper: string; action: string; to: string }) {
   return (
@@ -26,6 +26,46 @@ function Banner({ title, helper, action, to }: { title: string; helper: string; 
         <p className="text-xs text-sun-text">{helper}</p>
       </div>
       <Link to={to} className="lift inline-flex h-10 items-center rounded-full bg-sun px-4 font-extrabold text-ink">{action}</Link>
+    </div>
+  );
+}
+
+function BellMenu({ unread, onSeen }: { unread: number; onSeen: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<Announcement[] | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent) => {
+      if (!box.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  async function toggle() {
+    setOpen(!open);
+    if (open) return;
+    const inbox = await api<{ items: Announcement[] }>('/announcements');
+    setItems(inbox.items);
+    if (unread) {
+      await api('/announcements/seen', 'POST');
+      onSeen();
+    }
+  }
+
+  return (
+    <div ref={box} className="relative">
+      <button aria-label={unread ? `Announcements, ${unread} unread` : 'Announcements'} aria-expanded={open} onClick={toggle} className="lift relative flex size-10 cursor-pointer items-center justify-center rounded-full border border-line bg-card">
+        <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.300 21a2 2 0 0 0 3.400 0" /></svg>
+        {unread > 0 && <i className="absolute top-2 right-2 size-2 rounded-full bg-pink" />}
+      </button>
+      {open && (
+        <div className="absolute right-0 z-30 mt-2 max-h-[70vh] w-[380px] max-w-[calc(100vw-32px)] overflow-y-auto rounded-[20px] border border-line bg-card">
+          {items && <InboxList items={items} />}
+        </div>
+      )}
     </div>
   );
 }
@@ -63,6 +103,7 @@ function Shell() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <BellMenu unread={me.unreadAnnouncements} onSeen={reload} />
             <span className="flex h-9 items-center gap-1 rounded-full bg-sun px-3 text-ink" aria-label={`Solve streak: ${me.streak} days`}>
               <Flame /><span className="num">{me.streak}</span>
             </span>
@@ -96,6 +137,21 @@ function Shell() {
           <NavLink key={link.to} to={link.to} end className={bottomClass}>{link.short}</NavLink>
         ))}
       </nav>
+    </div>
+  );
+}
+
+function Announcements() {
+  const { data, error } = useLoad(async () => {
+    const inbox = await api<{ items: Announcement[] }>('/announcements');
+    await api('/announcements/seen', 'POST');
+    return inbox.items;
+  }, []);
+  if (error) return <ErrorText>{error}</ErrorText>;
+  return (
+    <div className="flex max-w-[800px] flex-col gap-4">
+      <h1 className="display text-[52px] leading-none tracking-[-0.035em]">Announcements</h1>
+      <div className="overflow-hidden rounded-[20px] border border-line bg-card">{data && <InboxList items={data} />}</div>
     </div>
   );
 }
@@ -164,6 +220,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/u/:id" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/announcements" element={<Announcements />} />
             <Route path="/reason/:contestId" element={<Reason />} />
             <Route path="/admin" element={<Admin />} />
           </Route>

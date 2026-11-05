@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { adminRoutes } from './admin';
 import { accountRoutes } from './accounts';
+import { adminAnnouncementRoutes, announcementRoutes } from './announcements';
 import type { AppEnv, Bindings } from './auth';
 import { runCron } from './cron';
 import { ingestRoutes } from './ingest';
@@ -30,7 +31,9 @@ app.get('/app-version', (c) =>
 
 app.route('/auth', accountRoutes);
 app.route('/ingest', ingestRoutes);
+app.route('/admin/announcements', adminAnnouncementRoutes);
 app.route('/admin', adminRoutes);
+app.route('/announcements', announcementRoutes);
 app.route('/', studentRoutes);
 
 export default {

@@ -3,7 +3,7 @@ import { JetBrainsMono_500Medium, JetBrainsMono_700Bold, JetBrainsMono_800ExtraB
 import { SpaceGrotesk_700Bold } from '@expo-google-fonts/space-grotesk';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
-import { router, Stack } from 'expo-router';
+import { router, Stack, type Href } from 'expo-router';
 import { useEffect } from 'react';
 import { Linking, StatusBar } from 'react-native';
 import { handleRsvpAction, isRsvpAction, setupNotifications } from '../lib/push';
@@ -34,9 +34,11 @@ export default function RootLayout() {
       handleRsvpAction(response).catch(console.warn);
       return;
     }
-    const { contestId, screen, url, rsvp } = response.notification.request.content.data ?? {};
+    const { contestId, screen, url, rsvp, path } = response.notification.request.content.data ?? {};
     if (screen === 'reason') {
       router.push({ pathname: '/reason', params: { contestId: String(contestId), rsvp: rsvp ? '1' : '' } });
+    } else if (typeof path === 'string') {
+      router.push(path as Href);
     } else if (typeof url === 'string') {
       Linking.openURL(url);
     }

@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { RSVP_REASONS } from 'shared/reasons';
 import { solvePoints } from 'shared/scoring';
 import { formatIST, IST_OFFSET, timeAgo, weekStrip } from 'shared/time';
-import { api, type Contest } from '../api';
-import { Avatar, Button, Card, ContestRow, ErrorText, inputClass, platformLabel, ProgressBar, Rating, RatingChip, useLoad, useMe } from '../ui';
+import { api, type Announcement, type Contest } from '../api';
+import { Avatar, Button, Card, ContestRow, ErrorText, inputClass, PinnedAnnouncement, platformLabel, ProgressBar, Rating, RatingChip, useLoad, useMe } from '../ui';
 
 type Standing = { userId: number; name: string; rank: number; points: number; solves: number; cfRating: number | null };
 type Solve = { userId: number; name: string; platform: string; problemId: string; problemName: string | null; tags: string[]; rp: number; solvedAt: number };
@@ -137,6 +137,7 @@ export function Home() {
   const profile = useLoad(() => api<Profile>(`/users/${me.user.id}`), [me.user.id]);
   const challenge = useLoad(() => api<Challenge>('/challenge'), []);
   const feed = useLoad(() => api<Solve[]>('/feed'), []);
+  const inbox = useLoad(() => api<{ pinned: Announcement | null }>('/announcements'), []);
 
   const rows = board.data ?? [];
   const index = rows.findIndex((row) => row.userId === me.user.id);
@@ -158,6 +159,7 @@ export function Home() {
           {me.streak ? <><span className="num text-sun">{me.streak}</span>-day streak</> : 'no streak yet'}
         </p>
       </div>
+      {inbox.data?.pinned && <PinnedAnnouncement item={inbox.data.pinned} />}
       <div className="grid items-start gap-5 min-[900px]:grid-cols-[1fr_320px]">
         <div className="flex min-w-0 flex-col gap-4">
           {next ? <NextContest contest={next} onChange={contests.reload} /> : contests.data && <Card><p className="text-muted">No contests coming up yet. Check back soon.</p></Card>}

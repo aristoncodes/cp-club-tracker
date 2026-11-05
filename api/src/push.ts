@@ -69,3 +69,32 @@ export async function sendPushes(env: Bindings, messages: PushMessage[]): Promis
   await sendWeb(env, messages.filter((m) => isWebSubscription(m.to)));
   await sendExpo(env.DB, messages.filter((m) => !isWebSubscription(m.to)));
 }
+
+export type PushPreference = 'notify_practice' | 'notify_rival' | 'notify_badges' | 'notify_recap';
+export type UserPush = Omit<PushMessage, 'to'> & { userId: number };
+
+// Sends each message to all of a member's devices. push_log drops a second push of the same type in the same minute.
+export async function pushUsers(env: Bindings, type: string, messages: UserPush[], preference?: PushPreference): Promise<void> {
+  if (!messages.length) return;
+  const db = env.DB;
+  const minute = Math.floor(Date.now() / 60_000);
+  const log = db.prepare('INSERT OR IGNORE INTO push_log (user_id, type, minute) VALUES (?, ?, ?) RETURNING user_id');
+  const logged = await db.batch<{ user_id: number }>(messages.map((m) => log.bind(m.userId, type, minute)));
+  const fresh = logged.flatMap((result) => result.results.map((row) => row.user_id));
+  const { results } = await db
+    .prepare(
+      `SELECT p.token, p.user_id AS userId FROM push_tokens p JOIN users u ON u.id = p.user_id
+       WHERE u.active = 1 ${preference ? `AND u.${preference} = 1` : ''} AND p.user_id IN (SELECT value FROM json_each(?))`,
+    )
+    .bind(JSON.stringify(fresh))
+    .all<{ token: string; userId: number }>();
+  await sendPushes(
+    env,
+    results.flatMap(({ token, userId }) => {
+      const message = messages.find((m) => m.userId === userId);
+      if (!message) return [];
+      const { userId: _, ...rest } = message;
+      return [{ to: token, ...rest }];
+    }),
+  );
+}

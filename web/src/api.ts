@@ -50,6 +50,20 @@ export type Me = {
   handles: Handle[];
   pendingReasons: { id: number; name: string }[];
   streak: number;
+  unreadAnnouncements: number;
+};
+
+export type Announcement = {
+  id: number;
+  title: string;
+  body: string;
+  audience: string;
+  batchYear: number | null;
+  link: string | null;
+  sentAt: number | null;
+  pinned: number;
+  authorName: string;
+  unread?: number;
 };
 
 export function getSession(): string | null {

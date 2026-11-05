@@ -1,9 +1,10 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
+import { studyYearLabel } from 'shared/batch';
 import { ratingColor } from 'shared/rating-color';
 import { REASONS } from 'shared/reasons';
-import { formatIST } from 'shared/time';
-import type { Contest, Me } from './api';
+import { formatIST, timeAgo } from 'shared/time';
+import type { Announcement, Contest, Me } from './api';
 
 export type ShellContext = { me: Me; reload: () => void };
 
@@ -199,6 +200,51 @@ export function ContestRow({ contest }: { contest: Contest }) {
       {RSVP_PILLS[contest.rsvp as 'yes' | 'no'] ?? <Pill tone="muted">Not answered</Pill>}
     </div>
   );
+}
+
+export function audienceLabel(item: Pick<Announcement, 'audience' | 'batchYear'>): string {
+  if (item.audience === 'admins') return 'Admins';
+  if (item.audience === 'batch') return studyYearLabel(item.batchYear, Date.now() / 1000) || 'One year';
+  return 'Everyone';
+}
+
+export function AppLink({ to, className, children }: { to: string; className?: string; children: ReactNode }) {
+  if (to.startsWith('/')) return <Link to={to} className={className}>{children}</Link>;
+  return <a href={to} target="_blank" rel="noreferrer" className={className}>{children}</a>;
+}
+
+export function InboxList({ items }: { items: Announcement[] }) {
+  const now = Date.now() / 1000;
+  if (!items.length) return <p className="p-4 text-muted">Nothing here yet. Club news shows up here.</p>;
+  return (
+    <div className="flex flex-col divide-y divide-line">
+      {items.map((item) => (
+        <article key={item.id} className={`flex gap-2 p-4 ${item.unread ? 'bg-[#1F1F29]' : ''}`}>
+          <span aria-label={item.unread ? 'Unread' : undefined} className={`mt-1.5 size-2 shrink-0 rounded-full ${item.unread ? 'bg-pink' : ''}`} />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted">{item.authorName} · {item.sentAt ? timeAgo(item.sentAt, now) : ''}</p>
+            <p className="font-bold">{item.title}</p>
+            <p className="text-muted">{item.body}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Pill tone="muted">{audienceLabel(item)}</Pill>
+              {item.link && <AppLink to={item.link} className="text-xs font-bold text-lime hover:underline">Open →</AppLink>}
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+export function PinnedAnnouncement({ item }: { item: Announcement }) {
+  const content = (
+    <>
+      <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M12 17v5M9 3h6l-1 7 3 4H7l3-4z" /></svg>
+      <span className="min-w-0 flex-1 truncate"><b>{item.title}</b> <span className="text-violet-soft">{item.body}</span></span>
+    </>
+  );
+  const classes = 'flex items-center gap-2 rounded-2xl bg-violet-tint px-4 py-2.5';
+  return item.link ? <AppLink to={item.link} className={classes}>{content}</AppLink> : <div className={classes}>{content}</div>;
 }
 
 export function CellMark({ status, reasonType }: { status: string | null | undefined; reasonType: string | null | undefined }) {

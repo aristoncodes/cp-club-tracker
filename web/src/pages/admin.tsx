@@ -5,8 +5,9 @@ import { REASONS } from 'shared/reasons';
 import { formatIST, IST_OFFSET, solvesText } from 'shared/time';
 import { api } from '../api';
 import { Avatar, Button, Card, CellMark, ErrorText, inputClass, platformLabel, ProgressBar, useLoad, useMe } from '../ui';
+import { AnnouncementsSection } from './admin-tools';
 
-type Section = 'attendance' | 'students' | 'admins' | 'flags';
+type Section = 'attendance' | 'students' | 'admins' | 'announcements' | 'flags';
 type GridContest = { id: number; platform: string; name: string; startAt: number; counts: number };
 type GridStudent = { id: number; name: string; batchYear: number | null };
 type Cell = { contestId: number; userId: number; rsvp: string | null; status: string | null; reasonType: string | null; reasonText: string | null };
@@ -18,6 +19,7 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: 'attendance', label: 'Attendance' },
   { id: 'students', label: 'Students & handles' },
   { id: 'admins', label: 'Admins' },
+  { id: 'announcements', label: 'Announcements' },
   { id: 'flags', label: 'Flags' },
 ];
 const DAY = 86400;
@@ -462,6 +464,7 @@ export function Admin() {
       {section === 'attendance' && <Attendance />}
       {section === 'students' && <Students />}
       {section === 'admins' && <Admins />}
+      {section === 'announcements' && <AnnouncementsSection />}
       {section === 'flags' && <FlagsSection />}
     </div>
   );
