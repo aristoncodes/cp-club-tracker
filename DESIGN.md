@@ -1,4 +1,4 @@
-# DESIGN — OOPS CLUB
+# DESIGN — OOPS.Grind
 
 The reference mockups are the five artboards on the "CP Club Tracker redesign" canvas (Web · Leaderboard, Web · Admin attendance, Web · Sign in, App · Home, App · Leaderboard). When this file and the canvas disagree, this file wins.
 
@@ -94,7 +94,7 @@ Build only these. Each lives in the file that uses it unless 2+ screens need it.
 
 - **Button.** Primary: `lime` fill, `ink` text, 800 weight, pill; height 40–44 on web, 48 on app. Secondary: transparent with a 2 px outline (`violet-soft` on violet cards, `line` elsewhere). Warning: `sun` fill, `ink` text.
 - **Segmented tabs** (Today / Week / Month): a pill track (`card` with a `line` border, 4–5 px padding). The active segment has a `lime` fill and `ink` text; inactive segments use `muted` text.
-- **Nav (web):** logo tile (the app icon at 34 px, radius 10, rotated −6°) + wordmark "OOPS" + lime "CLUB" in Space Grotesk. Links, in order: **Home · Leaderboard · Contests · Feed · Admin** (admins only). Links are pills; the active one has a `text` fill and `ink` text. Right side: streak pill (`sun`, flame icon + mono number) and the **avatar, which links to your Profile**; on the Profile page it gets a 2 px `lime` outline. There is no "Me" or "Settings" link in the nav.
+- **Nav (web):** logo tile (the app icon at 34 px, radius 10, rotated −6°) + wordmark "OOPS" + lime "." + "Grind" in Space Grotesk. Links, in order: **Home · Leaderboard · Contests · Feed · Admin** (admins only). Links are pills; the active one has a `text` fill and `ink` text. Right side: streak pill (`sun`, flame icon + mono number) and the **avatar, which links to your Profile**; on the Profile page it gets a 2 px `lime` outline. There is no "Me" or "Settings" link in the nav.
 - **Bottom tabs (app):** **Home · Board · Contests · Feed**. No "Me" tab. Stroke icons at 22 px; the active tab is `lime`, inactive ones `muted`. 1 px top border. Profile and Settings are pushed screens: none of the four tabs is active on them.
 - **Avatar button (app):** a 44 px avatar at the top right of Home and Board that opens Profile.
 - **Screen header (app, pushed screens):** a 44 px back chevron on the left and the title. On Profile, the title is centred with a 44 px settings gear on the right; on Settings, the title is in display 24 next to the back chevron.

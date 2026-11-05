@@ -1,4 +1,4 @@
-# ARCHITECTURE — OOPS CLUB
+# ARCHITECTURE — OOPS.Grind
 
 ## Overview
 

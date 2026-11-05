@@ -1,4 +1,4 @@
-# TESTING — OOPS CLUB
+# TESTING — OOPS.Grind
 
 Test logic that is pure and easy to get wrong. Verify the rest by running it. No end-to-end framework, no UI snapshot tests, no mocks of D1: use a real local D1 through `wrangler dev`.
 

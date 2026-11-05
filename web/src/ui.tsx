@@ -100,7 +100,7 @@ export function Logo() {
     <span className="flex items-center gap-2">
       <img src="/icon-192.png" alt="" className="size-[34px] -rotate-6 rounded-[10px]" />
       <span className="display text-xl">
-        OOPS <span className="text-lime">CLUB</span>
+        OOPS<span className="text-lime">.</span>Grind
       </span>
     </span>
   );

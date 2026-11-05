@@ -38,7 +38,7 @@ export default function Login() {
     <View style={styles.page}>
       <View style={styles.brand}>
         <Image source={require('../assets/icon.png')} style={styles.logoTile} />
-        <Text style={styles.wordmark}>OOPS <Text style={styles.lime}>CLUB</Text></Text>
+        <Text style={styles.wordmark}>OOPS<Text style={styles.lime}>.</Text>Grind</Text>
       </View>
       <View style={styles.middle}>
         <Text style={styles.headline}>Welcome back.{'\n'}<Text style={styles.lime}>Let's grind.</Text></Text>

@@ -1,8 +1,8 @@
-# Progress — OOPS CLUB
+# Progress — OOPS.Grind
 
 Last updated: 2026-11-05. `IMPLEMENTATION_PLAN.md` has the full detail of each task, and `SETUP.md` has the steps to go live.
 
-**Where it stands:** the redesign and accounts (Phase 4) are written and committed, but **not live yet**. They need the production migration and a real-device test. The website and API online are still the previous version.
+**Where it stands:** the redesign, one-page sign-up, per-minute fetch, meal-time pushes and daily health check are built. Website, API and app updates are deployed from `main`; the APK download link serves the newest release. Still to check on a real phone: push arrival, RSVP buttons with the app closed, and sign-up.
 
 ## Phase 4: redesign + accounts
 

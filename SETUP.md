@@ -1,4 +1,4 @@
-# Setup: taking OOPS CLUB live
+# Setup: taking OOPS.Grind live
 
 Every service here is free and needs no credit card. Do the parts in order; each part uses values from the one before it. Run commands from the repo root unless a step says otherwise.
 

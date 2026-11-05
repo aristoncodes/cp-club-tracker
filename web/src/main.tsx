@@ -56,7 +56,7 @@ function Shell() {
     <div className="pb-20 sm:pb-10">
       <header className="border-b border-line">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
-          <Link to="/" aria-label="OOPS CLUB home"><Logo /></Link>
+          <Link to="/" aria-label="OOPS.Grind home"><Logo /></Link>
           <nav className="hidden flex-wrap items-center gap-1 sm:flex">
             {links.map((link) => (
               <NavLink key={link.to} to={link.to} end className={pillClass}>{link.label}</NavLink>

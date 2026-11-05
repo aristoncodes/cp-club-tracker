@@ -1,4 +1,4 @@
-# CLAUDE.md — How to work on OOPS CLUB
+# CLAUDE.md — How to work on OOPS.Grind
 
 Read these before writing any code, in this order:
 
