@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { batchForStudyYear, STUDY_YEARS } from 'shared/batch';
 import { formatIST, IST_OFFSET } from 'shared/time';
-import { api, type Announcement } from '../api';
+import { api, type Announcement, type Contest } from '../api';
 import { audienceLabel, Button, Card, ErrorText, inputClass, ProgressBar, Toggle, useLoad } from '../ui';
 
 const TITLE_MAX = 80;
@@ -129,6 +130,152 @@ export function AnnouncementsSection() {
           ))}
         </Card>
       </aside>
+    </div>
+  );
+}
+
+type RoundInfo = { name: string; duration: number; problemCount: number };
+
+export function VirtualsSection() {
+  const list = useLoad(() => api<(Contest & { counts: number; startedCount: number })[]>('/virtuals'), []);
+  const [contestId, setContestId] = useState('');
+  const [start, setStart] = useState('');
+  const [counts, setCounts] = useState(false);
+  const [round, setRound] = useState<RoundInfo | null>(null);
+  const [error, setError] = useState('');
+
+  async function lookup(id: string) {
+    setContestId(id);
+    setRound(null);
+    setError('');
+    if (!id) return;
+    try {
+      setRound(await api<RoundInfo>(`/admin/virtuals/lookup?contestId=${id}`));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function schedule() {
+    setError('');
+    try {
+      await api('/admin/virtuals', 'POST', { cfContestId: Number(contestId), startAt: istInputToUnix(start), counts });
+      setContestId('');
+      setStart('');
+      setCounts(false);
+      setRound(null);
+      list.reload();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  return (
+    <div className="grid items-start gap-4 min-[900px]:grid-cols-[1fr_380px]">
+      <Card className="flex flex-col gap-3">
+        <h1 className="display text-2xl">Schedule a club virtual</h1>
+        <label className="flex flex-col gap-1">
+          <span className="label">Codeforces contest id</span>
+          <input className={`${inputClass} num`} inputMode="numeric" value={contestId} onChange={(e) => lookup(e.target.value.replace(/\D/g, ''))} />
+        </label>
+        {round && <p className="rounded-2xl border border-lime-line bg-lime-tint p-3 font-bold text-lime">✓ {round.name} · <span className="num">{Math.round(round.duration / 60)}</span> min · <span className="num">{round.problemCount}</span> problems</p>}
+        <label className="flex flex-col gap-1">
+          <span className="label">Start (IST)</span>
+          <input className={inputClass} type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
+        </label>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="font-bold">Counts for attendance</p>
+            <p className="text-xs text-muted">Members who don't start it would be marked absent.</p>
+          </div>
+          <Toggle label="Counts for attendance" on={counts} onChange={setCounts} />
+        </div>
+        {error && <ErrorText>{error}</ErrorText>}
+        <Button disabled={!round || !start} onClick={schedule}>Schedule virtual</Button>
+      </Card>
+      <Card className="flex flex-col gap-2">
+        <h2 className="display text-lg">Scheduled</h2>
+        {list.data?.length === 0 && <p className="text-muted">None yet.</p>}
+        {list.data?.map((item) => (
+          <Link key={item.id} to={`/virtual/${item.id}`} className="border-t border-line pt-2 first-of-type:border-0 first-of-type:pt-0 hover:underline">
+            <p className="font-bold">{item.name}</p>
+            <p className="text-xs text-muted">{formatIST(item.startAt)} · <span className="num">{item.goingCount}</span> going · <span className="num">{item.startedCount}</span> started{item.counts ? ' · counts' : ''}</p>
+          </Link>
+        ))}
+      </Card>
+    </div>
+  );
+}
+
+type Digest = {
+  attendance: { present: number; total: number };
+  lastAttendance: { present: number; total: number };
+  members: { active: number; total: number };
+  solves: number;
+  turnout: { id: number; name: string; startAt: number; present: number; total: number }[];
+  quiet: { userId: number; name: string }[];
+  pendingReasons: number;
+  handlesWaiting: number;
+  newSignups: number;
+  climbers: { userId: number; name: string; gained: number; rank: number }[];
+};
+
+const percent = (part: { present: number; total: number }) => (part.total ? Math.round((part.present / part.total) * 100) : null);
+
+export function DigestSection() {
+  const { data, error } = useLoad(() => api<Digest>('/admin/digest'), []);
+  if (error) return <ErrorText>{error}</ErrorText>;
+  if (!data) return null;
+  const attendance = percent(data.attendance);
+  const last = percent(data.lastAttendance);
+  return (
+    <div className="flex flex-col gap-4">
+      <h1 className="display text-[44px] leading-none tracking-[-0.035em]">Digest</h1>
+      <p className="text-muted">The last 7 days. Coordinators read it here until an email service is chosen.</p>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-[20px] bg-lime p-5 text-ink">
+          <p className="text-xs font-extrabold uppercase">Attendance</p>
+          <p className="num text-[32px]">{attendance === null ? '—' : `${attendance}%`}</p>
+          <p className="text-xs font-bold">{attendance !== null && last !== null ? <>{attendance >= last ? '▲' : '▼'} <span className="num">{Math.abs(attendance - last)}</span> from last week</> : 'No comparison yet'}</p>
+        </div>
+        <Card><p className="label">Active members</p><p className="num text-[32px]">{data.members.active}<span className="text-muted">/{data.members.total}</span></p></Card>
+        <Card><p className="label">Club solves</p><p className="num text-[32px]">{data.solves}</p></Card>
+        <Card><p className="label">Pending reasons</p><p className="num text-[32px] text-sun">{data.pendingReasons}</p></Card>
+      </div>
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <Card className="flex flex-col gap-2">
+          <h2 className="display text-lg">Contest turnout</h2>
+          {data.turnout.length === 0 && <p className="text-muted">No counted contests this week.</p>}
+          {data.turnout.map((contest) => (
+            <p key={contest.id} className="flex justify-between gap-2 border-t border-line pt-2 first-of-type:border-0 first-of-type:pt-0">
+              <span className="min-w-0 truncate">{contest.name}</span>
+              <span className="num shrink-0">{contest.present}/{contest.total}</span>
+            </p>
+          ))}
+        </Card>
+        <Card className="flex flex-col gap-2 bg-pink-tint">
+          <h2 className="display text-lg">Needs a nudge</h2>
+          <p className="text-xs text-pink-text">No solves in 7 days.</p>
+          {data.quiet.length === 0 && <p className="text-pink-text">Everyone solved something.</p>}
+          <div className="flex flex-wrap gap-1.5">
+            {data.quiet.map((member) => <Link key={member.userId} to={`/u/${member.userId}`} className="rounded-full bg-ink px-3 py-1 text-xs font-bold">{member.name}</Link>)}
+          </div>
+        </Card>
+        <Card className="flex flex-col gap-2">
+          <h2 className="display text-lg">Top climbers</h2>
+          {data.climbers.length === 0 && <p className="text-muted">Nobody climbed yet.</p>}
+          {data.climbers.map((climber) => (
+            <p key={climber.userId} className="flex justify-between gap-2">
+              <Link to={`/u/${climber.userId}`} className="hover:underline">{climber.name}</Link>
+              <span className="num text-lime">▲{climber.gained} · #{climber.rank}</span>
+            </p>
+          ))}
+        </Card>
+        <div className="grid grid-cols-2 gap-3">
+          <Card><p className="label">Handles waiting</p><p className="num text-[32px] text-pink">{data.handlesWaiting}</p></Card>
+          <Card><p className="label">New sign-ups</p><p className="num text-[32px]">{data.newSignups}</p></Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -29,7 +29,7 @@ ingestRoutes.get('/health', async (c) => {
        FROM handles h JOIN users u ON u.id = h.user_id
        WHERE h.approved_at IS NOT NULL AND h.broken = 0 AND u.active = 1 GROUP BY h.platform`,
     ),
-    db.prepare('SELECT platform, MAX(start_at) AS startAt FROM contests GROUP BY platform'),
+    db.prepare(`SELECT platform, MAX(start_at) AS startAt FROM contests WHERE kind = 'round' GROUP BY platform`),
     db.prepare('SELECT name FROM contests WHERE counts = 1 AND stage < 4 AND end_at < ?').bind(stuckAfter),
     db.prepare(`SELECT platform || ':' || handle AS handle FROM handles WHERE broken = 1`),
     db.prepare('SELECT DISTINCT error FROM push_errors WHERE at > unixepoch() - 86400'),

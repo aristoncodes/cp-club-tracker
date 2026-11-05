@@ -37,6 +37,7 @@ export type User = {
   notifyPractice: number;
   notifyRival: number;
   notifyBadges: number;
+  notifyRecap: number;
   rivalId: number | null;
 };
 
@@ -44,7 +45,7 @@ export type AppEnv = { Bindings: Bindings; Variables: { user: User } };
 
 export const USER_COLUMNS = `id, email, name, username, 1 - username_changes AS usernameChangesLeft, batch_year AS batchYear,
   role, active, onboarding_step AS onboardingStep,
-  cf_rating AS cfRating, notify_hour AS notifyHour, notify_rsvp AS notifyRsvp, notify_result AS notifyResult, notify_streak AS notifyStreak, notify_meals AS notifyMeals, notify_practice AS notifyPractice, notify_rival AS notifyRival, notify_badges AS notifyBadges, rival_id AS rivalId`;
+  cf_rating AS cfRating, notify_hour AS notifyHour, notify_rsvp AS notifyRsvp, notify_result AS notifyResult, notify_streak AS notifyStreak, notify_meals AS notifyMeals, notify_practice AS notifyPractice, notify_rival AS notifyRival, notify_badges AS notifyBadges, notify_recap AS notifyRecap, rival_id AS rivalId`;
 const SESSION_DAYS = 30;
 
 const sessionKey = (env: Bindings) => new TextEncoder().encode(env.SESSION_SECRET);

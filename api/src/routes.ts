@@ -25,6 +25,7 @@ const NOTIFY_COLUMNS: Record<string, string> = {
   notifyPractice: 'notify_practice',
   notifyRival: 'notify_rival',
   notifyBadges: 'notify_badges',
+  notifyRecap: 'notify_recap',
 };
 
 type DuelFeedRow = { id: number; status: string; winnerId: number | null; time: number | null; finishedAt: number; rating: number | null; aId: number; aName: string; bId: number; bName: string };
@@ -215,12 +216,12 @@ studentRoutes.post('/me/push-token', async (c) => {
 
 studentRoutes.get('/contests/upcoming', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT c.id, c.platform, c.name, c.url, c.start_at AS startAt, c.end_at AS endAt, a.rsvp,
+    `SELECT c.id, c.platform, c.name, c.url, c.start_at AS startAt, c.end_at AS endAt, c.kind, a.rsvp,
             (SELECT COUNT(*) FROM attendance x WHERE x.contest_id = c.id AND x.rsvp = 'yes') AS goingCount,
             (SELECT COUNT(*) FROM handles h JOIN users u ON u.id = h.user_id
              WHERE h.platform = c.platform AND h.approved_at IS NOT NULL AND u.active = 1) AS participantCount
      FROM contests c LEFT JOIN attendance a ON a.contest_id = c.id AND a.user_id = ?
-     WHERE c.counts = 1 AND c.start_at > unixepoch()
+     WHERE (c.counts = 1 OR c.kind = 'virtual') AND c.start_at > unixepoch()
      ORDER BY c.start_at LIMIT 10`,
   )
     .bind(c.get('user').id)
@@ -244,7 +245,7 @@ studentRoutes.post('/contests/:id/rsvp', async (c) => {
   const contest = await c.env.DB.prepare(
     `SELECT c.stage FROM contests c
      JOIN handles h ON h.platform = c.platform AND h.user_id = ? AND h.approved_at IS NOT NULL
-     WHERE c.id = ? AND c.counts = 1`,
+     WHERE c.id = ? AND (c.counts = 1 OR c.kind = 'virtual')`,
   )
     .bind(userId, contestId)
     .first<{ stage: number }>();

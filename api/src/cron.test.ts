@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ratingHistoryIsDue } from './cf-queue';
-import { contestAction, isContestJobTick, isHealthJobTick, isRatingRefreshTick, isSolveJobTick, isStreakReminderTick } from './cron';
+import { contestAction, isContestJobTick, isHealthJobTick, isRatingRefreshTick, isRecapTick, isSolveJobTick, isStreakReminderTick } from './cron';
 import { biggestClimbers, duelFeedText, withRanks } from './routes';
 
 const START = 2_000_000_000;
@@ -18,6 +18,21 @@ const contest = (overrides = {}) => ({
   counts: 1,
   stage: 0,
   ...overrides,
+});
+
+describe('recap and virtual timing', () => {
+  it('fires the recap on Sunday at 21:00 IST only', () => {
+    const at = (day: number, hour: number, minute: number) => Date.UTC(2026, 10, day, hour, minute) / 1000 - 19800;
+    expect(isRecapTick(at(8, 21, 0))).toBe(true); // Sunday 8 Nov 2026
+    expect(isRecapTick(at(8, 21, 1))).toBe(false);
+    expect(isRecapTick(at(7, 21, 0))).toBe(false);
+  });
+
+  it('runs a virtual through the stages even when it does not count', () => {
+    expect(contestAction(contest({ counts: 0, kind: 'virtual' }), START - 3600)).toBe('reminder');
+    expect(contestAction(contest({ counts: 0, kind: 'virtual', stage: 2 }), VERIFY)).toBe('verify');
+    expect(contestAction(contest({ counts: 0 }), START - 3600)).toBeNull();
+  });
 });
 
 describe('duelFeedText', () => {

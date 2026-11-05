@@ -4,6 +4,7 @@ import { checkBadges } from './badges';
 import { CfError, fetchContestStatus, fetchRatingHistory, fetchUserInfo, fetchUserStatus } from './cf';
 import { checkNextDuel } from './duels';
 import { insertSolves, markHandleBroken } from './records';
+import { nextVirtualRead, recordVirtual } from './virtuals';
 
 const HOUR = 3600;
 const SOLVE_SYNC_HANDLES = 25;
@@ -71,6 +72,12 @@ export async function runCfQueue(env: Bindings, now: number): Promise<void> {
   while (Date.now() - startedAt <= QUEUE_BUDGET_MS) {
     const duels = await checkNextDuel(env, readDuel);
     if (duels === 'checked') continue;
+    const virtual = await nextVirtualRead(env.DB, Math.floor(Date.now() / 1000));
+    if (virtual) {
+      const submissions = await syncCfHandle(env, virtual, Math.floor(Date.now() / 1000));
+      await recordVirtual(env.DB, virtual, submissions);
+      continue;
+    }
     const row = results[next++];
     if (row) {
       await syncCfHandle(env, row, now);

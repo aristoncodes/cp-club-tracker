@@ -136,9 +136,16 @@ export function ProfileView({ id, own }: { id: number; own?: boolean }) {
         </View>
       </View>
       {own ? null : <RivalButton id={profile.id} />}
-      <Pressable accessibilityRole="link" onPress={() => router.push({ pathname: '/badges', params: own ? {} : { user: String(profile.id) } })}>
-        <Text style={common.link}>Badges →</Text>
-      </Pressable>
+      <View style={common.row}>
+        <Pressable accessibilityRole="link" hitSlop={8} onPress={() => router.push({ pathname: '/badges', params: own ? {} : { user: String(profile.id) } })}>
+          <Text style={common.link}>Badges →</Text>
+        </Pressable>
+        {own ? (
+          <Pressable accessibilityRole="link" hitSlop={8} onPress={() => router.push('/recap')}>
+            <Text style={common.link}>This week's recap →</Text>
+          </Pressable>
+        ) : null}
+      </View>
       <View style={styles.grid}>
         <Tile label="This month" detail={solvesText(profile.stats.monthSolves)} filled>{round(profile.stats.monthPoints)}</Tile>
         <Tile label="Streak" detail="days"><Text style={{ color: theme.sun }}>{profile.streak}</Text></Tile>

@@ -154,14 +154,14 @@ export function ContestRow({ contest }: { contest: Contest }) {
   const [date, time] = formatIST(contest.startAt).split(' · ');
   const [weekday, day] = date.split(', ');
   return (
-    <Pressable style={styles.contestRow} onPress={() => Linking.openURL(contest.url)}>
-      <View style={styles.dateTile}>
-        <Text style={styles.dateWeekday}>{weekday.toUpperCase()}</Text>
-        <Text style={styles.dateDay}>{day.split(' ')[0]}</Text>
+    <Pressable style={styles.contestRow} onPress={() => (contest.kind === 'virtual' ? router.push({ pathname: '/virtual/[id]', params: { id: String(contest.id) } }) : Linking.openURL(contest.url))}>
+      <View style={[styles.dateTile, contest.kind === 'virtual' && { backgroundColor: theme.violet }]}>
+        <Text style={[styles.dateWeekday, contest.kind === 'virtual' && { color: theme.violetPale }]}>{weekday.toUpperCase()}</Text>
+        <Text style={[styles.dateDay, contest.kind === 'virtual' && { color: theme.white }]}>{day.split(' ')[0]}</Text>
       </View>
       <View style={styles.flex}>
         <Text style={styles.contestName} numberOfLines={1}>{contest.name}</Text>
-        <Text style={common.small}><Text style={{ color: platformColor(contest.platform) }}>{PLATFORM_NAMES[contest.platform]}</Text> · {time}</Text>
+        <Text style={common.small}><Text style={{ color: contest.kind === 'virtual' ? theme.violetSoft : platformColor(contest.platform) }}>{contest.kind === 'virtual' ? 'CLUB VIRTUAL' : PLATFORM_NAMES[contest.platform]}</Text> · {time}</Text>
       </View>
       {RSVP_PILLS[contest.rsvp ?? ''] ?? <Pill tone="muted" label="Not answered" />}
     </Pressable>

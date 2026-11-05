@@ -6,10 +6,13 @@ import { adminAnnouncementRoutes, announcementRoutes } from './announcements';
 import type { AppEnv, Bindings } from './auth';
 import { badgeRoutes } from './badges';
 import { runCron } from './cron';
+import { digestRoutes } from './digest';
 import { duelRoutes } from './duels';
 import { ingestRoutes } from './ingest';
 import { practiceRoutes } from './practice';
+import { recapRoutes } from './recap';
 import { rivalRoutes } from './rivals';
+import { adminVirtualRoutes, virtualRoutes } from './virtuals';
 import { studentRoutes } from './routes';
 
 const app = new Hono<AppEnv>().basePath('/api');
@@ -36,12 +39,16 @@ app.get('/app-version', (c) =>
 app.route('/auth', accountRoutes);
 app.route('/ingest', ingestRoutes);
 app.route('/admin/announcements', adminAnnouncementRoutes);
+app.route('/admin/virtuals', adminVirtualRoutes);
+app.route('/admin/digest', digestRoutes);
 app.route('/admin', adminRoutes);
 app.route('/announcements', announcementRoutes);
 app.route('/practice', practiceRoutes);
 app.route('/me/rival', rivalRoutes);
 app.route('/badges', badgeRoutes);
 app.route('/duels', duelRoutes);
+app.route('/recap', recapRoutes);
+app.route('/virtuals', virtualRoutes);
 app.route('/', studentRoutes);
 
 export default {

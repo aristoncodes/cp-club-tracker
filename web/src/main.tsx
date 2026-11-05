@@ -17,8 +17,10 @@ import { Login } from './pages/login';
 import { Practice } from './pages/practice';
 import { Profile } from './pages/profile';
 import { Reason } from './pages/reason';
+import { RecapPage } from './pages/recap';
 import { Settings } from './pages/settings';
 import { Signup } from './pages/signup';
+import { VirtualStandings } from './pages/virtual';
 import { Avatar, Button, ErrorText, Flame, InboxList, Logo, useLoad, type ShellContext } from './ui';
 
 function Banner({ title, helper, action, to }: { title: string; helper: string; action: string; to: string }) {
@@ -231,9 +233,11 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/practice" element={<Practice />} />
             <Route path="/badges" element={<Badges />} />
+            <Route path="/recap" element={<RecapPage />} />
             <Route path="/duels" element={<Duels />} />
             <Route path="/duel/:id" element={<Duel />} />
             <Route path="/contests" element={<Contests />} />
+            <Route path="/virtual/:id" element={<VirtualStandings />} />
             <Route path="/feed" element={<Feed />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/u/:id" element={<Profile />} />

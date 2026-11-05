@@ -225,7 +225,10 @@ export function Profile() {
         {own && <Link to="/settings" className="lift inline-flex h-11 items-center gap-2 rounded-full border-2 border-line px-5 font-bold"><Gear />Settings</Link>}
         {own && me.user.role === 'admin' && <Link to="/admin" className="lift inline-flex h-11 items-center rounded-full border-2 border-line px-5 font-bold sm:hidden">Admin</Link>}
       </div>
-      <Link to={own ? '/badges' : `/badges?user=${profile.id}`} className="font-bold text-lime hover:underline">Badges →</Link>
+      <div className="flex gap-4">
+        <Link to={own ? '/badges' : `/badges?user=${profile.id}`} className="font-bold text-lime hover:underline">Badges →</Link>
+        {own && <Link to="/recap" className="font-bold text-lime hover:underline">This week's recap →</Link>}
+      </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <StatTile label="Points this month" detail={solvesText(stats.monthSolves)} filled>{round(stats.monthPoints)}</StatTile>
         <StatTile label="Total solves" detail="Including from before joining">{stats.totalSolves}</StatTile>

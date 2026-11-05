@@ -184,18 +184,24 @@ const RSVP_PILLS = {
   no: <Pill tone="pink">Can't make it</Pill>,
 };
 
+export function VirtualTag() {
+  return <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-[#5B21B6] uppercase">Club virtual</span>;
+}
+
 export function ContestRow({ contest }: { contest: Contest }) {
   const [date, time] = formatIST(contest.startAt).split(' · ');
   const [weekday, day] = date.split(', ');
   return (
-    <div className="flex items-center gap-3 py-2">
-      <span className="flex size-12 shrink-0 flex-col items-center justify-center rounded-[14px] bg-card-2">
-        <span className="text-[10px] font-bold text-muted uppercase">{weekday}</span>
+    <div className={`flex items-center gap-3 py-2 ${contest.kind === 'virtual' ? '-mx-2 rounded-2xl bg-[#1D1730] px-2' : ''}`}>
+      <span className={`flex size-12 shrink-0 flex-col items-center justify-center rounded-[14px] ${contest.kind === 'virtual' ? 'bg-violet text-white' : 'bg-card-2'}`}>
+        <span className={`text-[10px] font-bold uppercase ${contest.kind === 'virtual' ? 'text-violet-pale' : 'text-muted'}`}>{weekday}</span>
         <span className="num text-base leading-none">{day.split(' ')[0]}</span>
       </span>
       <div className="min-w-0 flex-1">
         <a href={contest.url} target="_blank" rel="noreferrer" className="block truncate font-bold hover:underline">{contest.name}</a>
-        <p className="text-xs text-muted"><span className={contest.platform === 'cf' ? 'text-cf-blue' : 'text-orange'}>{platformLabel(contest.platform)}</span> · {time}</p>
+        <p className="text-xs text-muted">
+          {contest.kind === 'virtual' ? <VirtualTag /> : <span className={contest.platform === 'cf' ? 'text-cf-blue' : 'text-orange'}>{platformLabel(contest.platform)}</span>} · {time}
+        </p>
       </div>
       {RSVP_PILLS[contest.rsvp as 'yes' | 'no'] ?? <Pill tone="muted">Not answered</Pill>}
     </div>

@@ -24,6 +24,7 @@ export type User = {
   notifyPractice: number;
   notifyRival: number;
   notifyBadges: number;
+  notifyRecap: number;
   rivalId: number | null;
 };
 
@@ -58,6 +59,7 @@ export type Contest = {
   name: string;
   url: string;
   startAt: number;
+  kind?: string;
   rsvp: string | null;
   goingCount: number;
   participantCount: number;

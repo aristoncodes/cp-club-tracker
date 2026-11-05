@@ -7,7 +7,9 @@ import { duelHousekeeping } from './duels';
 import { mealAt, mealPush, type Meal } from './meal-pushes';
 import { pickMissingPotd, pickPotd, sendPotdPush, sendUpsolveReminders } from './practice';
 import { sendPushes, type PushMessage } from './push';
+import { sendRecapPush } from './recap';
 import { checkRivals } from './rivals';
+import { finishVirtual } from './virtuals';
 import { createAttendanceRows } from './records';
 
 const REMINDER_LEAD = 3600;
@@ -24,6 +26,7 @@ const HEALTH_JOB_SECOND_OF_DAY = 0.5 * HOUR;
 const POTD_PUSH_SECOND_OF_DAY = 2.5 * HOUR;
 const PROBLEMSET_JOB_SECOND_OF_DAY = 16.5 * HOUR;
 const DAY = 86400;
+const SUNDAY = 6; // Days after Monday.
 
 type ContestRow = {
   id: number;
@@ -36,10 +39,11 @@ type ContestRow = {
   end_at: number;
   counts: number;
   stage: number;
+  kind?: string;
 };
 
 export function contestAction(contest: ContestRow, now: number): 'reminder' | 'rsvp' | 'catchup' | 'verify' | null {
-  if (!contest.counts || contest.stage >= 4) return null;
+  if ((!contest.counts && contest.kind !== 'virtual') || contest.stage >= 4) return null;
   const sinceVerify = now - (contest.end_at + VERIFY_DELAY);
   if (contest.stage === 3) {
     const retry = sinceVerify >= HOUR && sinceVerify <= REDISPATCH_FOR && sinceVerify % HOUR < CRON_TICK;
@@ -61,6 +65,7 @@ function isDailyTick(now: number, secondOfDay: number): boolean {
 export const isRatingRefreshTick = (now: number) => isDailyTick(now, RATING_REFRESH_SECOND_OF_DAY);
 export const isHealthJobTick = (now: number) => isDailyTick(now, HEALTH_JOB_SECOND_OF_DAY);
 export const isStreakReminderTick = (now: number) => isDailyTick(now, STREAK_REMINDER_SECOND_OF_DAY);
+export const isRecapTick = (now: number) => isDailyTick(now, STREAK_REMINDER_SECOND_OF_DAY) && (istDay(now) + 3) % 7 === SUNDAY;
 export const isPotdPushTick = (now: number) => isDailyTick(now, POTD_PUSH_SECOND_OF_DAY);
 export const isProblemsetJobTick = (now: number) => isDailyTick(now, PROBLEMSET_JOB_SECOND_OF_DAY);
 export const isSolveJobTick = (now: number) => now % SOLVE_JOB_SECONDS < CRON_TICK;
@@ -100,6 +105,11 @@ async function advanceContest(env: Bindings, contest: ContestRow, now: number): 
   const db = env.DB;
   const action = contestAction(contest, now);
   if (!action) return;
+
+  if (action === 'verify' && contest.kind === 'virtual') {
+    await finishVirtual(env, contest);
+    return;
+  }
 
   if (action === 'verify') {
     await dispatchWorkflow(env, 'participation.yml', {
@@ -171,7 +181,7 @@ export function mealRecipientsQuery(db: D1Database, now: number): D1PreparedStat
     .bind(istDay(now));
 }
 
-// The 9 PM streak reminder replaces dinner's line for the people it goes to, so nobody gets two at once.
+// The 9 PM streak reminder and Sunday's recap replace dinner's line for the people they go to, so nobody gets both.
 async function sendMealPushes(env: Bindings, meal: Meal, now: number): Promise<void> {
   const today = istDay(now);
   const { results } = await mealRecipientsQuery(env.DB, now).all<{ token: string; solvedToday: number }>();
@@ -179,6 +189,10 @@ async function sendMealPushes(env: Bindings, meal: Meal, now: number): Promise<v
     .bind(today)
     .first<{ n: number }>();
   const streak = meal === 'dinner' ? (await streakReminderQuery(env.DB, now).all<{ token: string }>()).results.map((r) => r.token) : [];
+  if (isRecapTick(now)) {
+    const recap = await env.DB.prepare('SELECT p.token FROM push_tokens p JOIN users u ON u.id = p.user_id WHERE u.active = 1 AND u.notify_recap = 1').all<{ token: string }>();
+    streak.push(...recap.results.map((r) => r.token));
+  }
   await sendPushes(
     env,
     results
@@ -197,8 +211,8 @@ async function attempt(label: string, work: () => Promise<void>): Promise<void> 
 
 export async function runCron(env: Bindings, now: number): Promise<void> {
   const { results } = await env.DB.prepare(
-    `SELECT id, platform, external_id, alt_external_id, name, url, start_at, end_at, counts, stage
-     FROM contests WHERE counts = 1 AND stage < 4 AND start_at <= ?`,
+    `SELECT id, platform, external_id, alt_external_id, name, url, start_at, end_at, counts, stage, kind
+     FROM contests WHERE (counts = 1 OR kind = 'virtual') AND stage < 4 AND start_at <= ?`,
   )
     .bind(now + REMINDER_LEAD)
     .all<ContestRow>();
@@ -208,6 +222,7 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
   await attempt('duel housekeeping', () => duelHousekeeping(env, now));
   await attempt('badge sweep', () => sweepBadges(env, now));
   await attempt('announcements', () => sendDueAnnouncements(env, now));
+  if (isRecapTick(now)) await attempt('recap', () => sendRecapPush(env));
   if (isStreakReminderTick(now)) await attempt('streak reminder', () => sendStreakReminders(env, now));
   const meal = mealAt(now);
   if (meal) await attempt('meal push', () => sendMealPushes(env, meal, now));
