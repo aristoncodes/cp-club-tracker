@@ -4,6 +4,10 @@ compatibility_date = "2026-10-01"
 
 [vars]
 WEB_ORIGIN = "https://cp-club-web.aristoncodes247.workers.dev"
+APP_LATEST = "1.1.0"
+APP_MIN = "1.1.0"
+APP_URL = "https://github.com/aristoncodes/cp-club-tracker/releases/latest/download/cp-club-tracker.apk"
+APP_NOTES = ""
 
 [triggers]
 crons = ["* * * * *"]

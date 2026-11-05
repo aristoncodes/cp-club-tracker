@@ -19,6 +19,10 @@
   --pink: #ff5fa2;
   --pink-tint: #3a1427;
   --pink-text: #ff8fbf;
+  --pink-line: #6b2546;
+  --pink-soft: #ffb3d4;
+  --lock: #20202b;
+  --lock-glyph: #5a5a6e;
   --sun: #ffd23f;
   --sun-tint: #2a2111;
   --sun-line: #5c4613;
@@ -49,6 +53,10 @@
   --color-pink: var(--pink);
   --color-pink-tint: var(--pink-tint);
   --color-pink-text: var(--pink-text);
+  --color-pink-line: var(--pink-line);
+  --color-pink-soft: var(--pink-soft);
+  --color-lock: var(--lock);
+  --color-lock-glyph: var(--lock-glyph);
   --color-sun: var(--sun);
   --color-sun-tint: var(--sun-tint);
   --color-sun-line: var(--sun-line);

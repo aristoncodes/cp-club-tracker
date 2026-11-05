@@ -24,6 +24,10 @@ app.get('/health', async (c) => {
   return c.json({ ok: true });
 });
 
+app.get('/app-version', (c) =>
+  c.json({ latest: c.env.APP_LATEST, min: c.env.APP_MIN, url: c.env.APP_URL, notes: c.env.APP_NOTES, web: c.env.WEB_ORIGIN }),
+);
+
 app.route('/auth', accountRoutes);
 app.route('/ingest', ingestRoutes);
 app.route('/admin', adminRoutes);

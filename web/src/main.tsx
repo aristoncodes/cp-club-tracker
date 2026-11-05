@@ -1,5 +1,5 @@
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { StrictMode, useEffect } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { api, getSession, type Me } from './api';
@@ -15,7 +15,7 @@ import { Profile } from './pages/profile';
 import { Reason } from './pages/reason';
 import { Settings } from './pages/settings';
 import { Signup } from './pages/signup';
-import { Avatar, ErrorText, Flame, Logo, useLoad, type ShellContext } from './ui';
+import { Avatar, Button, ErrorText, Flame, Logo, useLoad, type ShellContext } from './ui';
 
 function Banner({ title, helper, action, to }: { title: string; helper: string; action: string; to: string }) {
   return (
@@ -111,6 +111,38 @@ function NotFound() {
   );
 }
 
+const RELEASE_CHECK_MS = 5 * 60_000;
+const RELEASE_SCRIPT = /\/assets\/[^"]+\.js/;
+
+// A deploy changes the hashed script name in index.html, so comparing names needs no build step.
+function RefreshToast() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const running = document.querySelector<HTMLScriptElement>('script[type="module"][src*="/assets/"]')?.getAttribute('src')?.match(RELEASE_SCRIPT)?.[0];
+    if (!running) return;
+    const check = () =>
+      fetch('/index.html', { cache: 'no-store' })
+        .then((response) => response.text())
+        .then((html) => setReady((html.match(RELEASE_SCRIPT)?.[0] ?? running) !== running))
+        .catch(() => undefined);
+    const timer = setInterval(check, RELEASE_CHECK_MS);
+    window.addEventListener('focus', check);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', check);
+    };
+  }, []);
+
+  if (!ready) return null;
+  return (
+    <div role="status" className="fixed right-4 bottom-20 z-20 flex items-center gap-3 rounded-2xl border border-line bg-card p-3 sm:bottom-4">
+      <span className="font-bold">New version available</span>
+      <Button onClick={() => window.location.reload()}>Refresh</Button>
+    </div>
+  );
+}
+
 function App() {
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
@@ -118,6 +150,7 @@ function App() {
 
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <RefreshToast />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />

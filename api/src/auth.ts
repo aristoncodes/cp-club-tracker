@@ -4,6 +4,10 @@ import { jwtVerify, SignJWT, type JWTPayload } from 'jose';
 export type Bindings = {
   DB: D1Database;
   WEB_ORIGIN: string;
+  APP_LATEST: string;
+  APP_MIN: string;
+  APP_URL: string;
+  APP_NOTES: string;
   SESSION_SECRET: string;
   INGEST_SECRET: string;
   ADMIN_EMAILS: string;
