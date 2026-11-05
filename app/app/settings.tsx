@@ -19,7 +19,7 @@ const SWITCHES = [
   { key: 'notifyStreak', title: 'Streak about to break', detail: "At 9 PM, if you haven't solved today." },
   { key: 'notifyMeals', title: 'Meal-time nudges', detail: 'At 9 AM, 1 PM, 5 PM and 9 PM.' },
   { key: 'notifyPractice', title: 'Practice reminders', detail: 'Problem of the day and upsolves.' },
-  { key: 'notifyRival', title: 'Rival alerts', detail: 'When your rival picks you or passes you.' },
+  { key: 'notifyRival', title: 'Rival alerts', detail: 'When your rival passes you.' },
   { key: 'notifyBadges', title: 'Badges', detail: 'When you earn a new badge.' },
   { key: 'notifyRecap', title: 'Weekly recap', detail: 'Your week, on Sunday at 9 PM.' },
 ] as const;

@@ -26,7 +26,7 @@ These are defaults chosen to unblock the build. Change any of them before Phase 
 | Navigation | App tabs become Home · Board · Practice · Duels · Contests. Feed moves inside Board as a "Rankings / Feed" switch. The web keeps Feed as its own page |
 | Club virtuals and attendance | Off by default; the admin can switch it on per virtual |
 | Duel format | One problem; time limit 30, 45 or 60 minutes (default 45) |
-| Rival notified when picked | Yes |
+| Rival notified when picked | No. Being picked is silent |
 | Who can send announcements | Every admin, to any audience |
 | Audiences | Everyone, one year of study (1st to 4th), or admins. The docs use years of study, not batches |
 | Attendance visible to others | Rival cards and badges may show "present" counts, because Codeforces results are public. RSVPs and reasons stay admin-only |
@@ -111,7 +111,7 @@ After every counted contest, each member gets an upsolve list: the problems in t
 
 **B2. Rivals**
 - **Picking:** each member picks one rival with "Set as rival" on any profile. It can be changed once every 7 days.
-- **Pushes:** the rival is told ("@x picked you as a rival"). The member also gets a push when their rival passes them this week, at most once a day.
+- **Pushes:** the member gets a push when their rival passes them this week, at most once a day. The person picked isn't told.
 - **Home card:** this week's points, solves, contests and duels side by side, plus who's ahead.
 - *Done when:* the card updates as both people solve, and the "passed you" push fires at most once a day.
 
@@ -201,7 +201,7 @@ The winner comes **only from Codeforces submission data**. Every submission has 
 | Problem of the day | 08:00 IST | Practice reminders |
 | Upsolve reminder | 2 and 6 days after a contest | Practice reminders |
 | Duel invite (Accept / Decline), duel start, duel result | Immediately | Always on |
-| Rival picked you / passed you | Immediately, at most once a day | Rival alerts |
+| Rival passed you | Immediately, at most once a day | Rival alerts |
 | New badge | Immediately | Badges |
 | Sunday recap | Sunday 21:00 IST | Weekly recap |
 | Announcement | When sent | Always on |

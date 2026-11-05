@@ -50,13 +50,6 @@ rivalRoutes.put('/', async (c) => {
   const target = await db.prepare('SELECT id FROM users WHERE id = ? AND active = 1').bind(userId!).first();
   if (!target) return c.json({ error: 'Student not found' }, 404);
   await db.prepare('UPDATE users SET rival_id = ?, rival_set_at = ?, rival_ahead = 0 WHERE id = ?').bind(userId!, now, user.id).run();
-  const today = istDay(now);
-  const claimed = await db.prepare('UPDATE users SET rival_pushed_day = ? WHERE id = ? AND rival_pushed_day IS NOT ? RETURNING id').bind(today, userId!, today).first();
-  if (claimed) {
-    c.executionCtx.waitUntil(
-      pushUsers(c.env, 'rival', [{ userId: userId!, title: 'New rival', body: `@${user.username} picked you as a rival`, data: { path: `/user/${user.id}` } }], 'notify_rival').catch((err) => console.error('Rival push failed:', err)),
-    );
-  }
   return c.json({ ok: true });
 });
 
