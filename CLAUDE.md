@@ -1,13 +1,12 @@
 # CLAUDE.md — How to work on OOPS.Grind
 
-Read these before writing any code, in this order:
+Read `CODEMAP.md` first. It says where the code is and which doc sections a task needs; read those sections, not every doc in full.
 
-1. `PRD.md`: what we are building and the rules (attendance, scoring).
-2. `ARCHITECTURE.md`: how it works internally: schema, jobs, API, adapters.
-3. `DESIGN.md`: how the app and website look.
-4. `PRD_ADDONS.md` and `DESIGN_ADDONS.md`: the rules and looks for the add-ons, which build on the files above.
-5. `IMPLEMENTATION_PLAN.md`: the order to build in. Work top to bottom.
-6. `TESTING.md`: how to verify each task.
+- Attendance, scoring or who can see what: read `PRD.md` in full. If the docs don't answer it, stop and ask.
+- Add-ons: read `PRD_ADDONS.md → Decisions` before that feature's section.
+- Starting a task from the plan: read its entry in `IMPLEMENTATION_PLAN.md` and its checks in `TESTING.md`.
+
+Don't read whole code files when a section will do. When a file, route group or table is added, removed or changes job, update `CODEMAP.md` in the same commit.
 
 ## Prime rule: the least code that works
 
