@@ -105,3 +105,12 @@ export function duelCheckDue(duel: { lastCheckAt: number | null; requestedAt: nu
 }
 
 export const checkCoolingDown = (lastCheckAt: number | null, now: number) => lastCheckAt !== null && now - lastCheckAt < CHECK_COOLDOWN;
+
+export function formatClock(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+}
+
+const VERDICTS: Record<string, string> = { WRONG_ANSWER: 'WA', TIME_LIMIT_EXCEEDED: 'TLE', MEMORY_LIMIT_EXCEEDED: 'MLE', RUNTIME_ERROR: 'RE', IDLENESS_LIMIT_EXCEEDED: 'ILE' };
+
+export const wrongVerdictText = (verdict: string, test: number) => (verdict === 'COMPILATION_ERROR' ? 'Compile error' : `${VERDICTS[verdict] ?? verdict} on test ${test}`);

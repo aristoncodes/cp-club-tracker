@@ -3,6 +3,7 @@ import { sendDueAnnouncements } from './announcements';
 import { sweepBadges } from './badges';
 import { refreshRatings, runCfQueue } from './cf-queue';
 import type { Bindings } from './auth';
+import { duelHousekeeping } from './duels';
 import { mealAt, mealPush, type Meal } from './meal-pushes';
 import { pickMissingPotd, pickPotd, sendPotdPush, sendUpsolveReminders } from './practice';
 import { sendPushes, type PushMessage } from './push';
@@ -204,6 +205,7 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
   for (const contest of results) {
     await attempt(`contest ${contest.id}`, () => advanceContest(env, contest, now));
   }
+  await attempt('duel housekeeping', () => duelHousekeeping(env, now));
   await attempt('badge sweep', () => sweepBadges(env, now));
   await attempt('announcements', () => sendDueAnnouncements(env, now));
   if (isStreakReminderTick(now)) await attempt('streak reminder', () => sendStreakReminders(env, now));

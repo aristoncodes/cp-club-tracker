@@ -5,6 +5,9 @@ import { api } from '../api';
 import { Avatar, Button, Card, ErrorText, platformLabel, RatingChip } from '../ui';
 
 type FeedItem = {
+  kind: 'solve' | 'duel';
+  id?: number;
+  text?: string;
   userId: number;
   name: string;
   username: string | null;
@@ -54,7 +57,15 @@ export function Feed() {
       {items?.length === 0 && <Card><p className="text-muted">No solves yet. Be the first on the board.</p></Card>}
       {!!items?.length && (
         <Card className="flex flex-col gap-4">
-          {items.map((item) => (
+          {items.map((item) => item.kind === 'duel' ? (
+            <Link key={`duel-${item.id}`} to={`/duel/${item.id}`} className="flex items-center gap-3 hover:underline">
+              <span className="num flex size-9 shrink-0 items-center justify-center rounded-full bg-pink text-xs text-ink">VS</span>
+              <div className="min-w-0 flex-1">
+                <p>{item.text}</p>
+                <p className="text-xs text-muted">{timeAgo(item.solvedAt, now)}</p>
+              </div>
+            </Link>
+          ) : (
             <div key={`${item.userId}-${item.platform}-${item.problemId}`} className="flex items-start gap-3">
               <Avatar userId={item.userId} name={item.name} />
               <div className="min-w-0 flex-1">

@@ -165,3 +165,14 @@ describe('check timing', () => {
     expect(duelCheckDue({ lastCheckAt: END + 1, requestedAt: null, endAt: END }, END + 2)).toBe(false);
   });
 });
+
+describe('duel text', () => {
+  it('formats the clock', async () => {
+    const { formatClock, wrongVerdictText } = await import('./duel');
+    expect(formatClock(1132)).toBe('18:52');
+    expect(formatClock(5)).toBe('0:05');
+    expect(formatClock(-3)).toBe('0:00');
+    expect(wrongVerdictText('WRONG_ANSWER', 4)).toBe('WA on test 4');
+    expect(wrongVerdictText('COMPILATION_ERROR', 1)).toBe('Compile error');
+  });
+});

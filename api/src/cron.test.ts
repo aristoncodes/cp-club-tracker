@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ratingHistoryIsDue } from './cf-queue';
 import { contestAction, isContestJobTick, isHealthJobTick, isRatingRefreshTick, isSolveJobTick, isStreakReminderTick } from './cron';
-import { biggestClimbers, withRanks } from './routes';
+import { biggestClimbers, duelFeedText, withRanks } from './routes';
 
 const START = 2_000_000_000;
 const END = START + 7200;
@@ -18,6 +18,15 @@ const contest = (overrides = {}) => ({
   counts: 1,
   stage: 0,
   ...overrides,
+});
+
+describe('duelFeedText', () => {
+  const row = { status: 'won', winnerId: 1, time: 1080, rating: 1500, aId: 1, aName: 'a', bName: 'b' };
+  it('writes the three endings', () => {
+    expect(duelFeedText(row)).toBe('@a beat @b on a 1500 in 18 min');
+    expect(duelFeedText({ ...row, winnerId: 2, time: null })).toBe('@b beat @a on a 1500');
+    expect(duelFeedText({ ...row, status: 'draw', winnerId: null })).toBe('@a and @b drew on a 1500: nobody solved it');
+  });
 });
 
 describe('contestAction', () => {

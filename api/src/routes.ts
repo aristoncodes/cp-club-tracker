@@ -27,6 +27,15 @@ const NOTIFY_COLUMNS: Record<string, string> = {
   notifyBadges: 'notify_badges',
 };
 
+type DuelFeedRow = { id: number; status: string; winnerId: number | null; time: number | null; finishedAt: number; rating: number | null; aId: number; aName: string; bId: number; bName: string };
+
+export function duelFeedText({ status, winnerId, time, rating, aId, aName, bName }: Pick<DuelFeedRow, 'status' | 'winnerId' | 'time' | 'rating' | 'aId' | 'aName' | 'bName'>): string {
+  const problem = rating ? `a ${rating}` : 'a problem';
+  if (status === 'draw') return `@${aName} and @${bName} drew on ${problem}: nobody solved it`;
+  const [winner, loser] = winnerId === aId ? [aName, bName] : [bName, aName];
+  return time === null ? `@${winner} beat @${loser} on ${problem}` : `@${winner} beat @${loser} on ${problem} in ${Math.max(1, Math.round(time / 60))} min`;
+}
+
 type ReasonBody = { reasonType?: string; reasonText?: string };
 
 function reasonError({ reasonType, reasonText }: ReasonBody): string | null {
@@ -368,18 +377,32 @@ studentRoutes.get('/challenge', async (c) => {
 
 studentRoutes.get('/feed', async (c) => {
   const before = Number(c.req.query('before')) || Math.floor(Date.now() / 1000) + 1;
-  const { results } = await c.env.DB.prepare(
-    `SELECT s.user_id AS userId, u.name, u.username, s.platform, s.problem_id AS problemId, p.name AS problemName, p.url,
-            p.tags, s.rp, s.points, s.live, s.solved_at AS solvedAt
-     FROM solves s
-     JOIN users u ON u.id = s.user_id
-     LEFT JOIN problems p ON p.platform = s.platform AND p.problem_id = s.problem_id
-     WHERE s.solved_at < ? AND s.points > 0 AND u.active = 1
-     ORDER BY s.solved_at DESC LIMIT ?`,
-  )
-    .bind(before, FEED_SIZE)
-    .all<{ tags: string | null }>();
-  return c.json(results.map((row) => ({ ...row, tags: row.tags ? JSON.parse(row.tags) : [] })));
+  const db = c.env.DB;
+  const [solves, duels] = await db.batch<Record<string, unknown>>([
+    db
+      .prepare(
+        `SELECT s.user_id AS userId, u.name, u.username, s.platform, s.problem_id AS problemId, p.name AS problemName, p.url,
+                p.tags, s.rp, s.points, s.live, s.solved_at AS solvedAt
+         FROM solves s
+         JOIN users u ON u.id = s.user_id
+         LEFT JOIN problems p ON p.platform = s.platform AND p.problem_id = s.problem_id
+         WHERE s.solved_at < ? AND s.points > 0 AND u.active = 1
+         ORDER BY s.solved_at DESC LIMIT ?`,
+      )
+      .bind(before, FEED_SIZE),
+    db
+      .prepare(
+        `SELECT d.id, d.status, d.winner_id AS winnerId, d.winning_time AS time, d.finished_at AS finishedAt, p.rating,
+                d.challenger_id AS aId, a.username AS aName, d.opponent_id AS bId, b.username AS bName
+         FROM duels d JOIN users a ON a.id = d.challenger_id JOIN users b ON b.id = d.opponent_id
+         LEFT JOIN problems p ON p.platform = 'cf' AND p.problem_id = d.problem_id
+         WHERE d.status IN ('won','draw') AND d.finished_at < ? ORDER BY d.finished_at DESC LIMIT ?`,
+      )
+      .bind(before, FEED_SIZE),
+  ]);
+  const solveItems = (solves.results as { tags: string | null; solvedAt: number }[]).map((row) => ({ ...row, kind: 'solve', tags: row.tags ? JSON.parse(row.tags) : [] }));
+  const duelItems = (duels.results as DuelFeedRow[]).map((row) => ({ kind: 'duel', id: row.id, userId: row.winnerId ?? row.aId, solvedAt: row.finishedAt, text: duelFeedText(row) }));
+  return c.json([...solveItems, ...duelItems].sort((x, y) => y.solvedAt - x.solvedAt).slice(0, FEED_SIZE));
 });
 
 studentRoutes.get('/users/:id', async (c) => {

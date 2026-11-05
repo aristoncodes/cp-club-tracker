@@ -13,7 +13,8 @@ function weekStats(db: D1Database, userId: number, week: number): D1PreparedStat
       `SELECT
          (SELECT COALESCE(SUM(points), 0) FROM solves WHERE user_id = ?1 AND solved_at >= ?2) AS points,
          (SELECT COUNT(*) FROM solves WHERE user_id = ?1 AND solved_at >= ?2 AND points > 0) AS solves,
-         (SELECT COUNT(*) FROM attendance a JOIN contests c ON c.id = a.contest_id WHERE a.user_id = ?1 AND a.status = 'present' AND c.start_at >= ?2) AS contests`,
+         (SELECT COUNT(*) FROM attendance a JOIN contests c ON c.id = a.contest_id WHERE a.user_id = ?1 AND a.status = 'present' AND c.start_at >= ?2) AS contests,
+         (SELECT COUNT(*) FROM duels WHERE winner_id = ?1 AND finished_at >= ?2) AS duels`,
     )
     .bind(userId, week);
 }

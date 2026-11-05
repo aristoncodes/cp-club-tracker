@@ -6,6 +6,7 @@ import { adminAnnouncementRoutes, announcementRoutes } from './announcements';
 import type { AppEnv, Bindings } from './auth';
 import { badgeRoutes } from './badges';
 import { runCron } from './cron';
+import { duelRoutes } from './duels';
 import { ingestRoutes } from './ingest';
 import { practiceRoutes } from './practice';
 import { rivalRoutes } from './rivals';
@@ -40,6 +41,7 @@ app.route('/announcements', announcementRoutes);
 app.route('/practice', practiceRoutes);
 app.route('/me/rival', rivalRoutes);
 app.route('/badges', badgeRoutes);
+app.route('/duels', duelRoutes);
 app.route('/', studentRoutes);
 
 export default {

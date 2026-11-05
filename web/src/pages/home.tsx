@@ -8,7 +8,7 @@ import { GoalRing, PotdCard, type Goal, type Potd, type Upsolve } from './practi
 import { Avatar, Button, Card, ContestRow, ErrorText, inputClass, PinnedAnnouncement, platformLabel, ProgressBar, Rating, RatingChip, useLoad, useMe } from '../ui';
 
 type Standing = { userId: number; name: string; rank: number; points: number; solves: number; cfRating: number | null };
-type Solve = { userId: number; name: string; platform: string; problemId: string; problemName: string | null; tags: string[]; rp: number; solvedAt: number };
+type Solve = { kind: string; userId: number; name: string; platform: string; problemId: string; problemName: string | null; tags: string[]; rp: number; solvedAt: number };
 type Profile = {
   stats: { weekPoints: number; weekSolves: number };
   attendance?: { total: number; present: number };
@@ -123,7 +123,7 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
 function RivalCard({ data }: { data: Extract<Rival, { me: unknown }> }) {
   const lead = round(data.me.points - data.them.points);
   const first = data.rival.name.split(' ')[0];
-  const rows = [['Points', data.me.points, data.them.points], ['Solves', data.me.solves, data.them.solves], ['Contests', data.me.contests, data.them.contests]] as const;
+  const rows = [['Points', data.me.points, data.them.points], ['Solves', data.me.solves, data.them.solves], ['Contests', data.me.contests, data.them.contests], ['Duels', data.me.duels, data.them.duels]] as const;
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -284,7 +284,7 @@ export function Home() {
           <Card className="flex flex-col gap-3">
             <h2 className="display flex items-center gap-2 text-lg"><i aria-hidden className="size-2 rounded-full bg-lime" />Live feed</h2>
             {feed.data?.length === 0 && <p className="text-muted">Nothing yet. The first solve shows up here.</p>}
-            {feed.data?.slice(0, FEED_ITEMS).map((solve) => (
+            {feed.data?.filter((item) => item.kind === 'solve').slice(0, FEED_ITEMS).map((solve) => (
               <div key={`${solve.userId}-${solve.platform}-${solve.problemId}`} className="flex items-start gap-2">
                 <Avatar userId={solve.userId} name={solve.name} size={32} />
                 <div className="min-w-0 flex-1">

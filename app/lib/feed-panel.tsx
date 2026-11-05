@@ -7,6 +7,9 @@ import { api } from './api';
 import { Avatar, Rating } from './ui';
 
 type FeedItem = {
+  kind: 'solve' | 'duel';
+  id?: number;
+  text?: string;
   userId: number;
   name: string;
   username: string | null;
@@ -76,11 +79,18 @@ export function FeedPanel() {
       <FlatList
         data={items}
         contentContainerStyle={styles.list}
-        keyExtractor={(item) => `${item.userId}-${item.platform}-${item.problemId}`}
+        keyExtractor={(item) => (item.kind === 'duel' ? `duel-${item.id}` : `${item.userId}-${item.platform}-${item.problemId}`)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={theme.lime} />}
         onEndReached={loadMore}
         ListEmptyComponent={refreshing ? undefined : <Text style={styles.muted}>No solves yet. Be the first on the board.</Text>}
-        renderItem={({ item }) => (
+        renderItem={({ item }) => item.kind === 'duel' ? (
+          <Pressable style={styles.row} onPress={() => router.push({ pathname: '/duel/[id]', params: { id: String(item.id) } })}>
+            <View style={styles.main}>
+              <Text style={styles.line}>{item.text}</Text>
+              <Text style={styles.small}>{timeAgo(item.solvedAt, now)}</Text>
+            </View>
+          </Pressable>
+        ) : (
           <Pressable style={styles.row} onPress={() => item.url && Linking.openURL(item.url)}>
             <Avatar userId={item.userId} name={item.name} />
             <View style={styles.main}>

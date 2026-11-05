@@ -7,6 +7,7 @@ import { pushUsers } from './push';
 const DAY = 86400;
 const WEEK = 7 * DAY;
 const SWEEP_MINUTES = 15;
+const GIANT_GAP = 200;
 
 // The longest run of consecutive integers in the subquery's column v.
 const longestRun = (values: string) =>
@@ -42,6 +43,8 @@ export async function badgeStats(db: D1Database, userId: number): Promise<BadgeS
       )
       .bind(userId),
     db.prepare('SELECT cf_rating_history AS history FROM users WHERE id = ?').bind(userId),
+    db.prepare('SELECT COUNT(*) AS n FROM duels WHERE winner_id = ?').bind(userId),
+    db.prepare(`SELECT COUNT(*) AS n FROM duels WHERE winner_id = ? AND rating_gap >= ${GIANT_GAP}`).bind(userId),
   ];
   const results = await db.batch<{ n: number; history: string | null }>(statements);
   const count = (index: number) => results[index].results[0]?.n ?? 0;
@@ -54,8 +57,8 @@ export async function badgeStats(db: D1Database, userId: number): Promise<BadgeS
     potdRun: count(4),
     goalRun: count(5),
     newColour: reachedNewColour(ratings) ? 1 : 0,
-    duelWins: 0,
-    giantWins: 0,
+    duelWins: count(7),
+    giantWins: count(8),
   };
 }
 

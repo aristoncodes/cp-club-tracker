@@ -1,7 +1,8 @@
 import { brokenHandle, cfSolves, type CfSubmission } from 'shared/cf';
 import type { Bindings } from './auth';
 import { checkBadges } from './badges';
-import { CfError, fetchRatingHistory, fetchUserInfo, fetchUserStatus } from './cf';
+import { CfError, fetchContestStatus, fetchRatingHistory, fetchUserInfo, fetchUserStatus } from './cf';
+import { checkNextDuel } from './duels';
 import { insertSolves, markHandleBroken } from './records';
 
 const HOUR = 3600;
@@ -10,6 +11,8 @@ const QUEUE_BUDGET_MS = 48_000;
 const FIRST_SYNC_SUBMISSIONS = 50;
 const RECENT_SUBMISSIONS = 10;
 const JUDGING_MARGIN = 600;
+const DUEL_READ_SUBMISSIONS = 30;
+const IDLE_WAIT_MS = 2000;
 
 async function reportIfBroken(db: D1Database, err: unknown): Promise<boolean> {
   const handle = err instanceof CfError ? brokenHandle(err.message) : null;
@@ -53,6 +56,7 @@ async function syncCfHandle(env: Bindings, row: CfHandleRow, now: number): Promi
 }
 
 // The only caller of Codeforces in the Worker, so the 2 s gap in cf.ts really is a gap.
+// Before every call it looks again for urgent work: duels first, then virtuals, and solve sync gets what's left.
 export async function runCfQueue(env: Bindings, now: number): Promise<void> {
   const startedAt = Date.now();
   const { results } = await env.DB.prepare(
@@ -62,9 +66,19 @@ export async function runCfQueue(env: Bindings, now: number): Promise<void> {
   )
     .bind(SOLVE_SYNC_HANDLES)
     .all<CfHandleRow>();
-  for (const row of results) {
-    if (Date.now() - startedAt > QUEUE_BUDGET_MS) return;
-    await syncCfHandle(env, row, now);
+  const readDuel = (contestId: string, handle: string) => fetchContestStatus(contestId, handle, DUEL_READ_SUBMISSIONS);
+  let next = 0;
+  while (Date.now() - startedAt <= QUEUE_BUDGET_MS) {
+    const duels = await checkNextDuel(env, readDuel);
+    if (duels === 'checked') continue;
+    const row = results[next++];
+    if (row) {
+      await syncCfHandle(env, row, now);
+      continue;
+    }
+    if (duels === 'none') return;
+    // Duels are live but none is due, so wait here: a "check now" gets picked up within seconds.
+    await new Promise((resolve) => setTimeout(resolve, IDLE_WAIT_MS));
   }
 }
 

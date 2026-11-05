@@ -36,7 +36,7 @@ export type Me = {
   newBadges: BadgeId[];
 };
 
-export type RivalStats = { points: number; solves: number; contests: number };
+export type RivalStats = { points: number; solves: number; contests: number; duels: number };
 export type Rival = { rival: null } | { rival: { id: number; name: string; username: string | null }; me: RivalStats; them: RivalStats; changeAt: number };
 
 export type Announcement = {

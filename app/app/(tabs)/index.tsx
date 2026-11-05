@@ -116,7 +116,7 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
 function RivalCard({ data }: { data: LiveRival }) {
   const lead = Math.round((data.me.points - data.them.points) * 10) / 10;
   const first = data.rival.name.split(' ')[0];
-  const rows = [['Points', data.me.points, data.them.points], ['Solves', data.me.solves, data.them.solves], ['Contests', data.me.contests, data.them.contests]] as const;
+  const rows = [['Points', data.me.points, data.them.points], ['Solves', data.me.solves, data.them.solves], ['Contests', data.me.contests, data.them.contests], ['Duels', data.me.duels, data.them.duels]] as const;
   return (
     <Pressable accessibilityRole="button" style={styles.card} onPress={() => router.push({ pathname: '/user/[id]', params: { id: String(data.rival.id) } })}>
       <View style={styles.between}>
