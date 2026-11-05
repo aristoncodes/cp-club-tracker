@@ -241,7 +241,6 @@ function App() {
             <Route path="/feed" element={<Feed />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/u/:id" element={<Profile />} />
-            <Route path="/user/:id" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/reason/:contestId" element={<Reason />} />
