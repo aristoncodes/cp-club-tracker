@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { solvesText } from 'shared/time';
 import { api, type Me } from '../../lib/api';
+import { FeedPanel } from '../../lib/feed-panel';
 import { Avatar, AvatarButton, common, initials, Rating } from '../../lib/ui';
 import { theme } from '../../theme';
 
@@ -22,6 +23,7 @@ const TABS: { id: Period; label: string; empty: string }[] = [
   { id: 'week', label: 'Week', empty: 'No solves this week yet. One problem gets you on the board.' },
   { id: 'month', label: 'Month', empty: 'No solves this month yet. One problem gets you on the board.' },
 ];
+const VIEWS = [{ id: 'rankings', label: 'Rankings' }, { id: 'feed', label: 'Feed' }] as const;
 const PODIUM_ORDER = [
   { index: 1, color: theme.pink, height: 84 },
   { index: 0, color: theme.lime, height: 112 },
@@ -54,6 +56,7 @@ function Podium({ rows }: { rows: Row[] }) {
 }
 
 export default function Leaderboard() {
+  const [view, setView] = useState<'rankings' | 'feed'>('rankings');
   const [period, setPeriod] = useState<Period>('week');
   const [rows, setRows] = useState<Row[]>([]);
   const [me, setMe] = useState<Me | null>(null);
@@ -88,9 +91,18 @@ export default function Leaderboard() {
   return (
     <View style={styles.page}>
       <View style={common.between}>
-        <Text style={styles.title}>Leaderboard</Text>
+        <Text style={styles.title}>Board</Text>
         {me ? <AvatarButton userId={me.user.id} name={me.user.name} /> : null}
       </View>
+      <View style={styles.tabs} accessibilityRole="tablist">
+        {VIEWS.map((option) => (
+          <Pressable key={option.id} accessibilityRole="tab" accessibilityState={{ selected: view === option.id }} style={[styles.tab, view === option.id && styles.tabActive]} onPress={() => setView(option.id)}>
+            <Text style={[styles.tabText, view === option.id && styles.tabTextActive]}>{option.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {view === 'feed' ? <FeedPanel /> : null}
+      {view === 'rankings' ? <>
       <View style={styles.tabs} accessibilityRole="tablist">
         {TABS.map((tab) => {
           const active = tab.id === period;
@@ -149,6 +161,7 @@ export default function Leaderboard() {
           {mine.moved ? <Text style={styles.youRank}>{mine.moved > 0 ? '▲' : '▼'}{Math.abs(mine.moved)}</Text> : null}
         </View>
       ) : null}
+      </> : null}
     </View>
   );
 }

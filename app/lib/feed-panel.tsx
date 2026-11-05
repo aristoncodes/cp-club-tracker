@@ -2,9 +2,9 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { timeAgo } from 'shared/time';
-import { api } from '../../lib/api';
-import { Avatar, Rating } from '../../lib/ui';
-import { theme } from '../../theme';
+import { theme } from '../theme';
+import { api } from './api';
+import { Avatar, Rating } from './ui';
 
 type FeedItem = {
   userId: number;
@@ -24,7 +24,7 @@ const PAGE_SIZE = 30;
 
 const REFRESH_MS = 60_000;
 
-export default function Feed() {
+export function FeedPanel() {
   const [items, setItems] = useState<FeedItem[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,8 +71,7 @@ export default function Feed() {
 
   const now = Date.now() / 1000;
   return (
-    <View style={styles.page}>
-      <Text style={styles.title}>Feed</Text>
+    <View style={styles.panel}>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <FlatList
         data={items}
@@ -102,8 +101,7 @@ export default function Feed() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, paddingTop: 56, paddingHorizontal: theme.gutter, gap: 12 },
-  title: { color: theme.text, fontFamily: theme.font.display, fontSize: 30, letterSpacing: -0.9 },
+  panel: { flex: 1, gap: 12 },
   error: { color: theme.pink, fontFamily: theme.font.regular, fontSize: 14 },
   list: { gap: 6, paddingBottom: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card },

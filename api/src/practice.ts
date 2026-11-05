@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
+import { closestTarget, GOAL_RATINGS, GOAL_TARGETS, goalLocked, goalSuggestion } from 'shared/goal';
 import { potdBand, potdBonus, potdRating, POTD_BANDS } from 'shared/potd';
-import { IST_OFFSET, istDay, solveStreak, weekStrip } from 'shared/time';
+import { IST_OFFSET, istDay, periodStart, solveStreak, weekStrip } from 'shared/time';
 import { contestType, upsolveItems, upsolveReminderDue } from 'shared/upsolve';
 import { requireUser, type AppEnv, type Bindings } from './auth';
 import { pushUsers } from './push';
@@ -10,6 +11,8 @@ const RECENT_ROUND_SECONDS = 90 * DAY;
 const UPSOLVE_ROWS = 120;
 const REMINDER_WINDOW = 8 * DAY;
 const POTD_STREAK_DAYS = 400;
+const WEEK = 7 * DAY;
+const SUGGESTION_WEEKS = 4;
 
 export type ContestProblem = { problemId: string; name: string; rating?: number; tags?: string[]; url?: string };
 
@@ -155,6 +158,36 @@ export async function potdBonuses(
 
 export const practiceRoutes = new Hono<AppEnv>();
 practiceRoutes.use(requireUser);
+
+practiceRoutes.get('/goal', async (c) => {
+  const userId = c.get('user').id;
+  const db = c.env.DB;
+  const now = Math.floor(Date.now() / 1000);
+  const week = periodStart('week', now);
+  const goal = await db.prepare('SELECT target, min_rating AS minRating FROM goals WHERE user_id = ? AND week_start = ?').bind(userId, week).first<{ target: number; minRating: number }>();
+  const [progress, averages] = await db.batch<Record<string, number>>([
+    db.prepare('SELECT COUNT(*) AS n FROM solves WHERE user_id = ? AND solved_at >= ? AND points > 0 AND rp >= ?').bind(userId, week, goal?.minRating ?? 0),
+    db
+      .prepare(`SELECT ${GOAL_RATINGS.map((rating) => `COUNT(CASE WHEN rp >= ${rating} THEN 1 END) AS r${rating}`).join(', ')} FROM solves WHERE user_id = ? AND solved_at >= ? AND solved_at < ? AND points > 0`)
+      .bind(userId, week - SUGGESTION_WEEKS * WEEK, week),
+  ]);
+  const suggestions = Object.fromEntries(GOAL_RATINGS.map((rating) => [rating, closestTarget(goalSuggestion(averages.results[0][`r${rating}`] / SUGGESTION_WEEKS))]));
+  return c.json({ goal, done: goal ? progress.results[0].n : 0, locked: goalLocked(now), suggestions });
+});
+
+practiceRoutes.put('/goal', async (c) => {
+  const { target, minRating } = await c.req.json<{ target?: number; minRating?: number }>();
+  if (!GOAL_TARGETS.includes(target ?? 0) || !GOAL_RATINGS.includes(minRating ?? 0)) return c.json({ error: 'Choose a count and a rating' }, 400);
+  const now = Math.floor(Date.now() / 1000);
+  if (goalLocked(now)) return c.json({ error: 'Goals lock on Thursday. Set a new one on Monday.' }, 409);
+  await c.env.DB.prepare(
+    `INSERT INTO goals (user_id, week_start, target, min_rating) VALUES (?, ?, ?, ?)
+     ON CONFLICT (user_id, week_start) DO UPDATE SET target = excluded.target, min_rating = excluded.min_rating`,
+  )
+    .bind(c.get('user').id, periodStart('week', now), target, minRating)
+    .run();
+  return c.json({ ok: true });
+});
 
 practiceRoutes.get('/upsolves', async (c) => {
   const { results } = await c.env.DB.prepare(

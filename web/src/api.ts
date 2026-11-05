@@ -17,6 +17,7 @@ export type User = {
   notifyResult: number;
   notifyStreak: number;
   notifyMeals: number;
+  notifyPractice: number;
 };
 
 export type Contest = {

@@ -175,6 +175,7 @@ export function Leaderboard() {
         <div className="flex flex-col items-start gap-2">
           <Eyebrow>Who's grinding</Eyebrow>
           <h1 className="display text-[52px] leading-none tracking-[-0.035em]">{tab.title}</h1>
+          <Link to="/feed" className="font-bold text-lime hover:underline sm:hidden">See the feed →</Link>
           <p className="text-muted">
             {periodLine(period)} · <span className="num">{list.length}</span> on the board · <span className="num">{totalSolves}</span> {totalSolves === 1 ? 'solve' : 'solves'}
           </p>

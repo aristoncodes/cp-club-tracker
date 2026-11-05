@@ -4,6 +4,7 @@ import { RSVP_REASONS } from 'shared/reasons';
 import { solvePoints } from 'shared/scoring';
 import { formatIST, IST_OFFSET, timeAgo, weekStrip } from 'shared/time';
 import { api, type Announcement, type Contest } from '../api';
+import { GoalRing, PotdCard, type Goal, type Potd, type Upsolve } from './practice';
 import { Avatar, Button, Card, ContestRow, ErrorText, inputClass, PinnedAnnouncement, platformLabel, ProgressBar, Rating, RatingChip, useLoad, useMe } from '../ui';
 
 type Standing = { userId: number; name: string; rank: number; points: number; solves: number; cfRating: number | null };
@@ -138,6 +139,9 @@ export function Home() {
   const challenge = useLoad(() => api<Challenge>('/challenge'), []);
   const feed = useLoad(() => api<Solve[]>('/feed'), []);
   const inbox = useLoad(() => api<{ pinned: Announcement | null }>('/announcements'), []);
+  const potd = useLoad(() => api<Potd>('/practice/potd'), []);
+  const goal = useLoad(() => api<Goal>('/practice/goal'), []);
+  const upsolves = useLoad(() => api<Upsolve[]>('/practice/upsolves'), []);
 
   const rows = board.data ?? [];
   const index = rows.findIndex((row) => row.userId === me.user.id);
@@ -147,6 +151,7 @@ export function Home() {
   const solvedToday = strip.length > 0 && strip.every((day) => day.state !== 'today');
   const attendance = profile.data?.attendance;
   const next = contests.data?.[0];
+  const upsolvesLeft = upsolves.data?.filter((row) => !row.done) ?? [];
 
   return (
     <div className="flex flex-col gap-5">
@@ -162,6 +167,27 @@ export function Home() {
       {inbox.data?.pinned && <PinnedAnnouncement item={inbox.data.pinned} />}
       <div className="grid items-start gap-5 min-[900px]:grid-cols-[1fr_320px]">
         <div className="flex min-w-0 flex-col gap-4">
+          {potd.data && <PotdCard data={potd.data} onChange={potd.reload} />}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link to="/practice" className="lift block">
+              <Card className="flex h-full items-center gap-3">
+                <GoalRing done={goal.data?.done ?? 0} target={goal.data?.goal?.target ?? 0} size={64} />
+                <div>
+                  <p className="display text-lg">Weekly goal</p>
+                  <p className="text-xs text-muted">{goal.data?.goal ? <><span className="num">{goal.data.goal.target}</span> at <span className="num">{goal.data.goal.minRating}+</span></> : goal.data?.locked ? 'Back on Monday' : 'Set one for this week'}</p>
+                </div>
+              </Card>
+            </Link>
+            <Link to="/practice" className="lift block">
+              <Card className="flex h-full items-center gap-3">
+                <span className="num flex size-14 shrink-0 items-center justify-center rounded-[14px] bg-pink text-2xl text-ink">{upsolvesLeft.length}</span>
+                <div className="min-w-0">
+                  <p className="display text-lg">{upsolvesLeft.length === 1 ? 'Upsolve' : 'Upsolves'} left</p>
+                  <p className="truncate text-xs text-muted">{upsolvesLeft[0]?.contestName ?? 'All clear for now.'}</p>
+                </div>
+              </Card>
+            </Link>
+          </div>
           {next ? <NextContest contest={next} onChange={contests.reload} /> : contests.data && <Card><p className="text-muted">No contests coming up yet. Check back soon.</p></Card>}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatTile label="Points this week" value={round(profile.data?.stats.weekPoints ?? 0)} detail={mine ? `#${mine.rank} in club` : 'Not ranked yet'} accent />

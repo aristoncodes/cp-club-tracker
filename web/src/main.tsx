@@ -11,6 +11,7 @@ import { Feed } from './pages/feed';
 import { Home } from './pages/home';
 import { Leaderboard } from './pages/leaderboard';
 import { Login } from './pages/login';
+import { Practice } from './pages/practice';
 import { Profile } from './pages/profile';
 import { Reason } from './pages/reason';
 import { Settings } from './pages/settings';
@@ -80,11 +81,20 @@ function Shell() {
   if (me.user.onboardingStep !== 'done') return <Navigate to="/signup" replace />;
 
   const links = [
-    { to: '/', label: 'Home', short: 'Home' },
-    { to: '/leaderboard', label: 'Leaderboard', short: 'Board' },
-    { to: '/contests', label: 'Contests', short: 'Contests' },
-    { to: '/feed', label: 'Feed', short: 'Feed' },
-    ...(me.user.role === 'admin' ? [{ to: '/admin', label: 'Admin', short: 'Admin' }] : []),
+    { to: '/', label: 'Home' },
+    { to: '/leaderboard', label: 'Leaderboard' },
+    { to: '/practice', label: 'Practice' },
+    { to: '/duels', label: 'Duels' },
+    { to: '/contests', label: 'Contests' },
+    { to: '/feed', label: 'Feed' },
+    ...(me.user.role === 'admin' ? [{ to: '/admin', label: 'Admin' }] : []),
+  ];
+  const bottomLinks = [
+    { to: '/', label: 'Home' },
+    { to: '/leaderboard', label: 'Board' },
+    { to: '/practice', label: 'Practice' },
+    { to: '/duels', label: 'Duels' },
+    { to: '/contests', label: 'Contests' },
   ];
   const pillClass = ({ isActive }: { isActive: boolean }) =>
     `lift flex min-h-10 items-center rounded-full px-4 font-bold ${isActive ? 'bg-text text-ink' : 'text-muted hover:text-text'}`;
@@ -133,8 +143,8 @@ function Shell() {
         <Outlet context={{ me, reload } satisfies ShellContext} />
       </main>
       <nav className="fixed inset-x-0 bottom-0 grid auto-cols-fr grid-flow-col border-t border-line bg-card sm:hidden">
-        {links.map((link) => (
-          <NavLink key={link.to} to={link.to} end className={bottomClass}>{link.short}</NavLink>
+        {bottomLinks.map((link) => (
+          <NavLink key={link.to} to={link.to} end className={bottomClass}>{link.label}</NavLink>
         ))}
       </nav>
     </div>
@@ -215,6 +225,7 @@ function App() {
           <Route element={<Shell />}>
             <Route path="/" element={<Home />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/practice" element={<Practice />} />
             <Route path="/contests" element={<Contests />} />
             <Route path="/feed" element={<Feed />} />
             <Route path="/profile" element={<Profile />} />

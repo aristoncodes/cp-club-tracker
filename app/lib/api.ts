@@ -20,6 +20,7 @@ export type User = {
   notifyResult: number;
   notifyStreak: number;
   notifyMeals: number;
+  notifyPractice: number;
 };
 
 export type Me = {
@@ -53,6 +54,24 @@ export type Contest = {
   goingCount: number;
   participantCount: number;
 };
+
+export type Potd =
+  | { problem: null; reason: 'needsHandle' | 'notPicked' }
+  | {
+      band: number;
+      problem: { problemId: string; name: string; rating: number; url: string; tags: string[] | null };
+      revealed: boolean;
+      bonus: number;
+      solvedAt: number | null;
+      solvedCount: number;
+      bandCount: number;
+      nextAt: number;
+      streak: number;
+      strip: { label: string; state: 'done' | 'today' | 'other' }[];
+      members: { userId: number; name: string; username: string | null; solvedAt: number | null }[];
+    };
+export type Upsolve = { contestId: number; contestName: string; endAt: number; problemId: string; name: string | null; rating: number | null; url: string | null; done: number };
+export type Goal = { goal: { target: number; minRating: number } | null; done: number; locked: boolean; suggestions: Record<string, number> };
 
 export class ApiError extends Error {
   constructor(

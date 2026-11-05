@@ -5,7 +5,8 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { RSVP_REASONS } from 'shared/reasons';
 import { solvePoints } from 'shared/scoring';
 import { formatIST, istDay, solvesText, weekStrip } from 'shared/time';
-import { ApiError, api, clearSession, getSession, type Announcement, type Me } from '../../lib/api';
+import { ApiError, api, clearSession, getSession, type Announcement, type Goal, type Me, type Potd, type Upsolve } from '../../lib/api';
+import { GoalRing, PotdCard } from '../../lib/practice-cards';
 import { registerPushToken } from '../../lib/push';
 import { AvatarButton, BellButton, Button, openLink, StreakPill } from '../../lib/ui';
 import { theme } from '../../theme';
@@ -127,6 +128,9 @@ export default function Home() {
   const [weekRows, setWeekRows] = useState<Standing[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [pinned, setPinned] = useState<Announcement | null>(null);
+  const [potd, setPotd] = useState<Potd | null>(null);
+  const [goal, setGoal] = useState<Goal | null>(null);
+  const [upsolves, setUpsolves] = useState<Upsolve[]>([]);
   const [destination, setDestination] = useState<Destination>(null);
   const [error, setError] = useState('');
 
@@ -137,14 +141,20 @@ export default function Home() {
       const meData = await api<Me>('/me');
       if (meData.user.onboardingStep !== 'done') return setDestination('signup');
       registerPushToken().catch(console.warn);
-      const [upcoming, day, week, userProfile, inbox] = await Promise.all([
+      const [upcoming, day, week, userProfile, inbox, nextPotd, nextGoal, nextUpsolves] = await Promise.all([
         api<Contest[]>('/contests/upcoming'),
         api<Standing[]>('/leaderboard?period=day'),
         api<Standing[]>('/leaderboard?period=week'),
         api<Profile>(`/users/${meData.user.id}`),
         api<{ pinned: Announcement | null }>('/announcements'),
+        api<Potd>('/practice/potd'),
+        api<Goal>('/practice/goal'),
+        api<Upsolve[]>('/practice/upsolves'),
       ]);
       setPinned(inbox.pinned);
+      setPotd(nextPotd);
+      setGoal(nextGoal);
+      setUpsolves(nextUpsolves);
       setMe(meData);
       setContests(upcoming);
       setDayRows(day);
@@ -184,6 +194,7 @@ export default function Home() {
   const today = profile?.today ?? istDay(Date.now() / 1000);
   const strip = weekStrip(profile?.heatmap ?? [], today);
   const solvedToday = strip.every((day) => day.state !== 'today');
+  const upsolvesLeft = upsolves.filter((row) => !row.done);
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
@@ -227,6 +238,17 @@ export default function Home() {
         </Pressable>
       ))}
       {contests[0] ? <NextContest contest={contests[0]} onChange={load} /> : <View style={styles.card}><Text style={styles.muted}>No contests coming up yet. Check back soon.</Text></View>}
+      {potd ? <PotdCard data={potd} onChange={load} /> : null}
+      <View style={styles.row}>
+        <Pressable accessibilityRole="button" style={[styles.card, styles.flexOne]} onPress={() => router.push('/practice')}>
+          <GoalRing done={goal?.done ?? 0} target={goal?.goal?.target ?? 0} />
+          <Text style={styles.statLabel}>{goal?.goal ? `${goal.goal.target} at ${goal.goal.minRating}+` : 'Set a goal'}</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" style={[styles.card, styles.flexOne]} onPress={() => router.push('/practice')}>
+          <View style={styles.upsolveTile}><Text style={styles.upsolveCount}>{upsolvesLeft.length}</Text></View>
+          <Text style={styles.statLabel} numberOfLines={2}>{upsolvesLeft.length ? `Upsolves left from ${upsolvesLeft[0].contestName}` : 'No upsolves left'}</Text>
+        </Pressable>
+      </View>
       <View style={styles.row}>
         <StatCard label="Today" accent standing={dayRows.find((row) => row.userId === me.user.id)} />
         <StatCard label="This week" standing={mine} />
@@ -273,6 +295,8 @@ const styles = StyleSheet.create({
   greeting: { color: theme.text, fontFamily: theme.font.display, fontSize: 28, letterSpacing: -0.8 },
   muted: { color: theme.muted, fontFamily: theme.font.regular, fontSize: 13 },
   error: { color: theme.pink, fontFamily: theme.font.regular, fontSize: 14 },
+  upsolveTile: { width: 64, height: 64, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.pink },
+  upsolveCount: { color: theme.ink, fontFamily: theme.font.monoHeavy, fontSize: 26 },
   pinned: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 16, backgroundColor: theme.violetTint },
   pinnedTitle: { color: theme.text, fontFamily: theme.font.bold, fontSize: 14 },
   pinnedBody: { color: theme.violetSoft, fontFamily: theme.font.regular, fontSize: 12 },
