@@ -141,7 +141,7 @@ Sign in with your admin email first.
 - [ ] After the contest ends, attendance updates about 20 minutes later and the result push arrives. Check the **participation** run under GitHub Actions.
 - [ ] CodeChef: do the same for one Starters. If the **participation** run fails with `Unknown CodeChef time format`, send me the message.
 - [ ] Solve a problem on Codeforces. It shows on the leaderboard within about 30 minutes.
-- [ ] iPhone: in Safari, Add to Home Screen, open it from there, go to Me, and turn on notifications. A contest push arrives.
+- [ ] iPhone: in Safari, Add to Home Screen, open it from there, open Settings, and turn on notifications. A contest push arrives.
 - [ ] Run `pnpm --filter api exec wrangler tail` during a few cron runs and check for no `exceededCpu`.
 - [ ] Android: install on a clean phone and check pushes still arrive after a reboot.
 - [ ] Run one full contest cycle with 3 test students. Then invite the club.

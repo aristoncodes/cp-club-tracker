@@ -98,7 +98,7 @@ function Activity({ counts, own }: { counts: Record<string, number>; own: boolea
           </div>
           {total === 0 && (
             <p className="absolute inset-0 m-0 flex items-center justify-center text-center text-sm font-semibold">
-              {own ? 'Nothing here yet. Your first AC lights this up.' : 'Nothing here yet.'}
+              {own ? 'No activity yet. Your first accepted solution will appear here.' : 'Nothing here yet.'}
             </p>
           )}
           <div className="mt-3 flex flex-wrap items-center justify-between gap-4 text-xs text-muted">
@@ -220,7 +220,7 @@ export function Profile() {
           <RatingChart history={profile.ratingHistory} />
           <Card className="flex flex-col gap-3">
             <h2 className="display text-lg">Recent solves</h2>
-            {profile.recentSolves.length === 0 && <p className="text-muted">Scored solves show up here.</p>}
+            {profile.recentSolves.length === 0 && <p className="text-muted">Your scored solves will appear here.</p>}
             {profile.recentSolves.map((solve) => (
               <div key={`${solve.platform}-${solve.problemId}`} className="flex items-center gap-3">
                 <PlatformCode platform={solve.platform} />
@@ -237,7 +237,7 @@ export function Profile() {
         <aside className="flex flex-col gap-4">
           <Card className="flex flex-col gap-2">
             <h2 className="display text-lg">Top topics</h2>
-            {profile.topTags.length === 0 && <p className="text-muted">Topics show up after a few solves.</p>}
+            {profile.topTags.length === 0 && <p className="text-muted">Topics will appear after a few solves.</p>}
             {profile.topTags.map((t, index) => (
               <div key={t.tag} className="flex flex-col gap-1">
                 <div className="flex justify-between text-sm"><span>{t.tag}</span><span className="num text-muted">{t.count}</span></div>

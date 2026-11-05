@@ -41,7 +41,7 @@ function Shell() {
 
   const links = [
     { to: '/', label: 'Home', short: 'Home' },
-    { to: '/leaderboard', label: 'Leaderboard', short: 'Board' },
+    { to: '/leaderboard', label: 'Leaderboard', short: 'Leaderboard' },
     { to: '/contests', label: 'Contests', short: 'Contests' },
     { to: '/feed', label: 'Feed', short: 'Feed' },
     ...(me.user.role === 'admin' ? [{ to: '/admin', label: 'Admin', short: 'Admin' }] : []),
@@ -76,15 +76,15 @@ function Shell() {
         {waiting && pathname === '/' && (
           <Banner
             title="Waiting for approval"
-            helper={me.user.role === 'admin' ? 'Approve your handles under Admin. Solves score from then on.' : 'A coordinator checks each handle. Solves score from then on.'}
-            action="See handles"
+            helper={me.user.role === 'admin' ? 'Approve your handles in Admin to start earning points.' : "A coordinator will review your handles. Your solves earn points once they're approved."}
+            action="View handles"
             to="/settings"
           />
         )}
         {me.pendingReasons.length > 0 && !pathname.startsWith('/reason') && (
           <Banner
             title={`You missed ${me.pendingReasons[0].name}`}
-            helper="Tell the coordinators why so it isn't left blank."
+            helper="Please give the coordinators a reason."
             action="Add reason"
             to={`/reason/${me.pendingReasons[0].id}`}
           />
@@ -105,8 +105,8 @@ function NotFound() {
     <main className="mx-auto flex min-h-screen max-w-[640px] flex-col justify-center gap-4 px-4 sm:px-6">
       <Logo />
       <h1 className="display text-5xl leading-none tracking-[-0.035em]">Page not found</h1>
-      <p className="text-muted">That link goes nowhere. Your streak is still fine.</p>
-      <Link className="font-bold text-lime" to="/">Go home</Link>
+      <p className="text-muted">The page you're looking for doesn't exist.</p>
+      <Link className="font-bold text-lime" to="/">Back to home</Link>
     </main>
   );
 }

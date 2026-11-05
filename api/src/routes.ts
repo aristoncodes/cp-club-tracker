@@ -28,7 +28,7 @@ type ReasonBody = { reasonType?: string; reasonText?: string };
 
 function reasonError({ reasonType, reasonText }: ReasonBody): string | null {
   if (!reasonType || !REASON_TYPES.includes(reasonType)) return 'A valid reason type is required';
-  if (reasonType === 'other' && !reasonText?.trim()) return 'Please say a little about the reason';
+  if (reasonType === 'other' && !reasonText?.trim()) return 'Please add a few details about the reason';
   return null;
 }
 
@@ -111,7 +111,7 @@ studentRoutes.put('/me', async (c) => {
       .bind(body.name.trim(), body.batchYear, username, user.id)
       .run();
   } catch (err) {
-    if (err instanceof Error && err.message.includes('UNIQUE')) return c.json({ error: 'That name is taken' }, 409);
+    if (err instanceof Error && err.message.includes('UNIQUE')) return c.json({ error: 'That username is taken' }, 409);
     throw err;
   }
   return c.json({ ok: true });
@@ -128,14 +128,14 @@ studentRoutes.post('/me/onboarding', async (c) => {
     hasRequiredHandles: required?.n === 2,
     isAdmin: user.role === 'admin',
   });
-  if (!allowed) return c.json({ error: 'Add your username, year and handles first' }, 400);
+  if (!allowed) return c.json({ error: 'Please add your username, year and handles first' }, 400);
   await c.env.DB.prepare(`UPDATE users SET onboarding_step = 'done' WHERE id = ?`).bind(user.id).run();
   return c.json({ ok: true });
 });
 
 studentRoutes.patch('/me/username', async (c) => {
   const user = c.get('user');
-  if (user.usernameChangesLeft < 1) return c.json({ error: "You've used your one change" }, 403);
+  if (user.usernameChangesLeft < 1) return c.json({ error: "You've already changed your username" }, 403);
   const username = normalizeUsername((await c.req.json<{ username?: string }>()).username);
   const invalid = usernameError(username);
   if (invalid) return c.json({ error: invalid }, 400);
@@ -143,7 +143,7 @@ studentRoutes.patch('/me/username', async (c) => {
   try {
     await c.env.DB.prepare('UPDATE users SET username = ?, username_changes = username_changes + 1 WHERE id = ?').bind(username, user.id).run();
   } catch (err) {
-    if (err instanceof Error && err.message.includes('UNIQUE')) return c.json({ error: 'That name is taken' }, 409);
+    if (err instanceof Error && err.message.includes('UNIQUE')) return c.json({ error: 'That username is taken' }, 409);
     throw err;
   }
   return c.json({ ok: true });

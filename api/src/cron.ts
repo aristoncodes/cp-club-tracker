@@ -115,7 +115,7 @@ async function advanceContest(env: Bindings, contest: ContestRow, now: number): 
     const tokens = await participantTokens(db, contest.platform, 'notify_hour');
     const messages: PushMessage[] = tokens.map((to) => ({
       to,
-      body: `${contest.name} starts at ${startsAt} — in 1 hour.`,
+      body: `${contest.name} starts at ${startsAt}, in 1 hour.`,
       data: { url: contest.url },
     }));
     await sendPushes(env, messages);
@@ -128,7 +128,7 @@ async function advanceContest(env: Bindings, contest: ContestRow, now: number): 
     const tokens = await participantTokens(db, contest.platform, 'notify_rsvp');
     const messages: PushMessage[] = tokens.map((to) => ({
       to,
-      body: `${contest.name} starts in 5 min. Giving it?`,
+      body: `${contest.name} starts in 5 minutes. Are you participating?`,
       categoryId: 'rsvp',
       data: { contestId: contest.id },
     }));

@@ -60,25 +60,25 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
       </View>
       {contest.rsvp === 'yes' && !choosing ? (
         <View style={styles.inStrip}>
-          <Text style={styles.inText}>You're in. Good luck!</Text>
+          <Text style={styles.inText}>You're participating. Good luck!</Text>
           <Pressable accessibilityRole="button" onPress={() => setChoosing(true)} hitSlop={12}><Text style={styles.change}>Change</Text></Pressable>
         </View>
       ) : null}
       {!contest.rsvp && !choosing ? (
         <View style={styles.row}>
-          <Button title="I'm in" flex onPress={() => send({ going: true })} />
-          <Button title="Can't" flex variant="onViolet" onPress={() => setChoosing(true)} />
+          <Button title="I'm participating" flex onPress={() => send({ going: true })} />
+          <Button title="I can't attend" flex variant="onViolet" onPress={() => setChoosing(true)} />
         </View>
       ) : null}
       {contest.rsvp === 'no' && !choosing ? (
         <View style={styles.answered}>
-          <Text style={styles.contestTime}>You can't make this one.</Text>
-          <Button title="Actually, I'm in" onPress={() => send({ going: true })} />
+          <Text style={styles.contestTime}>You've marked that you can't attend.</Text>
+          <Button title="I can participate after all" onPress={() => send({ going: true })} />
         </View>
       ) : null}
       {choosing ? (
         <View style={styles.choose}>
-          <Text style={styles.chooseTitle}>What's stopping you?</Text>
+          <Text style={styles.chooseTitle}>What's the reason?</Text>
           <View style={styles.chips}>
             {RSVP_REASONS.map((reason) => {
               const selected = reason.id === reasonType;
@@ -96,11 +96,11 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
             })}
           </View>
           {reasonType === 'other' ? (
-            <TextInput style={styles.input} value={reasonText} onChangeText={setReasonText} placeholder="Tell us a little more" placeholderTextColor={theme.muted} />
+            <TextInput style={styles.input} value={reasonText} onChangeText={setReasonText} placeholder="Please add a few details" placeholderTextColor={theme.muted} />
           ) : null}
           <View style={styles.row}>
-            <Button title="Send" flex disabled={!reasonType || (reasonType === 'other' && !reasonText.trim())} onPress={() => send({ going: false, reasonType, reasonText })} />
-            <Button title="I'm in" flex variant="onViolet" onPress={() => send({ going: true })} />
+            <Button title="Submit" flex disabled={!reasonType || (reasonType === 'other' && !reasonText.trim())} onPress={() => send({ going: false, reasonType, reasonText })} />
+            <Button title="I can participate" flex variant="onViolet" onPress={() => send({ going: true })} />
           </View>
         </View>
       ) : null}
@@ -197,7 +197,7 @@ export default function Home() {
       {me.handles.some((h) => !h.approved) ? (
         <Pressable accessibilityRole="button" style={styles.banner} onPress={() => router.push('/settings')}>
           <View style={styles.bannerTile}><Text style={styles.bannerMark}>!</Text></View>
-          <Text style={styles.bannerText}><Text style={styles.bannerBold}>Waiting for approval.</Text> A coordinator checks each handle.</Text>
+          <Text style={styles.bannerText}><Text style={styles.bannerBold}>Waiting for approval.</Text> A coordinator will review your handles.</Text>
           <Feather name="chevron-right" size={20} color={theme.sunText} />
         </Pressable>
       ) : null}
@@ -213,7 +213,7 @@ export default function Home() {
           <Feather name="chevron-right" size={20} color={theme.sunText} />
         </Pressable>
       ))}
-      {contests[0] ? <NextContest contest={contests[0]} onChange={load} /> : <View style={styles.card}><Text style={styles.muted}>No contests coming up yet. Check back soon.</Text></View>}
+      {contests[0] ? <NextContest contest={contests[0]} onChange={load} /> : <View style={styles.card}><Text style={styles.muted}>No upcoming contests. Check back soon.</Text></View>}
       <View style={styles.row}>
         <StatCard label="Today" accent standing={dayRows.find((row) => row.userId === me.user.id)} />
         <StatCard label="This week" standing={mine} />
@@ -231,20 +231,20 @@ export default function Home() {
           ))}
         </View>
         <Text style={styles.muted}>
-          {solvedToday ? `Solved today. Streak is at ${me.streak}.` : `Solve one problem today to make it ${me.streak + 1}.`}
+          {solvedToday ? `Solved today. Current streak: ${me.streak}.` : `Solve a problem today to reach a streak of ${me.streak + 1}.`}
         </Text>
       </View>
       <Pressable style={styles.card} accessibilityRole="button" onPress={() => router.push('/leaderboard')}>
         <View style={styles.between}>
-          <Text style={styles.cardTitle}>Chasing</Text>
+          <Text style={styles.cardTitle}>Next rank</Text>
           <Text style={styles.link}>Leaderboard →</Text>
         </View>
         <Text style={styles.muted}>
           {!mine
-            ? 'One solve this week gets you on the board.'
+            ? 'Solve one problem this week to join the leaderboard.'
             : above
               ? `${above.name.split(' ')[0]} is ${Math.round((above.points - mine.points) * 10) / 10} pts ahead. One ${HINT_RATING} problem is worth about ${solvePoints(HINT_RATING, mine.cfRating, false)}.`
-              : "You're at the top this week. Nobody's ahead of you."}
+              : "You're first this week."}
         </Text>
       </Pressable>
     </ScrollView>

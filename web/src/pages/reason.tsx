@@ -15,7 +15,7 @@ export function Reason() {
   const contest = me.pendingReasons.find((c) => String(c.id) === contestId);
 
   async function submit() {
-    if (reasonType === 'other' && !reasonText.trim()) return setError('Please say a little about the reason.');
+    if (reasonType === 'other' && !reasonText.trim()) return setError('Please add a few details about the reason.');
     setSaving(true);
     setError('');
     try {
@@ -47,7 +47,7 @@ export function Reason() {
         className={inputClass}
         value={reasonText}
         onChange={(e) => setReasonText(e.target.value)}
-        placeholder={reasonType === 'other' ? 'Tell us a little more' : 'Anything to add? (optional)'}
+        placeholder={reasonType === 'other' ? 'Please add a few details' : 'Additional details (optional)'}
         aria-label="Reason details"
       />
       {error && <ErrorText>{error}</ErrorText>}

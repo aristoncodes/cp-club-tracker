@@ -14,10 +14,10 @@ const PLATFORMS = [
 ];
 const SWITCHES = [
   { key: 'notifyHour', title: '1 hour before', detail: 'A reminder before each counted contest.' },
-  { key: 'notifyRsvp', title: '5 min RSVP', detail: 'Tell us if you are giving it.' },
+  { key: 'notifyRsvp', title: '5-minute check-in', detail: "Let us know whether you're participating." },
   { key: 'notifyResult', title: 'After contest', detail: 'Your attendance result.' },
-  { key: 'notifyStreak', title: 'Streak about to break', detail: "At 9 PM, if you haven't solved today." },
-  { key: 'notifyMeals', title: 'Meal-time nudges', detail: 'At 9 AM, 1 PM, 5 PM and 9 PM.' },
+  { key: 'notifyStreak', title: 'Streak reminder', detail: "At 9 PM, if you haven't solved today." },
+  { key: 'notifyMeals', title: 'Daily reminders', detail: 'At 9 AM, 1 PM, 5 PM and 9 PM.' },
 ] as const;
 
 function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[number]; me: Me; onChange: () => void }) {
@@ -87,7 +87,7 @@ function UsernameRow({ me, onChange }: { me: Me; onChange: () => void }) {
             ? <Pressable accessibilityRole="button" hitSlop={12} onPress={() => setEditing(true)}><Text style={common.link}>Change (1 left)</Text></Pressable>
             : <Pill tone="muted" label="Locked" />}
         </View>
-        {me.user.usernameChangesLeft < 1 ? <Text style={common.small}>You've used your one change. Ask a coordinator if you really need another.</Text> : null}
+        {me.user.usernameChangesLeft < 1 ? <Text style={common.small}>You've already changed your username. Contact a coordinator if you need another change.</Text> : null}
       </View>
     );
   }
@@ -97,11 +97,11 @@ function UsernameRow({ me, onChange }: { me: Me; onChange: () => void }) {
       <TextInput style={[common.input, common.mono]} value={value} onChangeText={(v) => setValue(v.trim().toLowerCase())} autoCapitalize="none" autoCorrect={false} accessibilityLabel="New username" />
       {check?.available ? <Text style={common.link}>✓ available</Text> : null}
       {check && !check.available ? <Text style={[common.small, { color: theme.pink }]}>{check.error ?? 'taken'}</Text> : null}
-      <Text style={styles.warning}>You can only change your username once. After this it's locked for good.</Text>
+      <Text style={styles.warning}>You can change your username only once. This can't be undone.</Text>
       {error ? <Text style={common.error}>{error}</Text> : null}
       <View style={common.row}>
         <Button title="Cancel" variant="secondary" flex onPress={() => { setEditing(false); setValue(me.user.username ?? ''); }} />
-        <Button title="Use this name for good" variant="warning" flex disabled={!check?.available} onPress={async () => {
+        <Button title="Confirm username" variant="warning" flex disabled={!check?.available} onPress={async () => {
           setError('');
           try {
             await api('/me/username', 'PATCH', { username: value });

@@ -8,7 +8,7 @@ const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2
 
 export function usernameError(username: string): string | null {
   if (!USERNAME.test(username)) return 'Use 3–20 lowercase letters, numbers, _ or .';
-  if (RESERVED_USERNAMES.includes(username)) return "That name isn't available";
+  if (RESERVED_USERNAMES.includes(username)) return "That username isn't available";
   return null;
 }
 
@@ -55,5 +55,5 @@ accountRoutes.get('/username-available', async (c) => {
   const error = usernameError(username);
   if (error) return c.json({ available: false, error });
   const taken = await c.env.DB.prepare('SELECT 1 FROM users WHERE username = ? COLLATE NOCASE').bind(username).first();
-  return c.json(taken ? { available: false, error: 'That name is taken' } : { available: true });
+  return c.json(taken ? { available: false, error: 'That username is taken' } : { available: true });
 });

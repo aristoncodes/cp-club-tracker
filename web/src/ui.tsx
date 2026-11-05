@@ -179,8 +179,8 @@ export function Pill({ tone, children }: { tone: keyof typeof PILLS & string; ch
 }
 
 const RSVP_PILLS = {
-  yes: <Pill tone="lime">Going</Pill>,
-  no: <Pill tone="pink">Can't make it</Pill>,
+  yes: <Pill tone="lime">Attending</Pill>,
+  no: <Pill tone="pink">Not attending</Pill>,
 };
 
 export function ContestRow({ contest }: { contest: Contest }) {
@@ -196,7 +196,7 @@ export function ContestRow({ contest }: { contest: Contest }) {
         <a href={contest.url} target="_blank" rel="noreferrer" className="block truncate font-bold hover:underline">{contest.name}</a>
         <p className="text-xs text-muted"><span className={contest.platform === 'cf' ? 'text-cf-blue' : 'text-orange'}>{platformLabel(contest.platform)}</span> · {time}</p>
       </div>
-      {RSVP_PILLS[contest.rsvp as 'yes' | 'no'] ?? <Pill tone="muted">Not answered</Pill>}
+      {RSVP_PILLS[contest.rsvp as 'yes' | 'no'] ?? <Pill tone="muted">No response</Pill>}
     </div>
   );
 }

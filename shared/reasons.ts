@@ -2,7 +2,7 @@ export const REASONS = [
   { id: 'exams', label: 'Exams', letter: 'E' },
   { id: 'travel', label: 'Travel', letter: 'T' },
   { id: 'illness', label: 'Unwell', letter: 'U' },
-  { id: 'clash', label: 'Clash', letter: 'C' },
+  { id: 'clash', label: 'Schedule conflict', letter: 'C' },
   { id: 'forgot', label: 'Forgot', letter: 'F' },
   { id: 'other', label: 'Other', letter: 'O' },
 ];

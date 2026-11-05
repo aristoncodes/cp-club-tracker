@@ -72,25 +72,25 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
       </div>
       {contest.rsvp === 'yes' && !choosing && (
         <div className="flex items-center justify-between rounded-full bg-lime px-5 py-2 font-extrabold text-ink">
-          <span>You're in. Good luck!</span>
+          <span>You're participating. Good luck!</span>
           <button className="min-h-8 cursor-pointer font-bold underline" onClick={() => setChoosing(true)}>Change</button>
         </div>
       )}
       {!contest.rsvp && !choosing && (
         <div className="flex gap-2">
-          <Button className="flex-1" onClick={() => send({ going: true })}>I'm in</Button>
-          <Button variant="onViolet" className="flex-1" onClick={() => setChoosing(true)}>Can't make it</Button>
+          <Button className="flex-1" onClick={() => send({ going: true })}>I'm participating</Button>
+          <Button variant="onViolet" className="flex-1" onClick={() => setChoosing(true)}>I can't attend</Button>
         </div>
       )}
       {contest.rsvp === 'no' && !choosing && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-violet-pale">You can't make this one.</span>
-          <Button onClick={() => send({ going: true })}>Actually, I'm in</Button>
+          <span className="text-violet-pale">You've marked that you can't attend.</span>
+          <Button onClick={() => send({ going: true })}>I can participate after all</Button>
         </div>
       )}
       {choosing && (
         <div className="flex flex-col gap-2">
-          <p className="font-bold">What's stopping you?</p>
+          <p className="font-bold">What's the reason?</p>
           <div className="flex flex-wrap gap-1.5" role="radiogroup">
             {RSVP_REASONS.map((reason) => (
               <button
@@ -104,10 +104,10 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
               </button>
             ))}
           </div>
-          {reasonType === 'other' && <input className={inputClass} placeholder="Tell us a little more" aria-label="Reason details" value={reasonText} onChange={(e) => setReasonText(e.target.value)} />}
+          {reasonType === 'other' && <input className={inputClass} placeholder="Please add a few details" aria-label="Reason details" value={reasonText} onChange={(e) => setReasonText(e.target.value)} />}
           <div className="flex gap-2">
-            <Button className="flex-1" disabled={!reasonType || (reasonType === 'other' && !reasonText.trim())} onClick={() => send({ going: false, reasonType, reasonText })}>Send</Button>
-            <Button variant="onViolet" className="flex-1" onClick={() => send({ going: true })}>Actually, I'm in</Button>
+            <Button className="flex-1" disabled={!reasonType || (reasonType === 'other' && !reasonText.trim())} onClick={() => send({ going: false, reasonType, reasonText })}>Submit</Button>
+            <Button variant="onViolet" className="flex-1" onClick={() => send({ going: true })}>I can participate after all</Button>
           </div>
         </div>
       )}
@@ -153,14 +153,14 @@ export function Home() {
         <p className="text-muted">{formatIST(now).split(' · ')[0]}</p>
         <h1 className="display text-5xl leading-tight tracking-[-0.035em]">{greeting()}, {me.user.name.split(' ')[0]}.</h1>
         <p className="text-muted">
-          {mine ? <>You're <span className="num text-lime">#{mine.rank}</span> this week</> : "You're not on the board yet this week"}
+          {mine ? <>You're <span className="num text-lime">#{mine.rank}</span> this week</> : "You're not on the leaderboard yet this week"}
           {' · '}
           {me.streak ? <><span className="num text-sun">{me.streak}</span>-day streak</> : 'no streak yet'}
         </p>
       </div>
       <div className="grid items-start gap-5 min-[900px]:grid-cols-[1fr_320px]">
         <div className="flex min-w-0 flex-col gap-4">
-          {next ? <NextContest contest={next} onChange={contests.reload} /> : contests.data && <Card><p className="text-muted">No contests coming up yet. Check back soon.</p></Card>}
+          {next ? <NextContest contest={next} onChange={contests.reload} /> : contests.data && <Card><p className="text-muted">No upcoming contests. Check back soon.</p></Card>}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatTile label="Points this week" value={round(profile.data?.stats.weekPoints ?? 0)} detail={mine ? `#${mine.rank} in club` : 'Not ranked yet'} accent />
             <StatTile label="Solves this week" value={profile.data?.stats.weekSolves ?? 0} detail="Scored this week" />
@@ -170,7 +170,7 @@ export function Home() {
             </StatTile>
           </div>
           <Card>
-            <h2 className="display mb-2 text-lg">Coming up</h2>
+            <h2 className="display mb-2 text-lg">Upcoming</h2>
             {contests.data?.length === 0 && <p className="text-muted">Nothing scheduled yet.</p>}
             <div className="flex flex-col divide-y divide-line">
               {contests.data?.slice(0, COMING_UP).map((contest) => <ContestRow key={contest.id} contest={contest} />)}
@@ -182,15 +182,15 @@ export function Home() {
           <Link to="/leaderboard" className="lift block">
             <Card className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <h2 className="display text-lg">Chasing</h2>
+                <h2 className="display text-lg">Next rank</h2>
                 <span className="font-bold text-lime">Leaderboard →</span>
               </div>
               <p className="text-muted">
                 {!mine
-                  ? 'One solve this week gets you on the board.'
+                  ? 'Solve one problem this week to join the leaderboard.'
                   : above
                     ? <><b className="text-text">{above.name.split(' ')[0]}</b> is <span className="num text-text">{round(above.points - mine.points)}</span> pts ahead. One {HINT_RATING} problem is worth about <span className="num text-lime">{solvePoints(HINT_RATING, mine.cfRating, false)}</span>.</>
-                    : "You're at the top this week. Nobody's ahead of you."}
+                    : "You're first this week."}
               </p>
               {mine && above && <ProgressBar percent={(mine.points / above.points) * 100} color="bg-lime" />}
             </Card>
@@ -211,7 +211,7 @@ export function Home() {
               ))}
             </div>
             <p className="text-muted">
-              {solvedToday ? <>Solved today. Streak is at <span className="num text-sun">{me.streak}</span>.</> : <>Solve one problem today to make it <span className="num text-sun">{me.streak + 1}</span>.</>}
+              {solvedToday ? <>Solved today. Current streak: <span className="num text-sun">{me.streak}</span>.</> : <>Solve a problem today to reach a streak of <span className="num text-sun">{me.streak + 1}</span>.</>}
             </p>
           </Card>
           {challenge.data && (
@@ -220,13 +220,13 @@ export function Home() {
                 <h2 className="display text-lg">Weekly challenge</h2>
                 <span className="num text-pink">{challenge.data.solved}/{challenge.data.target}</span>
               </div>
-              <p className="text-muted">Club solves {challenge.data.target} problems rated {challenge.data.minRating}+ by Sunday. You've added <span className="num text-text">{challenge.data.mine}</span>.</p>
+              <p className="text-muted">Club goal: {challenge.data.target} problems rated {challenge.data.minRating}+ by Sunday. Your contribution: <span className="num text-text">{challenge.data.mine}</span>.</p>
               <ProgressBar percent={(challenge.data.solved / challenge.data.target) * 100} color="bg-pink" height={12} />
             </Card>
           )}
           <Card className="flex flex-col gap-3">
             <h2 className="display flex items-center gap-2 text-lg"><i aria-hidden className="size-2 rounded-full bg-lime" />Live feed</h2>
-            {feed.data?.length === 0 && <p className="text-muted">Nothing yet. The first solve shows up here.</p>}
+            {feed.data?.length === 0 && <p className="text-muted">No solves yet.</p>}
             {feed.data?.slice(0, FEED_ITEMS).map((solve) => (
               <div key={`${solve.userId}-${solve.platform}-${solve.problemId}`} className="flex items-start gap-2">
                 <Avatar userId={solve.userId} name={solve.name} size={32} />

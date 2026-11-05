@@ -152,7 +152,7 @@ function Attendance() {
             <div className="rounded-[20px] bg-lime p-5 text-ink">
               <p className="text-xs font-bold">Club attendance</p>
               <p className="num text-[40px] leading-tight tracking-[-0.03em]">{clubRate === null ? '—' : `${clubRate}%`}</p>
-              <p className="text-xs font-bold">goal 70%</p>
+              <p className="text-xs font-bold">Goal: 70%</p>
             </div>
             <Card>
               <p className="label">Contests counted</p>
@@ -160,14 +160,14 @@ function Attendance() {
               <p className="text-xs text-muted">{cfCount} Codeforces · {counted.length - cfCount} CodeChef</p>
             </Card>
             <Card>
-              <p className="label">Said yes, didn't show</p>
+              <p className="label">Said yes, but absent</p>
               <p className="num text-[40px] leading-tight tracking-[-0.03em] text-pink">{noShows.length}</p>
               <p className="text-xs text-muted">across {new Set(noShows.map((c) => c.userId)).size} students</p>
             </Card>
             <Card>
               <p className="label">Reasons pending</p>
               <p className="num text-[40px] leading-tight tracking-[-0.03em] text-sun">{pending}</p>
-              <p className="text-xs text-muted">still to answer</p>
+              <p className="text-xs text-muted">awaiting a response</p>
             </Card>
           </div>
           <div className="grid items-start gap-4 min-[1000px]:grid-cols-[1fr_280px]">
@@ -183,13 +183,13 @@ function Attendance() {
                     <tr>
                       <th className="sticky top-0 left-0 z-20 border-b border-line bg-card p-3 text-left"><span className="label">Student</span></th>
                       <th className="label sticky top-0 z-10 border-b border-line bg-card p-3 text-right">Rate</th>
-                      <th className="label sticky top-0 z-10 border-b border-line bg-card p-3 text-right" title="Said yes, didn't show">No-show</th>
+                      <th className="label sticky top-0 z-10 border-b border-line bg-card p-3 text-right" title="Said yes, but absent">No-show</th>
                       {counted.map((contest) => (
                         <th key={contest.id} className="sticky top-0 z-10 min-w-20 border-b border-line bg-card p-2 text-center align-top font-normal" title={contest.name}>
                           <span className={`num block text-[10px] ${contest.platform === 'cf' ? 'text-[#60A5FA]' : 'text-orange'}`}>{contest.platform.toUpperCase()}</span>
                           <span className="block text-xs font-bold">{shortName(contest)}</span>
                           <span className="block text-[11px] text-muted">{formatIST(contest.startAt).split(', ')[1]?.split(' · ')[0]}</span>
-                          <button className="mt-1 min-h-6 cursor-pointer text-[11px] text-pink hover:underline" onClick={() => setCounts(contest, false)}>Don't count</button>
+                          <button className="mt-1 min-h-6 cursor-pointer text-[11px] text-pink hover:underline" onClick={() => setCounts(contest, false)}>Exclude</button>
                         </th>
                       ))}
                     </tr>
@@ -237,7 +237,7 @@ function Attendance() {
             </div>
             <aside className="flex flex-col gap-3">
               <Card className="flex flex-col gap-3">
-                <h2 className="display text-lg">Why people missed</h2>
+                <h2 className="display text-lg">Absence reasons</h2>
                 {reasons.length === 0 && <p className="text-muted">No reasons in this range yet.</p>}
                 {reasons.map(([type, group]) => (
                   <div key={type} className="flex flex-col gap-1">
@@ -260,7 +260,7 @@ function Attendance() {
                 ))}
               </Card>
               <div className="rounded-[20px] bg-violet-tint p-5">
-                <h2 className="display text-lg">Needs a nudge</h2>
+                <h2 className="display text-lg">Low attendance</h2>
                 <p className="mb-2 text-violet-soft">Below {NUDGE_BELOW}% in this range</p>
                 {nudges.length === 0 && <p className="text-violet-soft">Nobody right now.</p>}
                 {nudges.map(({ student, percent }) => (
@@ -269,11 +269,11 @@ function Attendance() {
               </div>
               {notCounted.length > 0 && (
                 <Card className="flex flex-col gap-2">
-                  <h2 className="display text-lg">Not counted</h2>
+                  <h2 className="display text-lg">Excluded contests</h2>
                   {notCounted.map((contest) => (
                     <div key={contest.id} className="flex items-center justify-between gap-2 border-t border-line pt-2">
                       <span className="min-w-0 text-xs">{contest.name}<span className="block text-muted">{formatIST(contest.startAt)}</span></span>
-                      <button className="min-h-11 shrink-0 cursor-pointer font-bold text-lime hover:underline" onClick={() => setCounts(contest, true)}>Count it</button>
+                      <button className="min-h-11 shrink-0 cursor-pointer font-bold text-lime hover:underline" onClick={() => setCounts(contest, true)}>Count contest</button>
                     </div>
                   ))}
                 </Card>
@@ -311,7 +311,7 @@ function Students() {
       <label className="flex min-h-11 items-center gap-2">
         <input type="checkbox" checked={onlyWaiting} onChange={(e) => setOnlyWaiting(e.target.checked)} /> Only show handles waiting for approval
       </label>
-      {data && users.length === 0 && <p className="text-muted">Nothing here right now.</p>}
+      {data && users.length === 0 && <p className="text-muted">Nothing to show.</p>}
       {users.map((user) => (
         <Card key={user.id} className={user.active ? '' : 'opacity-60'}>
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -425,7 +425,7 @@ function FlagsSection() {
       <Card>
         <h2 className="display mb-2 text-lg">Handles not found</h2>
         <p className="mb-2 text-muted">These aren't being tracked. The student needs to update their handle.</p>
-        {data.brokenHandles.length === 0 && <p className="text-muted">All handles are fine.</p>}
+        {data.brokenHandles.length === 0 && <p className="text-muted">All handles are valid.</p>}
         {data.brokenHandles.map((row) => (
           <p key={`${row.userId}-${row.platform}`} className="flex justify-between border-t border-line py-2">
             <Link to={`/u/${row.userId}`} className="hover:underline">{row.name}</Link>

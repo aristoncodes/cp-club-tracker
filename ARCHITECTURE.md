@@ -283,7 +283,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 - At startup, register category `rsvp` with two actions:
   - `yes`: buttonTitle "Yes", `opensAppToForeground: false`.
   - `no`: buttonTitle "No", with `textInput` (placeholder "Why not?") and `opensAppToForeground: false`.
-- Handle responses in a background notification task (`expo-task-manager` via `Notifications.registerTaskAsync`). The handler calls `/contests/:id/rsvp`. A No with typed text uses `reasonType: 'other'`. A No with no text calls nothing and posts a local notification, "Tap to give a reason", which opens the Reason screen; that screen sends the reason to `/contests/:id/rsvp` with `going: false`.
+- Handle responses in a background notification task (`expo-task-manager` via `Notifications.registerTaskAsync`). The handler calls `/contests/:id/rsvp`. A No with typed text uses `reasonType: 'other'`. A No with no text calls nothing and posts a local notification, "Tap to add a reason", which opens the Reason screen; that screen sends the reason to `/contests/:id/rsvp` with `going: false`.
 - If background handling proves unreliable on test devices, switch both actions to `opensAppToForeground: true` and handle them in `useLastNotificationResponse`. Document the switch in this file.
 - A push with `screen: 'reason'` opens `/reason?contestId=…`. A push with `url` opens that page.
 - Google sign-in uses `expo-auth-session` with PKCE and the redirect `com.cpclub.tracker:/oauthredirect`.

@@ -14,7 +14,7 @@ export default function Reason() {
   const [saving, setSaving] = useState(false);
 
   async function submit() {
-    if (reasonType === 'other' && !reasonText.trim()) return setError('Please say a little about the reason.');
+    if (reasonType === 'other' && !reasonText.trim()) return setError('Please add a few details about the reason.');
     setError('');
     setSaving(true);
     try {
@@ -34,7 +34,7 @@ export default function Reason() {
   return (
     <View style={styles.page}>
       <ScreenHeader title="Reason" />
-      <Text style={styles.title}>What got in the way?</Text>
+      <Text style={styles.title}>Why did you miss this contest?</Text>
       <View style={styles.chips}>
         {REASONS.map(({ id, label }) => {
           const selected = reasonType === id;
@@ -55,7 +55,7 @@ export default function Reason() {
         style={styles.input}
         value={reasonText}
         onChangeText={setReasonText}
-        placeholder={reasonType === 'other' ? 'Tell us a little more' : 'Anything to add? (optional)'}
+        placeholder={reasonType === 'other' ? 'Please add a few details' : 'Additional details (optional)'}
         placeholderTextColor={theme.muted}
         multiline
       />

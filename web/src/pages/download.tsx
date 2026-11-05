@@ -16,7 +16,7 @@ export function Download() {
         <ol className="flex list-inside list-decimal flex-col gap-1 text-muted">
           <li>Open this site in Safari.</li>
           <li>Tap Share, then Add to Home Screen.</li>
-          <li>Open it from your Home Screen, go to Me, and turn on notifications.</li>
+          <li>Open it from your Home Screen, open Settings, and turn on notifications.</li>
         </ol>
       </Card>
       <Link to="/login" className="font-bold text-lime hover:underline">← Back to sign in</Link>

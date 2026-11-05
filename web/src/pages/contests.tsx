@@ -18,15 +18,15 @@ export function Contests() {
       <h1 className="display text-[52px] leading-none tracking-[-0.035em]">Contests</h1>
       {(upcoming.error || past.error) && <ErrorText>{upcoming.error || past.error}</ErrorText>}
       <Card>
-        <h2 className="display mb-2 text-lg">Coming up</h2>
-        {upcoming.data?.length === 0 && <p className="text-muted">No contests coming up yet. Check back soon.</p>}
+        <h2 className="display mb-2 text-lg">Upcoming</h2>
+        {upcoming.data?.length === 0 && <p className="text-muted">No upcoming contests. Check back soon.</p>}
         <div className="flex flex-col divide-y divide-line">
           {upcoming.data?.map((contest) => <ContestRow key={contest.id} contest={contest} />)}
         </div>
       </Card>
       <Card>
         <h2 className="display mb-2 text-lg">Past contests</h2>
-        {rows.length === 0 && past.data && <p className="text-muted">Your results show up here after your first contest.</p>}
+        {rows.length === 0 && past.data && <p className="text-muted">Your results will appear here after your first contest.</p>}
         <div className="flex flex-col divide-y divide-line">
           {rows.map((contest) => (
             <div key={contest.id} className="flex items-center gap-3 py-2">

@@ -147,7 +147,7 @@ export function ProfileView({ id, own }: { id: number; own?: boolean }) {
               </View>
             ))}
           </View>
-          {total === 0 ? <View style={styles.emptyOverlay}><Text style={common.bold}>{own ? 'Nothing here yet. Your first AC lights this up.' : 'Nothing here yet.'}</Text></View> : null}
+          {total === 0 ? <View style={styles.emptyOverlay}><Text style={common.bold}>{own ? 'No activity yet. Your first accepted solution will appear here.' : 'Nothing here yet.'}</Text></View> : null}
         </View>
         <View style={common.between}>
           <Text style={common.small}>{solvesText(total)} in 6 months</Text>
@@ -167,7 +167,7 @@ export function ProfileView({ id, own }: { id: number; own?: boolean }) {
       </View>
       <View style={common.card}>
         <Text style={common.heading}>Top topics</Text>
-        {profile.topTags.length === 0 ? <Text style={common.muted}>Topics show up after a few solves.</Text> : null}
+        {profile.topTags.length === 0 ? <Text style={common.muted}>Topics will appear after a few solves.</Text> : null}
         {profile.topTags.slice(0, TOP_TOPICS).map((t, index) => (
           <View key={t.tag} style={styles.topic}>
             <View style={common.between}><Text style={common.text}>{t.tag}</Text><Text style={styles.count}>{t.count}</Text></View>

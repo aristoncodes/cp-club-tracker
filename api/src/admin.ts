@@ -100,7 +100,7 @@ adminRoutes.patch('/users/:id', async (c) => {
       .bind(role ?? null, active === undefined ? null : active ? 1 : 0, username, id)
       .run();
   } catch (err) {
-    if (err instanceof Error && err.message.includes('UNIQUE')) return c.json({ error: 'That name is taken' }, 409);
+    if (err instanceof Error && err.message.includes('UNIQUE')) return c.json({ error: 'That username is taken' }, 409);
     throw err;
   }
   if (!result.meta.changes) return c.json({ error: 'User not found' }, 404);

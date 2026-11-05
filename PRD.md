@@ -57,7 +57,7 @@ The college competitive programming club (40–50 students across all years) has
 | When | Message | Action |
 |---|---|---|
 | T − 60 min | "Codeforces Round 1095 (Div. 2) starts at 8:05 PM — in 1 hour." | Opens contest page |
-| T − 5 min | "Codeforces Round 1095 starts in 5 min. Giving it?" | Buttons: **Yes**, **No** (No asks for a reason) |
+| T − 5 min | "Codeforces Round 1095 starts in 5 minutes. Are you participating?" | Buttons: **Yes**, **No** (No asks for a reason) |
 | About T + 20 min after end (present) | "Marked present for Codeforces Round 1095." | none |
 | About T + 20 min after end (absent, no reason yet) | "You missed Codeforces Round 1095. Why?" | Opens reason form |
 
@@ -83,8 +83,8 @@ The college competitive programming club (40–50 students across all years) has
 - **Weekly challenge:** the club solves 50 problems rated 1400+ this week, showing club progress and your contribution.
 - **Profile:** linked handles, CF rating and its history, stat tiles, solve streak, 6-month activity, recent solves, top topics with a weak-topic hint. Your own also shows attendance and contest history.
 - **Streak reminder:** an opt-in push at 21:00 IST if you haven't solved today and have a streak of at least 1.
-- **Meal-time nudges:** four funny pushes a day, on by default: breakfast 9 AM (yesterday's problem), lunch 1 PM, snacks 5 PM and dinner 9 PM IST. Lines don't repeat for 30 days per meal. If you've already solved that day, lunch, snacks and dinner use a congratulating line instead (these repeat every 10 days). If you haven't, and at least 2 others have, the line adds "{n} clubmates already have." Anyone getting the 9 PM streak reminder gets that instead of dinner's line.
-- **Notification preferences:** a switch for each type: 1 hour before, 5 min RSVP, after contest, streak, meal-time nudges.
+- **Daily reminders:** four funny pushes a day, on by default: breakfast 9 AM (yesterday's problem), lunch 1 PM, snacks 5 PM and dinner 9 PM IST. Lines don't repeat for 30 days per meal. If you've already solved that day, lunch, snacks and dinner use a congratulating line instead (these repeat every 10 days). If you haven't, and at least 2 others have, the line adds "{n} clubmates already have." Anyone getting the 9 PM streak reminder gets that instead of dinner's line.
+- **Notification preferences:** a switch for each type: 1 hour before, 5-minute check-in, after contest, streak, daily reminders.
 - Admin page lists students with more than 30 solves in one day, for manual review. There is no automatic penalty.
 
 **Done when:** a Codeforces AC appears on the leaderboard within about 2 minutes (other platforms within about 5–10 minutes; 30 minutes at most if a run is skipped), with points matching the formula.

@@ -22,10 +22,10 @@ OOPS.Grind tracks a club's Codeforces, CodeChef, LeetCode and AtCoder activity i
 
 - **Live leaderboard:** points for every solve, weighted by difficulty, by day, week and month.
 - **Feed:** the club's latest solves, refreshed every minute.
-- **Contest reminders:** a push an hour before, and a 5-minute "Giving it?" with Yes and No buttons.
+- **Contest reminders:** a push an hour before, and a 5-minute "Are you participating?" with Yes and No buttons.
 - **Attendance:** checked automatically after each counted contest. You see your own, and coordinators see everyone's.
 - **Profiles:** streaks, a solve heatmap and rating history.
-- **Meal-time nudges:** four funny pushes a day, at 9 AM, 1 PM, 5 PM and 9 PM. You can turn them off.
+- **Daily reminders:** four funny pushes a day, at 9 AM, 1 PM, 5 PM and 9 PM. You can turn them off.
 
 ## Get started
 
