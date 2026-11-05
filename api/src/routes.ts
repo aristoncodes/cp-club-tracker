@@ -402,7 +402,11 @@ studentRoutes.get('/feed', async (c) => {
       .bind(before, FEED_SIZE),
   ]);
   const solveItems = (solves.results as { tags: string | null; solvedAt: number }[]).map((row) => ({ ...row, kind: 'solve', tags: row.tags ? JSON.parse(row.tags) : [] }));
-  const duelItems = (duels.results as DuelFeedRow[]).map((row) => ({ kind: 'duel', id: row.id, userId: row.winnerId ?? row.aId, solvedAt: row.finishedAt, text: duelFeedText(row) }));
+  // The empty solve fields keep older app builds from crashing until they take the over-the-air update.
+  const duelItems = (duels.results as DuelFeedRow[]).map((row) => {
+    const text = duelFeedText(row);
+    return { kind: 'duel', id: row.id, userId: row.winnerId ?? row.aId, solvedAt: row.finishedAt, text, name: '', username: null, platform: 'cf', problemId: `duel-${row.id}`, problemName: text, url: null, tags: [], rp: row.rating ?? 0, points: 0, live: 0 };
+  });
   return c.json([...solveItems, ...duelItems].sort((x, y) => y.solvedAt - x.solvedAt).slice(0, FEED_SIZE));
 });
 

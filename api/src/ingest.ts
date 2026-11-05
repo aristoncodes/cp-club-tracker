@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { istDay } from 'shared/time';
 import type { HealthReport, IngestContest, IngestSolve } from 'shared/types';
 import type { AppEnv } from './auth';
 import { checkBadges } from './badges';
@@ -19,7 +20,7 @@ ingestRoutes.use(async (c, next) => {
 ingestRoutes.get('/health', async (c) => {
   const db = c.env.DB;
   const stuckAfter = Math.floor(Date.now() / 1000) - STUCK_CONTEST_SECONDS;
-  const [cf, platforms, latestContests, stuckContests, brokenHandles, pushErrors] = await db.batch<Record<string, unknown>>([
+  const [cf, platforms, latestContests, stuckContests, brokenHandles, pushErrors, potdPicks] = await db.batch<Record<string, unknown>>([
     db.prepare(
       `SELECT COUNT(*) AS cfHandles, MIN(COALESCE(h.synced_at, 0)) AS oldestCfSync FROM handles h JOIN users u ON u.id = h.user_id
        WHERE h.platform = 'cf' AND h.approved_at IS NOT NULL AND h.broken = 0 AND u.active = 1`,
@@ -33,6 +34,7 @@ ingestRoutes.get('/health', async (c) => {
     db.prepare('SELECT name FROM contests WHERE counts = 1 AND stage < 4 AND end_at < ?').bind(stuckAfter),
     db.prepare(`SELECT platform || ':' || handle AS handle FROM handles WHERE broken = 1`),
     db.prepare('SELECT DISTINCT error FROM push_errors WHERE at > unixepoch() - 86400'),
+    db.prepare('SELECT COUNT(*) AS n FROM potd WHERE day = ?').bind(istDay(Math.floor(Date.now() / 1000))),
   ]);
   return c.json({
     ...(cf.results[0] as Pick<HealthReport, 'cfHandles' | 'oldestCfSync'>),
@@ -41,6 +43,7 @@ ingestRoutes.get('/health', async (c) => {
     stuckContests: stuckContests.results.map((row) => row.name),
     brokenHandles: brokenHandles.results.map((row) => row.handle),
     pushErrors: pushErrors.results.map((row) => row.error),
+    potdPicks: (potdPicks.results[0] as { n: number }).n,
   });
 });
 

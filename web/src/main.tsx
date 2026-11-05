@@ -166,7 +166,7 @@ function Announcements() {
   if (error) return <ErrorText>{error}</ErrorText>;
   return (
     <div className="flex max-w-[800px] flex-col gap-4">
-      <h1 className="display text-[52px] leading-none tracking-[-0.035em]">Announcements</h1>
+      <h1 className="display text-[40px] leading-none tracking-[-0.035em] sm:text-[52px]">Announcements</h1>
       <div className="overflow-hidden rounded-[20px] border border-line bg-card">{data && <InboxList items={data} />}</div>
     </div>
   );

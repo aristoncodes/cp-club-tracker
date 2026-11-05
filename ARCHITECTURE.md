@@ -301,17 +301,19 @@ Rules are in `PRD_ADDONS.md` and screens in `DESIGN_ADDONS.md`. This section is 
 ### New files
 
 ```
-shared/  upsolve.ts  duel.ts  potd.ts  app-version.ts  *.test.ts
-api/     src/announcements.ts  src/practice.ts  src/rivals.ts  src/badges.ts  src/duels.ts  src/virtuals.ts  src/digest.ts
-         src/cf-queue.ts       the only code in the Worker that calls Codeforces
+shared/  upsolve.ts  duel.ts  potd.ts  goal.ts  badges.ts  virtual.ts  app-version.ts  *.test.ts
+api/     migrations/0004_announcements.sql … 0012_virtuals.sql
+         src/announcements.ts  src/practice.ts  src/rivals.ts  src/badges.ts  src/duels.ts  src/recap.ts  src/virtuals.ts  src/digest.ts
+         src/cf-queue.ts       the queue: the only place Worker code starts a Codeforces call
 jobs/    sync-problemset.ts    problemset refresh + full history import
 app/     app/(tabs)/practice.tsx  app/(tabs)/duels.tsx  app/announcements.tsx  app/badges.tsx  app/recap.tsx
-         app/duel/new.tsx  app/duel/[id].tsx  app/virtual/[id].tsx  lib/update-card.tsx
-web/     src/pages/{practice,duels,duel,badges,recap,virtual}.tsx
+         app/duel/new.tsx  app/duel/[id].tsx  app/virtual/[id].tsx
+         lib/update-card.tsx  lib/practice-cards.tsx  lib/duel-cards.tsx  lib/badge-tile.tsx  lib/feed-panel.tsx
+web/     src/pages/{practice,duels,duel,badges,recap,virtual,admin-tools}.tsx
 .github/workflows/sync-problemset.yml
 ```
 
-`app/app/(tabs)/feed.tsx` is folded into the Board tab and deleted.
+Feed moved from an app tab to `app/lib/feed-panel.tsx`, shown inside Board. Notification paths such as `/duel/5`, `/practice` and `/announcements` are the same on app and web.
 
 ### Schema
 
@@ -449,7 +451,7 @@ CREATE TABLE push_log (                      -- event-driven pushes only; schedu
 ) WITHOUT ROWID;
 ```
 
-The recap and digest have no tables; they are computed from existing data when read.
+`duels` also has `rating_gap` (the loser's rating minus the winner's, for Giant slayer) and `finished_at`; `users` also has `badges_checked`, which is 0 only for members who were here when badges launched, so their first check is silent. The recap and digest have no tables; they are computed from existing data when read.
 
 ### Pure functions (`shared/`)
 
@@ -463,6 +465,10 @@ decideDuel({ start, end, problem, a, b, now, gaveUp? }): { status: 'live' | 'che
 duelRange(difficulty, ratingA, ratingB): { min, max }
 elo(rA, rB, outcome): { a, b }
 appVersionAction(current, latest, min): 'none' | 'optional' | 'required'
+goalLocked(now): boolean; goalSuggestion(weeklyAverage): number
+earnedBadges(stats): BadgeId[]; reachedNewColour(ratings): boolean
+virtualStart(submissions, cfContestId, clubStart): number | null
+applySubmissions(previous, submissions, cfContestId, startedAt); rankVirtual(rows)
 ```
 
 `decideDuel` takes more than the five arguments first planned, because its tests need them: `problem` (only the duel problem counts), `a` / `b` as `null` when Codeforces didn't answer (returns `checking`, never a decision) and `gaveUp` as `{ player, at }` (an Accepted by that player before `at` still counts; otherwise the other player wins). Elo is applied once, in the same `D1.batch` that moves a duel to a final status, guarded by `WHERE status IN ('live','judging')`.
@@ -505,14 +511,14 @@ All IST times below are daily unless noted, and fire through `isDailyTick`.
 
 | When | Step |
 |---|---|
-| Every minute | Send due announcements; expire invites older than 10 minutes; start `queued` duels when a slot is free; move finished virtuals on; process the queue above |
+| Every minute | Send due announcements; expire invites older than 10 minutes; start `queued` duels when a slot is free; move finished virtuals on; run the badge sweep slice if due; process the queue above |
 | Every 5 minutes | Rival check: push on a change to "rival ahead this week", at most once a day |
 | 00:00 | After the rating refresh, pick each band's problem for the new day with one SQL statement per band: rated exactly `potdRating(band)`, `contest_at` older than 3 months, and not in `cf_history` for anyone in the band |
-| 00:10 | Nightly badge sweep; clear old `push_log` rows |
+| 00:10–00:24 | Nightly badge sweep, one fifteenth of members a minute; clear old `push_log` rows; on Mondays, award last week's #1 |
 | 08:00 | Problem-of-the-day push (`notify_practice`) |
 | Every 5 minutes | Upsolve reminders at end + 2 days and + 6 days (`notify_practice`), using `contests.upsolve_pushes` |
 | Sunday 21:00 | Recap push (`notify_recap`); those people skip dinner's line |
-| Monday 09:00 | Digest email, once a service is chosen |
+| Monday 09:00 | Digest email: **not built**, waiting for the email service decision in `PRD_ADDONS.md`. Admin → Digest works without it |
 | 22:00 | Dispatch `sync-problemset.yml` |
 
 Picks run in the Worker, not an Action, because GitHub's timing is unreliable and the work is only SQL. The health check also reports a day with no problem picked.
@@ -564,6 +570,6 @@ Picks run in the Worker, not an Action, because GitHub's timing is unreliable an
 
 ### App and web
 
-- **Over the air:** everything uses existing native modules. Check on open and on foreground with `Updates.checkForUpdateAsync` and `fetchUpdateAsync`, then show the card from `isUpdatePending`. Whether to also set `checkAutomatically: NEVER`, which needs an APK, is an open decision in `PRD_ADDONS.md`. Because `runtimeVersion` follows the app version, a version bump stops over-the-air updates reaching older APKs, so those phones must first get an update containing the install prompt.
-- **Notifications:** a new `duel` category with `accept` and `decline` actions, set up through the same JS calls as `rsvp`. The response handler also routes `screen` values `practice`, `duel`, `badges`, `recap`, `announcements` and `contests`.
+- **Over the air:** everything uses existing native modules. Check on open and on foreground with `Updates.checkForUpdateAsync` and `fetchUpdateAsync`, then show the card from `isUpdatePending`. The version and notes shown come from `extra.release` in `app/app.json`, so update those before publishing. `checkAutomatically: NEVER` isn't set, because it would need an APK; that is an open decision in `PRD_ADDONS.md`. Because `runtimeVersion` follows the app version, a version bump stops over-the-air updates reaching older APKs, so those phones must first get an update containing the install prompt.
+- **Notifications:** a new `duel` category with `duel_accept` and `duel_decline` actions, set up through the same JS calls as `rsvp`. The response handler opens a push's `data.path`.
 - **Web toast:** on focus, fetch `/index.html` with `no-store` and compare its script name with the running one. No build changes.

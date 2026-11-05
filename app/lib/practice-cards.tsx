@@ -14,12 +14,12 @@ export function GoalRing({ done, target, size = 64 }: { done: number; target: nu
   const circumference = 2 * Math.PI * radius;
   const share = target ? Math.min(1, done / target) : 0;
   return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }} accessibilityLabel={`${done} of ${target}`}>
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }} accessibilityLabel={target ? `${done} of ${target}` : 'No goal set'}>
       <Svg width={size} height={size} style={styles.ring}>
         <Circle cx={size / 2} cy={size / 2} r={radius} fill="none" strokeWidth={RING_STROKE} stroke={theme.card2} />
         <Circle cx={size / 2} cy={size / 2} r={radius} fill="none" strokeWidth={RING_STROKE} strokeLinecap="round" stroke={theme.lime} strokeDasharray={`${circumference}`} strokeDashoffset={circumference * (1 - share)} />
       </Svg>
-      <Text style={styles.ringText}>{done}/{target}</Text>
+      <Text style={styles.ringText}>{target ? `${done}/${target}` : '—'}</Text>
     </View>
   );
 }

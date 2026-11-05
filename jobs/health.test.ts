@@ -17,6 +17,7 @@ const healthy: HealthReport = {
   stuckContests: [],
   brokenHandles: [],
   pushErrors: [],
+  potdPicks: 5,
 };
 const runs = {
   'sync-solves': [{ createdAt: NOW - 300, conclusion: 'success' }],
@@ -61,5 +62,9 @@ describe('healthProblems', () => {
     expect(healthProblems(healthy, failing, NOW)[0]).toContain('sync-solves is failing');
     const recovered = { ...runs, participation: [{ createdAt: NOW - 2 * DAY, conclusion: 'failure' }] };
     expect(healthProblems(healthy, recovered, NOW)).toEqual([]);
+  });
+
+  it('reports a day with no problem of the day', () => {
+    expect(healthProblems({ ...healthy, potdPicks: 0 }, runs, NOW)).toContain('No problem of the day was picked today');
   });
 });

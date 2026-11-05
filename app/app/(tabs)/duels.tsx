@@ -51,7 +51,7 @@ export default function Duels() {
                 <Text style={styles.heroLabel}>DUEL RATING</Text>
                 <Text style={styles.heroRating}>{hub.me.rating}</Text>
               </View>
-              {hub.me.weekChange ? <Text style={styles.heroChange}>{hub.me.weekChange > 0 ? '▲' : '▼'}{Math.abs(hub.me.weekChange)} this week</Text> : null}
+              {hub.me.weekChange ? <Text style={[styles.heroChange, hub.me.weekChange < 0 && { backgroundColor: theme.pink }]}>{hub.me.weekChange > 0 ? '▲' : '▼'}{Math.abs(hub.me.weekChange)} this week</Text> : null}
             </View>
             <View style={styles.tiles}>
               {([['WINS', hub.me.wins], ['LOSSES', hub.me.losses], ['DRAWS', hub.me.draws]] as const).map(([label, value]) => (

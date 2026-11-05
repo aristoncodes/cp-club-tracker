@@ -17,7 +17,7 @@ export function announcementError({ title, body, audience, studyYear, link }: An
   if (!body?.trim() || body.trim().length > BODY_MAX) return `Message must be 1–${BODY_MAX} characters`;
   if (audience !== 'all' && audience !== 'batch' && audience !== 'admins') return 'Choose an audience';
   if (audience === 'batch' && ![1, 2, 3, 4].includes(studyYear ?? 0)) return 'Choose a year of study';
-  if (link && !/^(https:\/\/|\/)/.test(link)) return 'A link must start with https:// or /';
+  if (link && !/^(https:\/\/|\/(?!\/))/.test(link)) return 'A link must start with https:// or /';
   return null;
 }
 

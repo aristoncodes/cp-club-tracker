@@ -111,7 +111,7 @@ export function GoalRing({ done, target, size = RING_SIZE }: { done: number; tar
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" strokeWidth={RING_STROKE} className="stroke-card-2" />
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" strokeWidth={RING_STROKE} strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - share)} className="stroke-lime" />
       </svg>
-      <span className="num absolute text-sm">{done}/{target}</span>
+      <span className="num absolute text-sm">{target ? `${done}/${target}` : '—'}</span>
     </span>
   );
 }

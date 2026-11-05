@@ -118,6 +118,7 @@ curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"
 | Duels | Three real duels between two test accounts: the slower player clicks, nobody clicks, and an earlier pending verdict |
 | Club virtual | Start a real virtual with a test handle; it shows within 2 minutes of a submission, and a handle that didn't start doesn't |
 | Queue | `wrangler tail` for a full day shows no Codeforces "Call limit exceeded" |
+| Digest | Admin → Digest figures match the Attendance and Students pages for the same week |
 
 ## Before onboarding the club
 

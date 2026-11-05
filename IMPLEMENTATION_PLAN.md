@@ -90,7 +90,7 @@ Rules are in `PRD_ADDONS.md`, looks in `DESIGN_ADDONS.md` and the design in `ARC
 
 ### Phase B — Habits
 
-40. [ ] **Weekly goal.** Editor, suggestion, ring, Thursday lock.
+40. [x] **Weekly goal.** Editor, suggestion, ring, Thursday lock.
     - Done when: qualifying solves fill the ring, and the goal locks on Thursday.
 41. [ ] **Rivals.** Set from a profile, Home card, pushes.
     - Done when: the card updates as both people solve, and the "passed you" push fires at most once a day.
@@ -99,7 +99,7 @@ Rules are in `PRD_ADDONS.md`, looks in `DESIGN_ADDONS.md` and the design in `ARC
 
 ### Phase C — Duels
 
-43. [ ] **`decideDuel`, `duelRange`, `elo`** in `shared/`, with every duel test passing before any endpoint exists.
+43. [x] **`decideDuel`, `duelRange`, `elo`** in `shared/`, with every duel test passing before any endpoint exists.
     - Done when: the `TESTING.md → decideDuel` cases all pass.
 44. [ ] **Duel backend.** Challenge, invite expiry, problem selection, queue checks, judging wait, result, Elo, feed items.
     - Done when: a full duel between two test accounts can be played over the API, and all three decision cases come out right.

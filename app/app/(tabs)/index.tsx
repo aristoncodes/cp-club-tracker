@@ -12,7 +12,7 @@ import { registerPushToken } from '../../lib/push';
 import { AvatarButton, BellButton, Button, openLink, StreakPill } from '../../lib/ui';
 import { theme } from '../../theme';
 
-type Contest = { id: number; platform: string; name: string; startAt: number; rsvp: string | null; goingCount: number; participantCount: number };
+type Contest = { id: number; platform: string; name: string; kind?: string; startAt: number; rsvp: string | null; goingCount: number; participantCount: number };
 type Destination = 'login' | 'signup' | null;
 type LiveRival = Extract<Rival, { me: unknown }>;
 type Standing = { userId: number; name: string; rank: number; points: number; solves: number; cfRating: number | null };
@@ -52,7 +52,7 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
   return (
     <View style={styles.contest}>
       <View style={styles.between}>
-        <Text style={styles.platform}>{(PLATFORM_LABELS[contest.platform] ?? contest.platform).toUpperCase()}</Text>
+        <Text style={styles.platform}>{contest.kind === 'virtual' ? 'CLUB VIRTUAL' : (PLATFORM_LABELS[contest.platform] ?? contest.platform).toUpperCase()}</Text>
         <Text style={styles.contestTime}>{date.split(',')[0]} · {time}</Text>
       </View>
       <Text style={styles.contestName}>{contest.name}</Text>

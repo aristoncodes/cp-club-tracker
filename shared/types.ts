@@ -33,4 +33,5 @@ export type HealthReport = {
   stuckContests: string[];
   brokenHandles: string[];
   pushErrors: string[];
+  potdPicks: number;
 };

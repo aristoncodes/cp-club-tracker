@@ -281,7 +281,9 @@ duelRoutes.get('/', async (c) => {
          ORDER BY u.duel_rating DESC, u.name LIMIT ${BOARD_SIZE}`,
       ),
   ]);
-  return c.json({ me: mine.results[0], invites: invites.results, live: live.results, recent: recent.results, board: board.results, now });
+  // Spectators mustn't get the problem of a live duel.
+  const hideProblem = ({ problemId: _, ...duel }: Record<string, unknown>) => duel;
+  return c.json({ me: mine.results[0], invites: invites.results, live: live.results.map(hideProblem), recent: recent.results.map(hideProblem), board: board.results, now });
 });
 
 duelRoutes.get('/opponents', async (c) => {

@@ -63,7 +63,7 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
     <section className="flex flex-col gap-4 rounded-[22px] bg-violet p-6 text-white">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1 basis-64">
-          <span className="rounded-full bg-white px-3 py-1 text-[11px] font-extrabold tracking-wider text-[#5B21B6] uppercase">{platformLabel(contest.platform)}</span>
+          <span className="rounded-full bg-white px-3 py-1 text-[11px] font-extrabold tracking-wider text-[#5B21B6] uppercase">{contest.kind === 'virtual' ? 'Club virtual' : platformLabel(contest.platform)}</span>
           <h2 className="display mt-3 text-[30px] leading-tight"><a href={contest.url} target="_blank" rel="noreferrer" className="hover:underline">{contest.name}</a></h2>
           <p className="text-sm text-violet-pale">{formatIST(contest.startAt)} · <span className="num">{hours}</span> h · <span className="num">{contest.goingCount}</span> of <span className="num">{contest.participantCount}</span> going</p>
         </div>

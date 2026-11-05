@@ -9,7 +9,7 @@ async function recentRuns(workflow: string): Promise<WorkflowRun[]> {
   return runs.map((run) => ({ createdAt: Date.parse(run.created_at) / 1000, conclusion: run.conclusion }));
 }
 
-const workflows = ['sync-solves', 'sync-contests', 'participation', 'backfill'] as const;
+const workflows = ['sync-solves', 'sync-contests', 'sync-problemset', 'participation', 'backfill'] as const;
 const runs = Object.fromEntries(await Promise.all(workflows.map(async (w) => [w, await recentRuns(w)])));
 const problems = healthProblems(await getHealth(), runs, Math.floor(Date.now() / 1000));
 

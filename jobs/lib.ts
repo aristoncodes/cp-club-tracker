@@ -51,7 +51,7 @@ const DAY = 24 * HOUR;
 const CF_FETCH_LIMIT = 30 * 60;
 const SOLVE_SILENCE_LIMIT = 14 * DAY;
 const SOLVE_SILENCE_MIN_HANDLES = 5;
-const JOB_LIMITS: Record<string, number> = { 'sync-solves': 30 * 60, 'sync-contests': 13 * HOUR };
+const JOB_LIMITS: Record<string, number> = { 'sync-solves': 30 * 60, 'sync-contests': 13 * HOUR, 'sync-problemset': 26 * HOUR };
 
 function workflowProblems(name: string, runs: WorkflowRun[], now: number): string[] {
   const limit = JOB_LIMITS[name];
@@ -75,6 +75,7 @@ export function healthProblems(report: HealthReport, runs: Record<string, Workfl
   }
   if (report.stuckContests.length) problems.push(`Attendance not finished for: ${report.stuckContests.join(', ')}`);
   if (report.pushErrors.length) problems.push(`Push notifications are failing: ${report.pushErrors.join(', ')}`);
+  if (report.potdPicks === 0) problems.push('No problem of the day was picked today');
   if (report.brokenHandles.length) problems.push(`Broken handles: ${report.brokenHandles.join(', ')}`);
   for (const [name, list] of Object.entries(runs)) problems.push(...workflowProblems(name, list, now));
   return problems;

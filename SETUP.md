@@ -148,6 +148,20 @@ Sign in with your admin email first.
 
 To send everyone to the app, share your web URL followed by `/download`.
 
+## Releasing the add-ons
+
+Do these in order. Production D1 has real data, so read each migration in `api/migrations/` (`0004` to `0012`) first. They only add tables and columns. `0009` also marks current members so their first badge check is silent.
+
+1. Merge the `add-ons` branch into `main`. Workflows run from `main`, so `sync-problemset` doesn't exist for the Worker until then.
+2. Take a backup: `pnpm --filter api exec wrangler d1 export cp-tracker --remote --output=backup.sql`. Don't commit it.
+3. Apply the migrations: `cd api && pnpm exec wrangler d1 migrations apply cp-tracker --remote`.
+4. Deploy the Worker: `pnpm exec wrangler deploy`.
+5. Deploy the website: `pnpm --filter web build`, then `cd web && ../api/node_modules/.bin/wrangler deploy`.
+6. In `app/app.json`, set `extra.release` to the version and one line of notes, then publish the app: `cd app && eas update --channel preview --message "Add-ons"`.
+7. Run **sync-problemset** by hand under GitHub **Actions**. Problem of the day and duels have no problems until it has run. Its first history import stops at 20,000 rows and continues on later nights, to stay inside D1's free write limit. Check D1's usage page the next day.
+
+If a later step fails, the app and website keep working on the older Worker, because the migrations only add things.
+
 ## Maintenance
 
 **If GitHub emails you that `health` failed:** open the failed run; its log lists each problem as `PROBLEM: …`.
@@ -156,6 +170,7 @@ To send everyone to the app, share your web URL followed by `/download`.
 |---|---|
 | When more students are approved | Run `wrangler tail` for a few minutes and check Codeforces fetch speed and CPU use |
 | After the first few contests | Compare attendance with the real standings, especially CodeChef |
+| After each APK | Update `APP_LATEST` in [api/wrangler.toml](api/wrangler.toml), and `APP_MIN` only if old versions must stop working, then deploy the Worker |
 | Monthly | `pnpm audit`, failed Actions runs, expiry of `GITHUB_TOKEN` (Worker secret) and `EXPO_TOKEN` (GitHub secret), Cloudflare's D1 usage page |
 | Every 6 months | Update Expo and check Google's target API rule; this needs a new APK |
 | Every August | Check students' years rolled over |

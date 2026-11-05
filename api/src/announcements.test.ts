@@ -23,6 +23,7 @@ describe('announcementError', () => {
 
   it('refuses links that could run script', () => {
     expect(announcementError({ ...draft, link: 'javascript:alert(1)' })).toMatch(/link/);
+    expect(announcementError({ ...draft, link: '//evil.example' })).toMatch(/link/);
     expect(announcementError({ ...draft, link: 'https://codeforces.com' })).toBeNull();
   });
 });

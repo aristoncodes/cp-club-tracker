@@ -134,7 +134,7 @@ export function Duels() {
                   <p className="text-xs font-bold tracking-wider text-violet-soft uppercase">Duel rating</p>
                   <p className="num text-[56px] leading-none tracking-[-0.03em]">{data.me.rating}</p>
                 </div>
-                {data.me.weekChange !== 0 && <span className="num rounded-full bg-lime px-3 py-1 text-sm text-ink">{data.me.weekChange > 0 ? '▲' : '▼'}{Math.abs(data.me.weekChange)} this week</span>}
+                {data.me.weekChange !== 0 && <span className={`num rounded-full px-3 py-1 text-sm text-ink ${data.me.weekChange > 0 ? 'bg-lime' : 'bg-pink'}`}>{data.me.weekChange > 0 ? '▲' : '▼'}{Math.abs(data.me.weekChange)} this week</span>}
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {([['Wins', data.me.wins], ['Losses', data.me.losses], ['Draws', data.me.draws]] as const).map(([label, value]) => (
