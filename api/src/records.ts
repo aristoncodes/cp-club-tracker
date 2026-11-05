@@ -84,7 +84,7 @@ export async function finishContest(
   const messages = results.flatMap((r): PushMessage[] => {
     if (r.status === 'present') return [{ to: r.token, body: `Marked present for ${contest.name}.` }];
     if (r.reasonType) return [];
-    return [{ to: r.token, body: `You missed ${contest.name}. Please add a reason.`, data: { contestId: contest.id, screen: 'reason' } }];
+    return [{ to: r.token, body: `You missed ${contest.name}. Why?`, data: { contestId: contest.id, screen: 'reason' } }];
   });
   await sendPushes(env, messages);
 

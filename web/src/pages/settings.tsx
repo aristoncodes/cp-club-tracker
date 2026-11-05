@@ -8,10 +8,10 @@ const TILE_COLORS: Record<string, string> = { cf: 'bg-cf-blue', cc: 'bg-orange',
 const TILE_CODES: Record<string, string> = { cf: 'CF', cc: 'CC', atcoder: 'AC', leetcode: 'LC' };
 const SWITCHES = [
   { key: 'notifyHour', title: '1 hour before', detail: 'A reminder before each counted contest.' },
-  { key: 'notifyRsvp', title: '5-minute check-in', detail: "Let us know whether you're participating." },
+  { key: 'notifyRsvp', title: '5 min RSVP', detail: 'Tell us if you are giving it.' },
   { key: 'notifyResult', title: 'After contest', detail: 'Your attendance result.' },
-  { key: 'notifyStreak', title: 'Streak reminder', detail: "At 9 PM, if you haven't solved today." },
-  { key: 'notifyMeals', title: 'Daily reminders', detail: 'At 9 AM, 1 PM, 5 PM and 9 PM.' },
+  { key: 'notifyStreak', title: 'Streak about to break', detail: "At 9 PM, if you haven't solved today." },
+  { key: 'notifyMeals', title: 'Meal-time nudges', detail: 'At 9 AM, 1 PM, 5 PM and 9 PM.' },
 ] as const;
 
 function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[number]; me: Me; onChange: () => void }) {
@@ -80,7 +80,7 @@ function UsernameField({ me, onChange }: { me: Me; onChange: () => void }) {
           {check?.available && <span className="text-xs font-bold text-lime">✓ available</span>}
         </span>
         {check && !check.available && <span className="text-xs text-pink">{check.error ?? 'taken'}</span>}
-        <p className="rounded-2xl border border-sun-line bg-sun-tint p-3 text-sm text-sun-text">You can change your username only once. This can't be undone.</p>
+        <p className="rounded-2xl border border-sun-line bg-sun-tint p-3 text-sm text-sun-text">You can only change your username once. After this it's locked for good.</p>
         {error && <ErrorText>{error}</ErrorText>}
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => { setEditing(false); setValue(me.user.username ?? ''); }}>Cancel</Button>
@@ -98,7 +98,7 @@ function UsernameField({ me, onChange }: { me: Me; onChange: () => void }) {
               }
             }}
           >
-            Confirm username
+            Use this name for good
           </Button>
         </div>
       </div>
@@ -112,7 +112,7 @@ function UsernameField({ me, onChange }: { me: Me; onChange: () => void }) {
         {left > 0 ? <Pill tone="muted">1 change left</Pill> : <Pill tone="muted"><Lock />Locked</Pill>}
         {left > 0 && <Button variant="secondary" onClick={() => setEditing(true)}>Change</Button>}
       </div>
-      {left < 1 && <p className="text-xs text-muted">You've already changed your username. Contact a coordinator if you need another change.</p>}
+      {left < 1 && <p className="text-xs text-muted">You've used your one change. Ask a coordinator if you really need another.</p>}
     </div>
   );
 }

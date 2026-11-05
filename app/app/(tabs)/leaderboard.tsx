@@ -18,9 +18,9 @@ type Row = {
 };
 
 const TABS: { id: Period; label: string; empty: string }[] = [
-  { id: 'day', label: 'Today', empty: 'No solves today yet. Solve one problem to join the leaderboard.' },
-  { id: 'week', label: 'Week', empty: 'No solves this week yet. Solve one problem to join the leaderboard.' },
-  { id: 'month', label: 'Month', empty: 'No solves this month yet. Solve one problem to join the leaderboard.' },
+  { id: 'day', label: 'Today', empty: 'No solves today yet. One problem gets you on the board.' },
+  { id: 'week', label: 'Week', empty: 'No solves this week yet. One problem gets you on the board.' },
+  { id: 'month', label: 'Month', empty: 'No solves this month yet. One problem gets you on the board.' },
 ];
 const PODIUM_ORDER = [
   { index: 1, color: theme.pink, height: 84 },

@@ -81,10 +81,10 @@ export default function Signup() {
         <View style={[common.input, common.row, check?.available && { borderColor: theme.limeLine }]}>
           <Text style={[common.muted, common.mono]}>@</Text>
           <TextInput style={styles.usernameInput} value={username} onChangeText={(value) => setUsername(value.trim().toLowerCase())} autoCapitalize="none" autoCorrect={false} accessibilityLabel="Username" />
-          {check?.available ? <Text style={common.link}>✓ available</Text> : null}
+          {check?.available ? <Text style={common.link}>✓ free</Text> : null}
         </View>
         {check && !check.available ? <Text style={[common.small, { color: theme.pink }]}>{check.error ?? 'taken'}</Text> : null}
-        <Text style={common.small}>You can change it once.</Text>
+        <Text style={common.small}>You can change it once later.</Text>
       </View>
       <View style={styles.field}>
         <Text style={common.label}>YEAR</Text>

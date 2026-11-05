@@ -51,7 +51,7 @@ export function Feed() {
     <div className="flex max-w-[800px] flex-col gap-4">
       <h1 className="display text-[52px] leading-none tracking-[-0.035em]">Feed</h1>
       {error && <ErrorText>{error}</ErrorText>}
-      {items?.length === 0 && <Card><p className="text-muted">No solves yet. Be the first on the leaderboard.</p></Card>}
+      {items?.length === 0 && <Card><p className="text-muted">No solves yet. Be the first on the board.</p></Card>}
       {!!items?.length && (
         <Card className="flex flex-col gap-4">
           {items.map((item) => (

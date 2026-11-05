@@ -132,8 +132,8 @@ export const PLATFORM_NAMES: Record<string, string> = { cf: 'Codeforces', cc: 'C
 export const platformColor = (platform: string) => PLATFORM_COLORS[platform] ?? theme.text;
 
 const RSVP_PILLS: Record<string, ReactNode> = {
-  yes: <Pill tone="lime" label="Attending" />,
-  no: <Pill tone="pink" label="Not attending" />,
+  yes: <Pill tone="lime" label="Going" />,
+  no: <Pill tone="pink" label="Can't make it" />,
 };
 
 export function ContestRow({ contest }: { contest: Contest }) {
@@ -149,7 +149,7 @@ export function ContestRow({ contest }: { contest: Contest }) {
         <Text style={styles.contestName} numberOfLines={1}>{contest.name}</Text>
         <Text style={common.small}><Text style={{ color: platformColor(contest.platform) }}>{PLATFORM_NAMES[contest.platform]}</Text> · {time}</Text>
       </View>
-      {RSVP_PILLS[contest.rsvp ?? ''] ?? <Pill tone="muted" label="No response" />}
+      {RSVP_PILLS[contest.rsvp ?? ''] ?? <Pill tone="muted" label="Not answered" />}
     </Pressable>
   );
 }

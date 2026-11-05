@@ -42,7 +42,7 @@ export default function Login() {
       </View>
       <View style={styles.middle}>
         <Text style={styles.headline}>Welcome back.{'\n'}<Text style={styles.lime}>Let's grind.</Text></Text>
-        <Text style={common.muted}>Contest reminders, attendance and a live leaderboard. New here? Use the same button to create your account.</Text>
+        <Text style={common.muted}>Contest reminders, attendance and a live leaderboard. New here? The same button gets you started.</Text>
         <Button title="Continue with Google" variant="white" onPress={signIn} disabled={!request} />
         {error ? <Text style={common.error}>{error}</Text> : null}
       </View>

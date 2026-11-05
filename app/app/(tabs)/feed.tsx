@@ -80,7 +80,7 @@ export default function Feed() {
         keyExtractor={(item) => `${item.userId}-${item.platform}-${item.problemId}`}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={theme.lime} />}
         onEndReached={loadMore}
-        ListEmptyComponent={refreshing ? undefined : <Text style={styles.muted}>No solves yet. Be the first on the leaderboard.</Text>}
+        ListEmptyComponent={refreshing ? undefined : <Text style={styles.muted}>No solves yet. Be the first on the board.</Text>}
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => item.url && Linking.openURL(item.url)}>
             <Avatar userId={item.userId} name={item.name} />

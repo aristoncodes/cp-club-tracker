@@ -40,13 +40,13 @@ export default function Contests() {
       <Text style={common.title}>Contests</Text>
       {error ? <Text style={common.error}>{error}</Text> : null}
       <View style={common.card}>
-        <Text style={common.heading}>Upcoming</Text>
-        {upcoming.length === 0 && !refreshing ? <Text style={common.muted}>No upcoming contests. Check back soon.</Text> : null}
+        <Text style={common.heading}>Coming up</Text>
+        {upcoming.length === 0 && !refreshing ? <Text style={common.muted}>No contests coming up yet. Check back soon.</Text> : null}
         {upcoming.map((contest) => <ContestRow key={contest.id} contest={contest} />)}
       </View>
       <View style={common.card}>
         <Text style={common.heading}>Past contests</Text>
-        {past.length === 0 && !refreshing ? <Text style={common.muted}>Your results will appear here after your first contest.</Text> : null}
+        {past.length === 0 && !refreshing ? <Text style={common.muted}>Your results show up here after your first contest.</Text> : null}
         {past.map((contest) => (
           <Pressable key={contest.id} style={styles.row} onPress={() => Linking.openURL(contest.url)}>
             <CellMark status={contest.status} reasonType={contest.reasonType} />

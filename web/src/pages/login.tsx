@@ -30,7 +30,7 @@ export function Login() {
         <h1 className="display text-[44px] leading-[1.05] tracking-[-0.035em] sm:text-[56px]">
           Welcome back.<br /><span className="text-lime">Let's grind.</span>
         </h1>
-        <p className="text-base text-muted">Contest reminders, attendance and a live leaderboard for the club. New here? Use the same button to create your account.</p>
+        <p className="text-base text-muted">Contest reminders, attendance and a live leaderboard for the club. New here? The same button gets you started.</p>
         {/* Google's frame paints a white box unless its page area uses a light colour scheme. */}
         <div className="self-start [color-scheme:light]">
           <GoogleLogin
@@ -68,13 +68,13 @@ export function Login() {
         <div className="-rotate-1 flex items-center gap-3 rounded-2xl bg-violet p-3 text-white">
           <span className="num flex size-10 items-center justify-center rounded-[10px] bg-white text-sm text-[#5B21B6]">5m</span>
           <div>
-            <p className="font-bold">A contest starts in 5 minutes</p>
-            <p className="text-sm text-violet-pale">Are you participating? Yes · No</p>
+            <p className="font-bold">A round starts in 5 min</p>
+            <p className="text-sm text-violet-pale">Giving it? Yes · No</p>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-2xl border border-line bg-card p-3">
           <i aria-hidden className="size-2.5 rounded-full bg-pink" />
-          <span>A club member solved a <span className="handle text-cf-blue">1700</span></span>
+          <span>A clubmate just solved a <span className="handle text-cf-blue">1700</span></span>
         </div>
       </section>
     </main>

@@ -26,9 +26,9 @@ type Extras = {
 };
 
 const TABS: { id: Period; label: string; title: string; empty: string }[] = [
-  { id: 'day', label: 'Today', title: 'Today', empty: 'No solves today yet. Solve one problem to join the leaderboard.' },
-  { id: 'week', label: 'Week', title: 'This week', empty: 'No solves this week yet. Solve one problem to join the leaderboard.' },
-  { id: 'month', label: 'Month', title: 'This month', empty: 'No solves this month yet. Solve one problem to join the leaderboard.' },
+  { id: 'day', label: 'Today', title: 'Today', empty: 'No solves today yet. One problem gets you on the board.' },
+  { id: 'week', label: 'Week', title: 'This week', empty: 'No solves this week yet. One problem gets you on the board.' },
+  { id: 'month', label: 'Month', title: 'This month', empty: 'No solves this month yet. One problem gets you on the board.' },
 ];
 const PODIUM = [
   { fill: 'bg-lime', height: 250, place: '1st' },
@@ -87,7 +87,7 @@ function ChaseBar({ rows, myId }: { rows: Row[]; myId: number }) {
   const above = rows[index - 1];
   const hint = solvePoints(HINT_RATING, mine?.cfRating ?? null, false);
   const headline = !mine
-    ? "You're not on the leaderboard yet."
+    ? "You're not on the board yet."
     : above
       ? <>You're <span className="num text-lime">#{mine.rank}</span> · <span className="num">{Math.round((above.points - mine.points) * 10) / 10}</span> pts behind {above.name.split(' ')[0]}</>
       : <>You're <span className="num text-lime">#{mine.rank}</span>. Nobody's ahead of you.</>;
@@ -129,7 +129,7 @@ function Sidebar({ extras }: { extras: Extras | null }) {
       </Card>
       <Card className="flex flex-col gap-3">
         <h2 className="display text-lg">Biggest climbers</h2>
-        {extras?.climbers.length === 0 && <p className="text-muted">No rank changes this period.</p>}
+        {extras?.climbers.length === 0 && <p className="text-muted">No climbers yet this period.</p>}
         {extras?.climbers.map((row) => (
           <Link key={row.userId} to={`/u/${row.userId}`} className="flex items-center gap-2">
             <Avatar userId={row.userId} name={row.name} size={32} />
@@ -139,7 +139,7 @@ function Sidebar({ extras }: { extras: Extras | null }) {
         ))}
       </Card>
       <Card className="flex flex-col gap-3">
-        <h2 className="display text-lg">Hardest solves</h2>
+        <h2 className="display text-lg">Toughest solves</h2>
         {extras?.toughest.length === 0 && <p className="text-muted">Nothing solved yet this period.</p>}
         {extras?.toughest.map((row) => (
           <Link key={`${row.userId}-${row.platform}-${row.problemId}`} to={`/u/${row.userId}`} className="flex items-center gap-2">
@@ -173,10 +173,10 @@ export function Leaderboard() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col items-start gap-2">
-          <Eyebrow>Leaderboard</Eyebrow>
+          <Eyebrow>Who's grinding</Eyebrow>
           <h1 className="display text-[52px] leading-none tracking-[-0.035em]">{tab.title}</h1>
           <p className="text-muted">
-            {periodLine(period)} · <span className="num">{list.length}</span> ranked · <span className="num">{totalSolves}</span> {totalSolves === 1 ? 'solve' : 'solves'}
+            {periodLine(period)} · <span className="num">{list.length}</span> on the board · <span className="num">{totalSolves}</span> {totalSolves === 1 ? 'solve' : 'solves'}
           </p>
         </div>
         <Tabs tabs={TABS} value={period} onChange={setPeriod} />

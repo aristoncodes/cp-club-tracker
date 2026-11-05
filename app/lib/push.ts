@@ -37,7 +37,7 @@ export async function handleRsvpAction(response: Notifications.NotificationRespo
     await api(`/contests/${contestId}/rsvp`, 'POST', { going: false, reasonType: 'other', reasonText: text });
   } else {
     await Notifications.scheduleNotificationAsync({
-      content: { body: 'Tap to add a reason', data: { contestId, screen: 'reason', rsvp: true } },
+      content: { body: 'Tap to give a reason', data: { contestId, screen: 'reason', rsvp: true } },
       trigger: { channelId: CHANNEL_ID },
     });
   }
@@ -53,7 +53,7 @@ export async function setupNotifications(): Promise<void> {
     {
       identifier: 'no',
       buttonTitle: 'No',
-      textInput: { submitButtonTitle: 'Send', placeholder: 'Reason' },
+      textInput: { submitButtonTitle: 'Send', placeholder: 'Why not?' },
       options: { opensAppToForeground: false },
     },
   ]);

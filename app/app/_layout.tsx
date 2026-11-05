@@ -50,7 +50,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.ink } }} />
       {isUpdatePending && (
         <Pressable accessibilityRole="button" onPress={() => reloadAsync().catch(console.warn)} style={styles.update}>
-          <Text style={styles.updateText}>Update available. Tap to restart.</Text>
+          <Text style={styles.updateText}>Update available, tap to restart</Text>
         </Pressable>
       )}
     </>
