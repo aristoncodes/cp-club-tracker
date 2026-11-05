@@ -6,7 +6,7 @@ Last updated: 2026-11-05. `IMPLEMENTATION_PLAN.md` has the full detail of each t
 
 ## Admin redesign
 
-All of it is written on the `admin-redesign` branch. **Nothing is pushed, deployed or migrated on production.**
+**Live for testing since 2026-11-06:** migration `0013` applied, Worker and website deployed, over-the-air update 1.3.0 published. Not announced to the club. `cp-tracker-staging` stays on Cloudflare for measuring, with made-up data and no cron.
 
 | Task | Status |
 |---|---|

@@ -50,8 +50,8 @@
         "projectId": "9136a425-3c99-4b28-b939-5358a9315f2e"
       },
       "release": {
-        "version": "1.2.0",
-        "notes": "Practice, duels, badges and more."
+        "version": "1.3.0",
+        "notes": "Must-attend contests, exam weeks, seasons and more."
       }
     },
     "owner": "aristoncodes",
