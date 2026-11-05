@@ -103,7 +103,7 @@ Build only these. Each lives in the file that uses it unless 2+ screens need it.
 - **Podium (app):** columns ordered 2-1-3, each with an avatar ringed in its colour and a coloured block of height 84 / 112 / 68 showing rank and points.
 - **Leaderboard row:** rank (mono 800) + movement (▲ `lime`, ▼ `pink`, — `muted`), avatar, name + year (`muted`), `@username` in rating colour, solves, max rating as a chip in rating colour, points in `lime` mono, right-aligned. Radius 14 with no divider lines. Your own row uses the `lime-tint` fill and border.
 - **Chase bar:** "You're #6 · 22.3 pts behind Meera" + a 10 px `lime` progress bar, plus a hint chip ("One 1500 problem ≈ +N", computed with the real scoring formula). On the app, a pinned `lime` "You" bar above the tabs replaces it.
-- **Next-contest card:** `violet` fill, platform pill, contest name in display font, IST time, and a three-tile countdown (days / hrs / min in `violet-deep` tiles). Before answering: "Participating" (primary) and "Can't attend" (outline). After Yes: a `lime` strip "You're participating. Good luck!" + "Change". After No: "What's the reason?" with reason chips (Exams, Travel, Unwell, Clash, Other) + "I can participate after all". Footer: stacked dots that identify nobody + "31 of 47 are going".
+- **Next-contest card:** `violet` fill, platform pill, contest name in display font, IST time, and a three-tile countdown (days / hrs / min in `violet-deep` tiles). Before answering: "I'm participating" (primary) and "I can't attend" (outline). After Yes: a `lime` strip "You're participating. Good luck!" + "Change". After No: "What's the reason?" with reason chips (Exams, Travel, Unwell, Clash, Other) + "I can participate after all". Footer: stacked dots that identify nobody + "31 of 47 are going".
 - **Stat card (app):** `card` with label, big mono value, and a one-line context ("#5 in club · 2 solves").
 - **Streak card:** a 7-day strip (M–S) of radius-10 tiles: done = `sun` fill with ✓, today = dashed `sun` outline, future or missed = `card-2`. Helper: "Solve one problem today to make it 13."
 - **Weekly challenge card:** title, mono "31/50" in `pink`, one-line goal, 12 px `pink` progress bar, and your own contribution.
@@ -177,6 +177,6 @@ The web is a fluid page: max width 1200 (880 for Settings), the sidebar wraps un
 ## Copy
 
 - Times are in IST, written as "Fri, 6 Nov · 8:05 PM".
-- Buttons: "Participating", "Can't attend", "Add reason", "Export CSV".
+- Buttons: "I'm participating", "I can't attend", "Add reason", "Export CSV".
 - Empty leaderboard: "No solves today yet. Solve one problem to join the leaderboard."
 - All names and numbers on the mockups are sample data; never ship them.
