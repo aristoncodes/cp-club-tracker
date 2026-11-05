@@ -66,8 +66,8 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
       ) : null}
       {!contest.rsvp && !choosing ? (
         <View style={styles.row}>
-          <Button title="I'm participating" flex onPress={() => send({ going: true })} />
-          <Button title="I can't attend" flex variant="onViolet" onPress={() => setChoosing(true)} />
+          <Button title="Participating" flex onPress={() => send({ going: true })} />
+          <Button title="Can't attend" flex variant="onViolet" onPress={() => setChoosing(true)} />
         </View>
       ) : null}
       {contest.rsvp === 'no' && !choosing ? (

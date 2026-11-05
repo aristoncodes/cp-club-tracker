@@ -78,8 +78,8 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
       )}
       {!contest.rsvp && !choosing && (
         <div className="flex gap-2">
-          <Button className="flex-1" onClick={() => send({ going: true })}>I'm participating</Button>
-          <Button variant="onViolet" className="flex-1" onClick={() => setChoosing(true)}>I can't attend</Button>
+          <Button className="flex-1" onClick={() => send({ going: true })}>Participating</Button>
+          <Button variant="onViolet" className="flex-1" onClick={() => setChoosing(true)}>Can't attend</Button>
         </div>
       )}
       {contest.rsvp === 'no' && !choosing && (
