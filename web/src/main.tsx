@@ -8,6 +8,8 @@ import { Admin } from './pages/admin';
 import { Badges, Celebration } from './pages/badges';
 import { Contests } from './pages/contests';
 import { Download } from './pages/download';
+import { Duel } from './pages/duel';
+import { Duels } from './pages/duels';
 import { Feed } from './pages/feed';
 import { Home } from './pages/home';
 import { Leaderboard } from './pages/leaderboard';
@@ -229,6 +231,8 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/practice" element={<Practice />} />
             <Route path="/badges" element={<Badges />} />
+            <Route path="/duels" element={<Duels />} />
+            <Route path="/duel/:id" element={<Duel />} />
             <Route path="/contests" element={<Contests />} />
             <Route path="/feed" element={<Feed />} />
             <Route path="/profile" element={<Profile />} />

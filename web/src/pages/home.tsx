@@ -4,6 +4,8 @@ import { RSVP_REASONS } from 'shared/reasons';
 import { solvePoints } from 'shared/scoring';
 import { formatIST, IST_OFFSET, timeAgo, weekStrip } from 'shared/time';
 import { api, type Announcement, type Contest, type Rival } from '../api';
+import type { DuelHub } from 'shared/duel';
+import { InviteCard } from './duels';
 import { GoalRing, PotdCard, type Goal, type Potd, type Upsolve } from './practice';
 import { Avatar, Button, Card, ContestRow, ErrorText, inputClass, PinnedAnnouncement, platformLabel, ProgressBar, Rating, RatingChip, useLoad, useMe } from '../ui';
 
@@ -168,6 +170,7 @@ export function Home() {
   const inbox = useLoad(() => api<{ pinned: Announcement | null }>('/announcements'), []);
   const potd = useLoad(() => api<Potd>('/practice/potd'), []);
   const rival = useLoad(() => api<Rival>('/me/rival'), []);
+  const duels = useLoad(() => api<DuelHub>('/duels'), []);
   const goal = useLoad(() => api<Goal>('/practice/goal'), []);
   const upsolves = useLoad(() => api<Upsolve[]>('/practice/upsolves'), []);
 
@@ -236,6 +239,18 @@ export function Home() {
         </div>
         <aside className="flex flex-col gap-3">
           {rival.data && 'me' in rival.data && <RivalCard data={rival.data} />}
+          {duels.data?.invites.map((duel) => <InviteCard key={duel.id} duel={duel} myId={me.user.id} now={duels.data!.now} onChange={duels.reload} />)}
+          {duels.data && (
+            <Link to="/duels" className="lift block">
+              <Card className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="label">Duel rating</p>
+                  <p className="num text-[32px] tracking-[-0.03em]">{duels.data.me.rating}</p>
+                </div>
+                <span className="font-bold text-lime">Duels →</span>
+              </Card>
+            </Link>
+          )}
           <Link to="/leaderboard" className="lift block">
             <Card className="flex flex-col gap-2">
               <div className="flex items-center justify-between">

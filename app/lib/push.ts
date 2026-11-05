@@ -17,9 +17,16 @@ Notifications.setNotificationHandler({
 });
 
 TaskManager.defineTask<Notifications.NotificationTaskPayload>(RESPONSE_TASK, async ({ data }) => {
-  if ('actionIdentifier' in data) await handleRsvpAction(data);
+  if (!('actionIdentifier' in data)) return;
+  if (data.actionIdentifier === 'duel_decline') await declineDuel(data);
+  else await handleRsvpAction(data);
 });
 Notifications.registerTaskAsync(RESPONSE_TASK);
+
+async function declineDuel(response: Notifications.NotificationResponse): Promise<void> {
+  await Notifications.dismissNotificationAsync(response.notification.request.identifier);
+  await api(`/duels/${response.notification.request.content.data?.duelId}/decline`, 'POST');
+}
 
 export function isRsvpAction(response: Notifications.NotificationResponse): boolean {
   return response.actionIdentifier === 'yes' || response.actionIdentifier === 'no';
@@ -56,6 +63,10 @@ export async function setupNotifications(): Promise<void> {
       textInput: { submitButtonTitle: 'Send', placeholder: 'Why not?' },
       options: { opensAppToForeground: false },
     },
+  ]);
+  await Notifications.setNotificationCategoryAsync('duel', [
+    { identifier: 'duel_accept', buttonTitle: 'Accept', options: { opensAppToForeground: true } },
+    { identifier: 'duel_decline', buttonTitle: 'Decline', options: { opensAppToForeground: false } },
   ]);
 }
 

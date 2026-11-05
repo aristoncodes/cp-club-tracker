@@ -114,3 +114,68 @@ export function formatClock(seconds: number): string {
 const VERDICTS: Record<string, string> = { WRONG_ANSWER: 'WA', TIME_LIMIT_EXCEEDED: 'TLE', MEMORY_LIMIT_EXCEEDED: 'MLE', RUNTIME_ERROR: 'RE', IDLENESS_LIMIT_EXCEEDED: 'ILE' };
 
 export const wrongVerdictText = (verdict: string, test: number) => (verdict === 'COMPILATION_ERROR' ? 'Compile error' : `${VERDICTS[verdict] ?? verdict} on test ${test}`);
+
+export type DuelView = {
+  id: number;
+  challengerId: number;
+  opponentId: number;
+  challengerName: string;
+  challengerUsername: string | null;
+  opponentName: string;
+  opponentUsername: string | null;
+  ratingMin: number;
+  ratingMax: number;
+  minutes: number;
+  status: string;
+  createdAt: number;
+  startAt: number | null;
+  endAt: number | null;
+  winnerId: number | null;
+  winningTime: number | null;
+  gaveUpId: number | null;
+  lastCheckAt: number | null;
+  lastCheckOk: number;
+  challengerDelta: number | null;
+  opponentDelta: number | null;
+};
+
+export type DuelDetail = DuelView & {
+  players: { challenger?: PlayerStatus; opponent?: PlayerStatus };
+  problem: { problemId: string; name: string; rating: number; url: string } | null;
+  isPlayer: boolean;
+  now: number;
+};
+
+export type DuelHub = {
+  me: { rating: number; weekChange: number; wins: number; losses: number; draws: number };
+  invites: DuelView[];
+  live: DuelView[];
+  recent: DuelView[];
+  board: { userId: number; name: string; username: string | null; rating: number; wins: number; losses: number }[];
+  now: number;
+};
+
+export const duelFinished = (status: string) => status === 'won' || status === 'draw';
+export const duelLive = (status: string) => status === 'live' || status === 'judging';
+export const duelName = (username: string | null, name: string) => (username ? `@${username}` : name);
+
+export function duelOutcome(duel: Pick<DuelView, 'status' | 'winnerId'>, userId: number): 'W' | 'L' | 'D' {
+  if (duel.status === 'draw') return 'D';
+  return duel.winnerId === userId ? 'W' : 'L';
+}
+
+export const duelHeadline = { W: 'You won!', L: 'Good duel.', D: 'Nobody solved it.' };
+export const DUEL_CHOICES = [
+  { id: 'easy', label: 'Easy', range: [-300, -100] },
+  { id: 'even', label: 'Even', range: [-100, 100] },
+  { id: 'hard', label: 'Hard', range: [100, 300] },
+] as const;
+export const DUEL_MINUTES = [30, 45, 60];
+
+export function playerStatusText(status: PlayerStatus | undefined, now: number, clockText: (ts: number) => string): string {
+  if (!status || status.state === 'none') return 'No submissions yet';
+  if (status.state === 'testing') return `Testing… · submitted ${clockText(status.at)}`;
+  if (status.state === 'accepted') return `Accepted · ${formatClock(status.time)}`;
+  const minutes = Math.floor((now - status.at) / 60);
+  return `${wrongVerdictText(status.verdict, status.test)} · ${minutes < 1 ? 'just now' : `${minutes} min ago`}`;
+}

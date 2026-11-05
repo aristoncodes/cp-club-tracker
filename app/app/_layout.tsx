@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications';
 import { router, Stack, type Href } from 'expo-router';
 import { useEffect } from 'react';
 import { Linking, StatusBar } from 'react-native';
+import { api } from '../lib/api';
 import { handleRsvpAction, isRsvpAction, setupNotifications } from '../lib/push';
 import { UpdatePrompts } from '../lib/update-card';
 import { theme } from '../theme';
@@ -34,7 +35,12 @@ export default function RootLayout() {
       handleRsvpAction(response).catch(console.warn);
       return;
     }
-    const { contestId, screen, url, rsvp, path } = response.notification.request.content.data ?? {};
+    const { contestId, screen, url, rsvp, path, duelId } = response.notification.request.content.data ?? {};
+    if (response.actionIdentifier === 'duel_decline') return;
+    if (response.actionIdentifier === 'duel_accept') {
+      api(`/duels/${duelId}/accept`, 'POST').catch(console.warn).finally(() => router.push(`/duel/${duelId}` as Href));
+      return;
+    }
     if (screen === 'reason') {
       router.push({ pathname: '/reason', params: { contestId: String(contestId), rsvp: rsvp ? '1' : '' } });
     } else if (typeof path === 'string') {
