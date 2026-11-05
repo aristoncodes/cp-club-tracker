@@ -42,6 +42,7 @@ export function Badges() {
   const [params] = useSearchParams();
   const user = params.get('user');
   const { data, error } = useLoad(() => api<BadgeRow[]>(`/badges${user ? `?user=${user}` : ''}`), [user]);
+  const extra = useLoad(() => api<{ id: string; label: string; earnedAt: number }[]>(`/badges/extra${user ? `?user=${user}` : ''}`), [user]);
   const earned = data?.filter((row) => row.earnedAt).length ?? 0;
   const closest = data?.filter((row) => !row.earnedAt && row.value > 0).sort((a, b) => b.value / b.goal - a.value / a.goal)[0];
   return (
@@ -51,6 +52,13 @@ export function Badges() {
       <p className="text-muted"><span className="num text-text">{earned}</span> of <span className="num text-text">{BADGES.length}</span> earned{closest ? ` · closest next: ${BADGES.find((b) => b.id === closest.id)!.name}` : ''}</p>
       {error && <ErrorText>{error}</ErrorText>}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3">
+        {extra.data?.map((badge) => (
+          <Card key={badge.id} className="flex flex-col items-start gap-2">
+            <span className="display flex size-[60px] -rotate-6 items-center justify-center rounded-2xl bg-sun text-xl text-ink">★</span>
+            <h2 className="display text-lg">{badge.label}</h2>
+            <span className="rounded-full bg-lime-tint px-3 py-1 text-xs font-bold text-lime">Earned {formatIST(badge.earnedAt).split(', ')[1].split(' · ')[0]}</span>
+          </Card>
+        ))}
         {data?.map((row) => {
           const badge = BADGES.find((b) => b.id === row.id)!;
           return (

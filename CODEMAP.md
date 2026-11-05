@@ -38,6 +38,7 @@ Current state and what's left: `PROGRESS.md`.
 | `duel.ts` | `decideDuel`, `playerStatus`, `duelRange`, `elo`, `duelCheckDue`, duel view types and text |
 | `virtual.ts` | `virtualStart`, `applySubmissions`, `rankVirtual` |
 | `app-version.ts` | `appVersionAction` |
+| `settings.ts` | `SETTING_DEFAULTS`, `effectiveValue` |
 
 ## api/src/ (Cloudflare Worker; mounted in `index.ts`)
 
@@ -47,7 +48,7 @@ Current state and what's left: `PROGRESS.md`.
 | `auth.ts` | | `requireUser`, `requireAdmin`, `USER_COLUMNS`, `Bindings` |
 | `accounts.ts` | `/auth/*` | Username and onboarding rules |
 | `routes.ts` | `/me*`, `/contests/*`, `/leaderboard*`, `/challenge`, `/feed`, `/users/:id` | `withRanks`, `biggestClimbers`, `duelFeedText` |
-| `admin.ts` | `/admin/*` (attendance, students, handles, admins, flags) | |
+| `admin.ts` | `/admin/` badges, students, handles, users, admins, audit | |
 | `ingest.ts` | `/ingest/*` (secret) | Health report |
 | `announcements.ts` | `/announcements`, `/admin/announcements` | `sendDueAnnouncements` |
 | `practice.ts` | `/practice/*` (potd, upsolves, goal) | `createUpsolves`, `pickPotd`, `potdBonuses`, reminders |
@@ -57,6 +58,11 @@ Current state and what's left: `PROGRESS.md`.
 | `recap.ts` | `/recap` | `sendRecapPush` |
 | `virtuals.ts` | `/virtuals`, `/admin/virtuals` | `nextVirtualRead`, `recordVirtual`, `finishVirtual` |
 | `digest.ts` | `/admin/digest` | |
+| `admin-club.ts` | `/admin/` overview, members, at-risk, attendance, exam-weeks, contests, sessions | |
+| `admin-engage.ts` | `/admin/` engagement, fairness, seasons, member-of-month, reports, rules | |
+| `admin-jobs.ts` | | Nightly at-risk, fairness, stats; member of the month; season freeze; session reminders; `inExamWeek` |
+| `admin-write.ts` | | `adminWrite`: the only way admin routes write |
+| `settings.ts` | | `getSettings` |
 | `cron.ts` | | `runCron` (per-minute dispatcher), `contestAction`, tick checks, `dispatchWorkflow`, streak and meal pushes |
 | `cf-queue.ts` | | `runCfQueue`: the only starter of Worker Codeforces calls; `refreshRatings` |
 | `cf.ts` | | Codeforces client with the 2 s gap |
@@ -85,7 +91,7 @@ Migrations: `0000` baseline, `0001` accounts, `0002` meals, `0003` push errors, 
 - `main.tsx`: routes, `Shell` (nav, banners, celebration), `BellMenu`, `RefreshToast`, `/announcements`.
 - `ui.tsx`: shared pieces (`Button`, `Card`, `Tabs`, `Avatar`, `ContestRow`, `InboxList`, `useLoad`, `useMe`).
 - `api.ts`: `api()` and shared types. `index.css`: tokens.
-- `pages/`: `home`, `leaderboard`, `practice` (also exports `PotdCard`, `GoalRing`), `duels` (also exports `InviteCard`), `duel`, `contests`, `virtual`, `feed`, `badges` (also exports `Celebration`), `recap`, `profile`, `settings`, `reason`, `login`, `signup`, `download`, `admin`, `admin-tools` (announcements, virtuals, digest).
+- `pages/`: `home`, `leaderboard`, `practice` (also exports `PotdCard`, `GoalRing`), `duels` (also exports `InviteCard`), `duel`, `contests`, `virtual`, `feed`, `badges` (also exports `Celebration`), `recap`, `profile`, `settings`, `reason`, `login`, `signup`, `download`, `admin` (layout and sidebar), `admin-ui` (shared pieces), `admin-club` (Overview, At-risk, Attendance, Exam weeks, Contests, Sessions), `admin-people` (Students, Members, Admins), `admin-engage` (Engagement, Fairness, Seasons), `admin-reports` (Reports, Rules), `admin-tools` (Announcements, virtuals, Digest).
 
 ## app/ (Expo; pushed screens use the same paths as web where possible)
 

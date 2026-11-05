@@ -225,7 +225,7 @@ The admin pages are web only, but these reach members on the website and, over t
 ## Data changes (summary)
 
 New tables:
-- `settings` (key, value, pending_value, pending_from, updated_by, updated_at)
+- `settings` (key, value, pending_value, pending_from, updated_by, updated_at). A saved change takes effect once `pending_from` has passed
 - `audit_log` (id, admin_id, area, action, target, before, after, at)
 - `admin_notes` (user_id, admin_id, text, at)
 - `exam_weeks` (+ `exam_week_batches`)
@@ -246,7 +246,6 @@ New columns:
 
 | When (IST) | Job |
 |---|---|
-| 00:00 nightly | Apply pending Rules values |
 | 01:00 nightly | At-risk check |
 | 01:01 nightly | Fairness check |
 | 01:02 nightly | `stats_daily` |

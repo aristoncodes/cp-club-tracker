@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
-import { requireAdmin, requireUser, type AppEnv } from './auth';
+import type { AppEnv } from './auth';
+import { adjustmentSum } from './records';
 import { biggestClimbers, withRanks } from './routes';
 
 const WEEK = 7 * 86400;
 
 export const digestRoutes = new Hono<AppEnv>();
-digestRoutes.use(requireUser, requireAdmin);
 
 digestRoutes.get('/', async (c) => {
   const db = c.env.DB;
@@ -14,15 +14,15 @@ digestRoutes.get('/', async (c) => {
   const attendance = (start: number, end: number) =>
     db
       .prepare(
-        `SELECT COUNT(CASE WHEN a.status = 'present' THEN 1 END) AS present, COUNT(a.status) AS total
+        `SELECT COUNT(CASE WHEN a.status = 'present' THEN 1 END) AS present, COUNT(CASE WHEN a.status IN ('present','absent') THEN 1 END) AS total
          FROM attendance a JOIN contests c ON c.id = a.contest_id WHERE c.counts = 1 AND c.start_at >= ? AND c.start_at < ?`,
       )
       .bind(start, end);
   const totals = (start: number, end: number) =>
     db
       .prepare(
-        `SELECT u.id AS userId, u.name, u.username, SUM(s.points) AS points FROM solves s JOIN users u ON u.id = s.user_id
-         WHERE s.solved_at >= ? AND s.solved_at < ? AND s.points > 0 AND u.active = 1 GROUP BY u.id ORDER BY points DESC`,
+        `SELECT u.id AS userId, u.name, u.username, SUM(s.points) + ${adjustmentSum('u.id', '?1', '?2')} AS points FROM solves s JOIN users u ON u.id = s.user_id
+         WHERE s.solved_at >= ?1 AND s.solved_at < ?2 AND s.points > 0 AND u.active = 1 GROUP BY u.id ORDER BY points DESC`,
       )
       .bind(start, end);
   const [thisWeek, lastWeek, members, solves, turnout, quiet, pending, waiting, signups, current, previous] = await db.batch<Record<string, unknown>>([
@@ -32,7 +32,7 @@ digestRoutes.get('/', async (c) => {
     db.prepare('SELECT COUNT(*) AS n FROM solves s JOIN users u ON u.id = s.user_id WHERE s.solved_at >= ? AND s.points > 0 AND u.active = 1').bind(from),
     db
       .prepare(
-        `SELECT c.id, c.name, c.platform, c.start_at AS startAt, COUNT(CASE WHEN a.status = 'present' THEN 1 END) AS present, COUNT(a.status) AS total
+        `SELECT c.id, c.name, c.platform, c.start_at AS startAt, COUNT(CASE WHEN a.status = 'present' THEN 1 END) AS present, COUNT(CASE WHEN a.status IN ('present','absent') THEN 1 END) AS total
          FROM contests c LEFT JOIN attendance a ON a.contest_id = c.id WHERE c.counts = 1 AND c.start_at >= ? AND c.start_at < ? GROUP BY c.id ORDER BY c.start_at`,
       )
       .bind(from, now),

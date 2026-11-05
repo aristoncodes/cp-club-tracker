@@ -26,7 +26,7 @@ type UserProfile = {
   heatmap: { day: number; count: number }[];
   today: number;
   attendance?: { total: number; present: number };
-  contests?: (ContestOutcome & { id: number; name: string; startAt: number })[];
+  contests?: (ContestOutcome & { id: number; name: string; startAt: number; note: string | null })[];
 };
 
 const CODES: Record<string, string> = { cf: 'CF', cc: 'CC', atcoder: 'AC', leetcode: 'LC' };
@@ -70,6 +70,21 @@ function Tile({ label, children, detail, filled }: { label: string; children: Re
       <Text style={[common.small, styles.tileLabel, { color: filled ? theme.ink : theme.muted }]}>{label}</Text>
       <Text style={[styles.bigStat, { color }]}>{children}</Text>
       <Text style={[common.small, { color: filled ? theme.ink : theme.muted }]}>{detail}</Text>
+    </View>
+  );
+}
+
+function PointNotices() {
+  const [notices, setNotices] = useState<{ id: number; kind: string; points: number; reason: string }[]>([]);
+  useEffect(() => {
+    api<typeof notices>('/me/point-notices').then(setNotices).catch(console.warn);
+  }, []);
+  if (!notices.length) return null;
+  return (
+    <View style={styles.notices}>
+      {notices.map((notice) => (
+        <Text key={notice.id} style={styles.noticeText}>{notice.kind === 'void' ? 'Solves removed' : 'Points adjusted'}: {notice.points > 0 ? '+' : ''}{Math.round(notice.points * 10) / 10}. {notice.reason}</Text>
+      ))}
     </View>
   );
 }
@@ -136,6 +151,7 @@ export function ProfileView({ id, own }: { id: number; own?: boolean }) {
         </View>
       </View>
       {own ? null : <RivalButton id={profile.id} />}
+      {own ? <PointNotices /> : null}
       <View style={common.row}>
         <Pressable accessibilityRole="link" hitSlop={8} onPress={() => router.push({ pathname: '/badges', params: own ? {} : { user: String(profile.id) } })}>
           <Text style={common.link}>Badges →</Text>
@@ -211,6 +227,7 @@ export function ProfileView({ id, own }: { id: number; own?: boolean }) {
               <View style={styles.flex}>
                 <Text style={common.bold} numberOfLines={1}>{contest.name}</Text>
                 <Text style={common.small}>{formatIST(contest.startAt).split(' · ')[0]} · {contestResult(contest)}</Text>
+                {contest.note ? <Text style={common.small}>Note from a coordinator: {contest.note}</Text> : null}
               </View>
             </View>
           ))}
@@ -221,6 +238,8 @@ export function ProfileView({ id, own }: { id: number; own?: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  notices: { gap: 4, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: theme.sunLine, backgroundColor: theme.sunTint },
+  noticeText: { color: theme.sunText, fontFamily: theme.font.regular, fontSize: 13 },
   page: { padding: theme.gutter, paddingTop: 48, gap: 12 },
   flex: { flex: 1 },
   header: { alignItems: 'center', gap: 4 },

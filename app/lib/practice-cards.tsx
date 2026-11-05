@@ -57,17 +57,17 @@ export function PotdCard({ data, onChange }: { data: Potd; onChange: () => void 
       </View>
       <Text style={styles.line}>
         {data.solvedAt ? `Solved · streak ${data.streak} · ` : ''}Solved by {data.solvedCount} of {data.bandCount} in your band ·{' '}
-        {data.revealed ? <Text><Text style={styles.faded}>+2</Text> bonus · tags revealed</Text> : `+${data.bonus} bonus`}
+        {data.revealed ? <Text><Text style={styles.faded}>+{data.bonusRevealed}</Text> bonus · tags revealed</Text> : `+${data.bonus} bonus`}
       </Text>
       {problem.tags ? (
         <View style={styles.tags}>{problem.tags.map((tag) => <Text key={tag} style={styles.tag}>{tag}</Text>)}</View>
       ) : !confirming ? (
         <Pressable accessibilityRole="button" onPress={() => setConfirming(true)} style={styles.reveal}>
-          <Text style={styles.revealText}>Reveal tags · bonus +5 → +2</Text>
+          <Text style={styles.revealText}>Reveal tags · bonus +{data.bonusFull} → +{data.bonusRevealed}</Text>
         </Pressable>
       ) : (
         <View style={styles.confirm}>
-          <Text style={common.bold}>Reveal tags? Your bonus drops from +5 to +2.</Text>
+          <Text style={common.bold}>Reveal tags? Your bonus drops from +{data.bonusFull} to +{data.bonusRevealed}.</Text>
           <View style={common.row}>
             <Button title="Keep hidden" flex onPress={() => setConfirming(false)} />
             <Button title="Reveal" flex variant="secondary" onPress={reveal} />

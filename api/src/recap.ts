@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { IST_OFFSET, istDay, periodStart, solveStreak } from 'shared/time';
 import { requireUser, type AppEnv, type Bindings } from './auth';
 import { pushUsers } from './push';
+import { adjustmentSum } from './records';
 import { biggestClimbers, withRanks } from './routes';
 
 const DAY = 86400;
@@ -31,8 +32,8 @@ recapRoutes.get('/', async (c) => {
   const totals = (from: number, to: number) =>
     db
       .prepare(
-        `SELECT u.id AS userId, u.name, u.username, SUM(s.points) AS points FROM solves s JOIN users u ON u.id = s.user_id
-         WHERE s.solved_at >= ? AND s.solved_at < ? AND s.points > 0 AND u.active = 1 GROUP BY u.id ORDER BY points DESC`,
+        `SELECT u.id AS userId, u.name, u.username, SUM(s.points) + ${adjustmentSum('u.id', '?1', '?2')} AS points FROM solves s JOIN users u ON u.id = s.user_id
+         WHERE s.solved_at >= ?1 AND s.solved_at < ?2 AND s.points > 0 AND u.active = 1 GROUP BY u.id ORDER BY points DESC`,
       )
       .bind(from, to);
   const [current, previous, mine, hardest, contests, days, topic, duels, goal, upcoming] = await db.batch<Record<string, unknown>>([

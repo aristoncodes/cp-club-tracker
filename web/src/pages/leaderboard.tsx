@@ -7,6 +7,7 @@ import type { Period } from 'shared/types';
 import { api } from '../api';
 import { Avatar, Card, ErrorText, Eyebrow, initials, Pill, platformLabel, PLATFORMS, ProgressBar, Rating, RatingChip, Tabs, useLoad, useMe } from '../ui';
 
+type Season = { name: string; startAt: number; endAt: number };
 type Row = {
   rank: number;
   moved: number | null;
@@ -25,7 +26,9 @@ type Extras = {
   toughest: { userId: number; name: string; platform: string; problemId: string; problemName: string | null; rp: number }[];
 };
 
-const TABS: { id: Period; label: string; title: string; empty: string }[] = [
+type BoardTab = Period | 'season';
+
+const TABS: { id: BoardTab; label: string; title: string; empty: string }[] = [
   { id: 'day', label: 'Today', title: 'Today', empty: 'No solves today yet. One problem gets you on the board.' },
   { id: 'week', label: 'Week', title: 'This week', empty: 'No solves this week yet. One problem gets you on the board.' },
   { id: 'month', label: 'Month', title: 'This month', empty: 'No solves this month yet. One problem gets you on the board.' },
@@ -40,7 +43,8 @@ const YEAR_COLORS = ['bg-sky', 'bg-pink', 'bg-sun', 'bg-lilac'];
 const NOW = () => Math.floor(Date.now() / 1000);
 const dateOnly = (ts: number) => formatIST(ts).split(' · ')[0];
 
-function periodLine(period: Period): string {
+function periodLine(period: BoardTab, season: Season | null): string {
+  if (period === 'season') return season ? `${dateOnly(season.startAt)} – ${dateOnly(season.endAt)}` : '';
   const start = periodStart(period, NOW());
   if (period === 'day') return dateOnly(start);
   if (period === 'week') {
@@ -157,14 +161,16 @@ export function Leaderboard() {
   const { me } = useMe();
   const now = NOW();
   const navigate = useNavigate();
-  const [period, setPeriod] = useState<Period>('week');
+  const [period, setPeriod] = useState<BoardTab>('week');
+  const season = useLoad(() => api<Season | null>('/seasons/current'), []);
   const [batch, setBatch] = useState(0);
   const [platform, setPlatform] = useState('');
   const query = `period=${period}&platform=${platform}`;
   const { data: rows, error } = useLoad(() => api<Row[]>(`/leaderboard?${query}&batch=${batch || ''}`), [query, batch]);
   const club = useLoad(() => api<Row[]>(`/leaderboard?period=${period}`), [period]);
   const extras = useLoad(() => api<Extras>(`/leaderboard/extras?${query}`), [query]);
-  const tab = TABS.find((t) => t.id === period) ?? TABS[0];
+  const tabs: typeof TABS = season.data ? [...TABS, { id: 'season', label: 'Season', title: season.data.name, empty: 'No solves this season yet. One problem gets you on the board.' }] : TABS;
+  const tab = tabs.find((t) => t.id === period) ?? tabs[0];
   const list = rows ?? [];
   const totalSolves = list.reduce((sum, row) => sum + row.solves, 0);
   const chipClass = (active: boolean) => `lift min-h-11 cursor-pointer rounded-full border px-4 font-bold ${active ? 'border-text bg-text text-ink' : 'border-line'}`;
@@ -177,10 +183,10 @@ export function Leaderboard() {
           <h1 className="display text-[52px] leading-none tracking-[-0.035em]">{tab.title}</h1>
           <Link to="/feed" className="font-bold text-lime hover:underline sm:hidden">See the feed →</Link>
           <p className="text-muted">
-            {periodLine(period)} · <span className="num">{list.length}</span> on the board · <span className="num">{totalSolves}</span> {totalSolves === 1 ? 'solve' : 'solves'}
+            {periodLine(period, season.data)} · <span className="num">{list.length}</span> on the board · <span className="num">{totalSolves}</span> {totalSolves === 1 ? 'solve' : 'solves'}
           </p>
         </div>
-        <Tabs tabs={TABS} value={period} onChange={setPeriod} />
+        <Tabs tabs={tabs} value={period} onChange={setPeriod} />
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button className={chipClass(batch === 0)} aria-pressed={batch === 0} onClick={() => setBatch(0)}>All</button>

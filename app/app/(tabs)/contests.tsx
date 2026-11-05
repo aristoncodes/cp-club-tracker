@@ -7,7 +7,7 @@ import { api, type Contest } from '../../lib/api';
 import { CellMark, common, ContestRow } from '../../lib/ui';
 import { theme } from '../../theme';
 
-type PastContest = ContestOutcome & { id: number; name: string; url: string; startAt: number };
+type PastContest = ContestOutcome & { id: number; name: string; url: string; startAt: number; note: string | null; source: string; claimedAt: number | null };
 type Virtual = Contest & { endAt: number; startedCount: number };
 type ContestView = 'upcoming' | 'virtuals' | 'past';
 
@@ -93,7 +93,14 @@ export default function Contests() {
             <View style={styles.main}>
               <Text style={common.bold} numberOfLines={1}>{contest.name}</Text>
               <Text style={common.small}>{formatIST(contest.startAt).split(' · ')[0]} · {contestResult(contest)}</Text>
+              {contest.note ? <Text style={common.small}>Note from a coordinator: {contest.note}</Text> : null}
+              {contest.claimedAt && !contest.status ? <Text style={common.small}>Waiting for a coordinator</Text> : null}
             </View>
+            {contest.source === 'other' && !contest.claimedAt && contest.status !== 'present' ? (
+              <Pressable accessibilityRole="button" style={styles.inButton} onPress={() => api(`/contests/${contest.id}/took-part`, 'POST').then(load).catch((err) => setError(err.message))}>
+                <Text style={styles.inText}>I took part</Text>
+              </Pressable>
+            ) : null}
           </Pressable>
         ))}
       </View>

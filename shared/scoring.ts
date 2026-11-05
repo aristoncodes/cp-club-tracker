@@ -1,3 +1,4 @@
+import { SETTING_DEFAULTS } from './settings';
 import type { Platform } from './types';
 
 export const CHALLENGE_TARGET = 50;
@@ -14,8 +15,8 @@ export function problemRp(platform: Platform, difficulty: number | string | null
   return difficulty;
 }
 
-export function solvePoints(rp: number, userRating: number | null, live: boolean): number {
+export function solvePoints(rp: number, userRating: number | null, live: boolean, liveMultiplier: number = SETTING_DEFAULTS.live_multiplier): number {
   const m = Math.min(Math.max(1 + (rp - (userRating ?? DEFAULT_RATING)) / 400, 0.5), 2);
-  const points = 10 * (rp / 1000) ** 2 * m * (live ? 1.5 : 1);
+  const points = 10 * (rp / 1000) ** 2 * m * (live ? liveMultiplier : 1);
   return Math.round(points * 10) / 10;
 }

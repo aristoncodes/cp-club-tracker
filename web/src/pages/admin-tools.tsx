@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { batchForStudyYear, STUDY_YEARS } from 'shared/batch';
 import { formatIST, IST_OFFSET } from 'shared/time';
 import { api, type Announcement, type Contest } from '../api';
+import { Segmented } from './admin-ui';
 import { audienceLabel, Button, Card, ErrorText, inputClass, ProgressBar, Toggle, useLoad } from '../ui';
 
 const TITLE_MAX = 80;
@@ -14,10 +15,20 @@ function istInputToUnix(value: string): number {
   return Date.parse(`${value}:00Z`) / 1000 - IST_OFFSET;
 }
 
+export function Announcements() {
+  const [tab, setTab] = useState<'announcements' | 'virtuals'>('announcements');
+  return (
+    <>
+      <Segmented label="Communicate" value={tab} onChange={setTab} tabs={[{ id: 'announcements', label: 'Announcements' }, { id: 'virtuals', label: 'Club virtuals' }]} />
+      {tab === 'announcements' ? <AnnouncementsSection /> : <VirtualsSection />}
+    </>
+  );
+}
+
 type SentAnnouncement = Announcement & { sendAt: number; audienceCount: number; seenCount: number };
 type AudienceCount = { batchYear: number | null; role: string; n: number };
 
-export function AnnouncementsSection() {
+function AnnouncementsSection() {
   const { data, error, reload } = useLoad(() => api<{ items: SentAnnouncement[]; counts: AudienceCount[] }>('/admin/announcements'), []);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -136,7 +147,7 @@ export function AnnouncementsSection() {
 
 type RoundInfo = { name: string; duration: number; problemCount: number };
 
-export function VirtualsSection() {
+function VirtualsSection() {
   const list = useLoad(() => api<(Contest & { counts: number; startedCount: number })[]>('/virtuals'), []);
   const [contestId, setContestId] = useState('');
   const [start, setStart] = useState('');
@@ -222,7 +233,7 @@ type Digest = {
 
 const percent = (part: { present: number; total: number }) => (part.total ? Math.round((part.present / part.total) * 100) : null);
 
-export function DigestSection() {
+export function Digest() {
   const { data, error } = useLoad(() => api<Digest>('/admin/digest'), []);
   if (error) return <ErrorText>{error}</ErrorText>;
   if (!data) return null;

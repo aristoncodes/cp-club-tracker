@@ -23,7 +23,7 @@ export async function badgeStats(db: D1Database, userId: number): Promise<BadgeS
            SELECT COUNT(*) AS n FROM (
              SELECT a.status, ROW_NUMBER() OVER (ORDER BY c.start_at) - ROW_NUMBER() OVER (PARTITION BY a.status ORDER BY c.start_at) AS grp
              FROM attendance a JOIN contests c ON c.id = a.contest_id
-             WHERE a.user_id = ? AND c.counts = 1 AND a.status IS NOT NULL
+             WHERE a.user_id = ? AND c.counts = 1 AND a.status IN ('present','absent')
            ) WHERE status = 'present' GROUP BY grp)`,
       )
       .bind(userId),
@@ -128,4 +128,17 @@ badgeRoutes.get('/', async (c) => {
 badgeRoutes.post('/seen', async (c) => {
   await c.env.DB.prepare('UPDATE badges SET seen_at = unixepoch() WHERE user_id = ? AND seen_at IS NULL').bind(c.get('user').id).run();
   return c.json({ ok: true });
+});
+
+// Season and member-of-the-month badges sit outside the 12, and are named from what earned them.
+badgeRoutes.get('/extra', async (c) => {
+  const userId = Number(c.req.query('user')) || c.get('user').id;
+  const { results } = await c.env.DB.prepare(
+    `SELECT b.badge AS id, b.earned_at AS earnedAt, s.name AS season
+     FROM badges b LEFT JOIN seasons s ON b.badge = 'season_' || s.id
+     WHERE b.user_id = ? AND (b.badge LIKE 'season\\_%' ESCAPE '\\' OR b.badge LIKE 'month\\_%' ESCAPE '\\') ORDER BY b.earned_at DESC`,
+  )
+    .bind(userId)
+    .all<{ id: string; earnedAt: number; season: string | null }>();
+  return c.json(results.map((row) => ({ id: row.id, earnedAt: row.earnedAt, label: row.season ? `Top 3: ${row.season}` : `Member of the month: ${row.id.slice(6)}` })));
 });

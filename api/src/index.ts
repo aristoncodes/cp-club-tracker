@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { adminRoutes } from './admin';
+import { adminClubRoutes } from './admin-club';
+import { adminEngageRoutes } from './admin-engage';
 import { accountRoutes } from './accounts';
 import { adminAnnouncementRoutes, announcementRoutes } from './announcements';
-import type { AppEnv, Bindings } from './auth';
+import { requireAdmin, requireUser, type AppEnv, type Bindings } from './auth';
 import { badgeRoutes } from './badges';
 import { runCron } from './cron';
 import { digestRoutes } from './digest';
@@ -38,6 +40,9 @@ app.get('/app-version', (c) =>
 
 app.route('/auth', accountRoutes);
 app.route('/ingest', ingestRoutes);
+app.use('/admin/*', requireUser, requireAdmin);
+app.route('/admin', adminClubRoutes);
+app.route('/admin', adminEngageRoutes);
 app.route('/admin/announcements', adminAnnouncementRoutes);
 app.route('/admin/virtuals', adminVirtualRoutes);
 app.route('/admin/digest', digestRoutes);

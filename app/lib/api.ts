@@ -4,7 +4,7 @@ import type { BadgeId } from 'shared/badges';
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const SESSION_KEY = 'session';
 
-export type Handle = { platform: string; handle: string; approved: number };
+export type Handle = { platform: string; handle: string; approved: number; status?: string };
 
 export type User = {
   id: number;
@@ -60,6 +60,7 @@ export type Contest = {
   url: string;
   startAt: number;
   kind?: string;
+  mandatory?: number;
   rsvp: string | null;
   goingCount: number;
   participantCount: number;
@@ -78,6 +79,8 @@ export type Potd =
       nextAt: number;
       streak: number;
       strip: { label: string; state: 'done' | 'today' | 'other' }[];
+      bonusFull: number;
+      bonusRevealed: number;
       members: { userId: number; name: string; username: string | null; solvedAt: number | null }[];
     };
 export type Upsolve = { contestId: number; contestName: string; endAt: number; problemId: string; name: string | null; rating: number | null; url: string | null; done: number };

@@ -170,6 +170,18 @@ function RatingChart({ history }: { history: RatingPoint[] }) {
   );
 }
 
+type PointNotice = { id: number; kind: string; points: number; reason: string; at: number };
+
+function PointNotices() {
+  const { data } = useLoad(() => api<PointNotice[]>('/me/point-notices'), []);
+  if (!data?.length) return null;
+  return (
+    <div className="flex flex-col gap-1 rounded-2xl border border-sun-line bg-sun-tint p-3 text-sun-text">
+      {data.map((notice) => <p key={notice.id}><b>{notice.kind === 'void' ? 'Solves removed' : 'Points adjusted'}: <span className="num">{notice.points > 0 ? '+' : ''}{Math.round(notice.points * 10) / 10}</span>.</b> {notice.reason}</p>)}
+    </div>
+  );
+}
+
 function RivalButton({ id, current, onChange }: { id: number; current: boolean; onChange: () => void }) {
   const [error, setError] = useState('');
   if (current) return <span className="inline-flex h-11 items-center rounded-full bg-pink-tint px-5 font-bold text-pink-text">Your rival</span>;
@@ -225,6 +237,7 @@ export function Profile() {
         {own && <Link to="/settings" className="lift inline-flex h-11 items-center gap-2 rounded-full border-2 border-line px-5 font-bold"><Gear />Settings</Link>}
         {own && me.user.role === 'admin' && <Link to="/admin" className="lift inline-flex h-11 items-center rounded-full border-2 border-line px-5 font-bold sm:hidden">Admin</Link>}
       </div>
+      {own && <PointNotices />}
       <div className="flex gap-4">
         <Link to={own ? '/badges' : `/badges?user=${profile.id}`} className="font-bold text-lime hover:underline">Badges →</Link>
         {own && <Link to="/recap" className="font-bold text-lime hover:underline">This week's recap →</Link>}
@@ -281,6 +294,7 @@ export function Profile() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold">{contest.name}</p>
                     <p className="text-xs text-muted">{formatIST(contest.startAt).split(' · ')[0]} · {contestResult(contest)}</p>
+                    {contest.note && <p className="text-xs text-muted">Note from a coordinator: {contest.note}</p>}
                   </div>
                 </div>
               ))}

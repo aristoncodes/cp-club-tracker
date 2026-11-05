@@ -6,6 +6,9 @@ export type CfSubmission = {
   creationTimeSeconds: number;
   verdict?: string;
   passedTestCount?: number;
+  programmingLanguage?: string;
+  timeConsumedMillis?: number;
+  memoryConsumedBytes?: number;
   problem: { contestId?: number; index: string; name: string; rating?: number; tags: string[] };
   author: { participantType: string; startTimeSeconds?: number };
 };
@@ -32,6 +35,7 @@ export function cfSolves(handle: string, submissions: CfSubmission[]): IngestSol
         url: `https://codeforces.com/contest/${problem.contestId}/problem/${problem.index}`,
         solvedAt: creationTimeSeconds,
         live: isLiveSubmission({ problem, verdict, creationTimeSeconds, ...rest }),
+        fingerprint: rest.programmingLanguage ? `${rest.programmingLanguage}|${rest.timeConsumedMillis}|${rest.memoryConsumedBytes}` : undefined,
       },
     ];
   });

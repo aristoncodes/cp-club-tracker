@@ -4,10 +4,11 @@ import { IST_OFFSET, istDay, periodStart, solveStreak } from 'shared/time';
 import type { Period } from 'shared/types';
 import { canFinishOnboarding, normalizeUsername, usernameError } from './accounts';
 import { requireUser, type AppEnv } from './auth';
+import { adjustmentSum } from './records';
 
 const PLATFORMS = ['cf', 'cc', 'atcoder', 'leetcode'];
 const REASON_TYPES = ['exams', 'travel', 'illness', 'clash', 'forgot', 'other'];
-const PERIODS = ['day', 'week', 'month'];
+const PERIODS = ['day', 'week', 'month', 'season'];
 const FEED_SIZE = 30;
 const HEATMAP_DAYS = 183;
 const TOP_TAGS = 6;
@@ -72,7 +73,7 @@ async function pastContests(db: D1Database, userId: number, before: number, limi
   const { results } = await db
     .prepare(
       `SELECT c.id, c.platform, c.external_id AS externalId, c.alt_external_id AS altExternalId, c.name, c.url,
-              c.start_at AS startAt, a.status, a.rsvp, a.reason_type AS reasonType, a.reason_text AS reasonText,
+              c.start_at AS startAt, c.mandatory, c.source, a.status, a.rsvp, a.reason_type AS reasonType, a.reason_text AS reasonText, a.note, a.claimed_at AS claimedAt,
               (SELECT COUNT(*) FROM solves s WHERE s.user_id = ?1 AND s.live = 1 AND s.solved_at BETWEEN c.start_at AND c.end_at) AS liveSolves
        FROM contests c LEFT JOIN attendance a ON a.contest_id = c.id AND a.user_id = ?1
        WHERE c.counts = 1 AND c.end_at < unixepoch() AND c.start_at < ?2
@@ -95,7 +96,7 @@ studentRoutes.get('/me', async (c) => {
   const now = Math.floor(Date.now() / 1000);
   const [handles, pendingReasons, days, unread, newBadges] = await c.env.DB.batch([
     c.env.DB.prepare(
-      `SELECT platform, handle, approved_at IS NOT NULL AS approved FROM handles WHERE user_id = ?`,
+      `SELECT platform, handle, status, approved_at IS NOT NULL AS approved FROM handles WHERE user_id = ?`,
     ).bind(user.id),
     c.env.DB.prepare(
       `SELECT c.id, c.name FROM attendance a JOIN contests c ON c.id = a.contest_id
@@ -190,7 +191,8 @@ studentRoutes.put('/me/handles/:platform', async (c) => {
          approved_at = CASE WHEN handle = excluded.handle THEN approved_at END,
          broken = CASE WHEN handle = excluded.handle THEN broken ELSE 0 END,
          synced_at = CASE WHEN handle = excluded.handle THEN synced_at END,
-         history_imported_at = CASE WHEN handle = excluded.handle THEN history_imported_at END`,
+         history_imported_at = CASE WHEN handle = excluded.handle THEN history_imported_at END,
+         status = CASE WHEN handle = excluded.handle THEN status ELSE 'waiting' END`,
     )
       .bind(c.get('user').id, platform, handle.trim())
       .run();
@@ -216,10 +218,9 @@ studentRoutes.post('/me/push-token', async (c) => {
 
 studentRoutes.get('/contests/upcoming', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT c.id, c.platform, c.name, c.url, c.start_at AS startAt, c.end_at AS endAt, c.kind, a.rsvp,
+    `SELECT c.id, c.platform, c.name, c.url, c.start_at AS startAt, c.end_at AS endAt, c.kind, c.mandatory, c.source, a.rsvp, a.claimed_at AS claimedAt,
             (SELECT COUNT(*) FROM attendance x WHERE x.contest_id = c.id AND x.rsvp = 'yes') AS goingCount,
-            (SELECT COUNT(*) FROM handles h JOIN users u ON u.id = h.user_id
-             WHERE h.platform = c.platform AND h.approved_at IS NOT NULL AND u.active = 1) AS participantCount
+            (SELECT COUNT(*) FROM users u WHERE u.active = 1 AND (c.platform = 'other' OR EXISTS (SELECT 1 FROM handles h WHERE h.user_id = u.id AND h.platform = c.platform AND h.approved_at IS NOT NULL))) AS participantCount
      FROM contests c LEFT JOIN attendance a ON a.contest_id = c.id AND a.user_id = ?
      WHERE (c.counts = 1 OR c.kind = 'virtual') AND c.start_at > unixepoch()
      ORDER BY c.start_at LIMIT 10`,
@@ -244,8 +245,8 @@ studentRoutes.post('/contests/:id/rsvp', async (c) => {
 
   const contest = await c.env.DB.prepare(
     `SELECT c.stage FROM contests c
-     JOIN handles h ON h.platform = c.platform AND h.user_id = ? AND h.approved_at IS NOT NULL
-     WHERE c.id = ? AND (c.counts = 1 OR c.kind = 'virtual')`,
+     WHERE c.id = ?2 AND (c.counts = 1 OR c.kind = 'virtual')
+       AND (c.platform = 'other' OR EXISTS (SELECT 1 FROM handles h WHERE h.platform = c.platform AND h.user_id = ?1 AND h.approved_at IS NOT NULL))`,
   )
     .bind(userId, contestId)
     .first<{ stage: number }>();
@@ -266,6 +267,21 @@ studentRoutes.post('/contests/:id/rsvp', async (c) => {
       body.going ? null : body.reasonType,
       body.going ? null : body.reasonText?.trim() || null,
     )
+    .run();
+  return c.json({ ok: true });
+});
+
+// Only for contests on other sites, where nothing can read attendance. An admin confirms it on the Attendance page.
+studentRoutes.post('/contests/:id/took-part', async (c) => {
+  const contestId = Number(c.req.param('id'));
+  const contest = await c.env.DB.prepare(`SELECT source, start_at AS startAt FROM contests WHERE id = ?`).bind(contestId).first<{ source: string; startAt: number }>();
+  if (!contest || contest.source !== 'other') return c.json({ error: 'Contest not found' }, 404);
+  if (contest.startAt > Math.floor(Date.now() / 1000)) return c.json({ error: "This contest hasn't started yet" }, 409);
+  await c.env.DB.prepare(
+    `INSERT INTO attendance (contest_id, user_id, claimed_at) VALUES (?, ?, unixepoch())
+     ON CONFLICT (contest_id, user_id) DO UPDATE SET claimed_at = excluded.claimed_at, status = NULL WHERE manual = 0`,
+  )
+    .bind(contestId, c.get('user').id)
     .run();
   return c.json({ ok: true });
 });
@@ -291,13 +307,23 @@ function periodWindow(period: Period, now: number): PeriodWindow {
   return { start, previousStart: periodStart(period, start - 1) };
 }
 
+// A season has no "previous period", so its window has none: moved comes back null.
+async function boardWindow(db: D1Database, period: Period | 'season', now: number): Promise<PeriodWindow | null> {
+  if (period !== 'season') return periodWindow(period, now);
+  const season = await currentSeason(db, now);
+  return season ? { start: season.startAt, previousStart: season.startAt } : null;
+}
+
+const currentSeason = (db: D1Database, now: number) =>
+  db.prepare('SELECT id, name, start_at AS startAt, end_at AS endAt FROM seasons WHERE frozen_at IS NULL AND start_at <= ?1 AND end_at > ?1 LIMIT 1').bind(now).first<{ id: number; name: string; startAt: number; endAt: number }>();
+
 function leaderboardQueries(db: D1Database, { start, previousStart }: PeriodWindow, batch: number | null, platform: string | null) {
   const filters = (b: number, p: number) => `AND (?${b} IS NULL OR u.batch_year = ?${b}) AND (?${p} IS NULL OR s.platform = ?${p})`;
   return [
     db
       .prepare(
         `SELECT u.id AS userId, u.name, u.username, u.batch_year AS batchYear, u.cf_rating AS cfRating,
-                SUM(s.points) AS points, COUNT(*) AS solves, MAX(s.rp) AS hardest
+                SUM(s.points) + ${adjustmentSum('u.id', '?1')} AS points, COUNT(*) AS solves, MAX(s.rp) AS hardest
          FROM solves s JOIN users u ON u.id = s.user_id
          WHERE s.solved_at >= ?1 AND s.points > 0 AND u.active = 1 ${filters(2, 3)}
          GROUP BY u.id ORDER BY points DESC`,
@@ -305,7 +331,7 @@ function leaderboardQueries(db: D1Database, { start, previousStart }: PeriodWind
       .bind(start, batch, platform),
     db
       .prepare(
-        `SELECT s.user_id AS userId, SUM(s.points) AS points
+        `SELECT s.user_id AS userId, SUM(s.points) + ${adjustmentSum('s.user_id', '?1', '?2')} AS points
          FROM solves s JOIN users u ON u.id = s.user_id
          WHERE s.solved_at >= ?1 AND s.solved_at < ?2 AND s.points > 0 AND u.active = 1 ${filters(3, 4)}
          GROUP BY s.user_id ORDER BY points DESC`,
@@ -314,14 +340,15 @@ function leaderboardQueries(db: D1Database, { start, previousStart }: PeriodWind
   ] as const;
 }
 
-function periodFrom(value: string | undefined): Period | null {
-  return PERIODS.includes(value ?? 'day') ? ((value ?? 'day') as Period) : null;
+function periodFrom(value: string | undefined): Period | 'season' | null {
+  return PERIODS.includes(value ?? 'day') ? ((value ?? 'day') as Period | 'season') : null;
 }
 
 studentRoutes.get('/leaderboard', async (c) => {
   const period = periodFrom(c.req.query('period'));
-  if (!period) return c.json({ error: 'period must be day, week or month' }, 400);
-  const window = periodWindow(period, Math.floor(Date.now() / 1000));
+  if (!period) return c.json({ error: 'period must be day, week, month or season' }, 400);
+  const window = await boardWindow(c.env.DB, period, Math.floor(Date.now() / 1000));
+  if (!window) return c.json([]);
   const [current, previous] = await c.env.DB.batch<{ userId: number; points: number }>([
     ...leaderboardQueries(c.env.DB, window, Number(c.req.query('batch')) || null, c.req.query('platform') || null),
   ]);
@@ -336,15 +363,16 @@ studentRoutes.get('/leaderboard', async (c) => {
 
 studentRoutes.get('/leaderboard/extras', async (c) => {
   const period = periodFrom(c.req.query('period'));
-  if (!period) return c.json({ error: 'period must be day, week or month' }, 400);
+  if (!period) return c.json({ error: 'period must be day, week, month or season' }, 400);
   const platform = c.req.query('platform') || null;
   const db = c.env.DB;
-  const window = periodWindow(period, Math.floor(Date.now() / 1000));
+  const window = await boardWindow(db, period, Math.floor(Date.now() / 1000));
+  if (!window) return c.json({ years: [], climbers: [], toughest: [] });
   const [current, previous, years, toughest] = await db.batch<Record<string, unknown>>([
     ...leaderboardQueries(db, window, null, platform),
     db
       .prepare(
-        `SELECT u.batch_year AS batchYear, SUM(s.points) AS points
+        `SELECT u.batch_year AS batchYear, SUM(s.points) + COALESCE((SELECT SUM(adj.points) FROM point_adjustments adj JOIN users v ON v.id = adj.user_id WHERE v.batch_year = u.batch_year AND adj.kind = 'adjust' AND adj.undone_at IS NULL AND adj.at >= ?1), 0) AS points
          FROM solves s JOIN users u ON u.id = s.user_id
          WHERE s.solved_at >= ?1 AND s.points > 0 AND u.active = 1 AND u.batch_year IS NOT NULL AND (?2 IS NULL OR s.platform = ?2)
          GROUP BY u.batch_year`,
@@ -363,6 +391,17 @@ studentRoutes.get('/leaderboard/extras', async (c) => {
   const ranked = withRanks(current.results as { userId: number; points: number; name: string; username: string | null }[]);
   const before = withRanks(previous.results as { userId: number; points: number }[]);
   return c.json({ years: years.results, climbers: biggestClimbers(ranked, before), toughest: toughest.results });
+});
+
+studentRoutes.get('/seasons/current', async (c) => c.json(await currentSeason(c.env.DB, Math.floor(Date.now() / 1000))));
+
+studentRoutes.get('/me/point-notices', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, kind, points, reason, at FROM point_adjustments WHERE user_id = ? AND undone_at IS NULL ORDER BY at DESC LIMIT 5`,
+  )
+    .bind(c.get('user').id)
+    .all();
+  return c.json(results);
 });
 
 studentRoutes.get('/challenge', async (c) => {
@@ -443,11 +482,11 @@ studentRoutes.get('/users/:id', async (c) => {
     db
       .prepare(
         `SELECT
-           COALESCE(SUM(CASE WHEN solved_at >= ?1 THEN points END), 0) AS dayPoints,
+           COALESCE(SUM(CASE WHEN solved_at >= ?1 THEN points END), 0) + ${adjustmentSum('?4', '?1')} AS dayPoints,
            COUNT(CASE WHEN solved_at >= ?1 AND points > 0 THEN 1 END) AS daySolves,
-           COALESCE(SUM(CASE WHEN solved_at >= ?2 THEN points END), 0) AS weekPoints,
+           COALESCE(SUM(CASE WHEN solved_at >= ?2 THEN points END), 0) + ${adjustmentSum('?4', '?2')} AS weekPoints,
            COUNT(CASE WHEN solved_at >= ?2 AND points > 0 THEN 1 END) AS weekSolves,
-           COALESCE(SUM(CASE WHEN solved_at >= ?3 THEN points END), 0) AS monthPoints,
+           COALESCE(SUM(CASE WHEN solved_at >= ?3 THEN points END), 0) + ${adjustmentSum('?4', '?3')} AS monthPoints,
            COUNT(CASE WHEN solved_at >= ?3 AND points > 0 THEN 1 END) AS monthSolves,
            COUNT(*) AS totalSolves
          FROM solves WHERE user_id = ?4`,
@@ -472,7 +511,7 @@ studentRoutes.get('/users/:id', async (c) => {
       .prepare(
         `SELECT COUNT(*) AS total, COUNT(CASE WHEN a.status = 'present' THEN 1 END) AS present
          FROM attendance a JOIN contests c ON c.id = a.contest_id
-         WHERE a.user_id = ? AND c.counts = 1 AND a.status IS NOT NULL`,
+         WHERE a.user_id = ? AND c.counts = 1 AND a.status IN ('present','absent')`,
       )
       .bind(id),
   ]);

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { formatIST } from 'shared/time';
 import { contestResult } from 'shared/reasons';
 import { api, type Contest, type PastContest } from '../api';
-import { Button, Card, CellMark, ContestRow, ErrorText, PlatformCode, Tabs, useLoad, VirtualTag } from '../ui';
+import { Button, Card, CellMark, ContestRow, ErrorText, Pill, PlatformCode, Tabs, useLoad, VirtualTag } from '../ui';
 
 type Virtual = Contest & { counts: number; startedCount: number };
 type View = 'upcoming' | 'virtuals' | 'past';
@@ -90,7 +90,12 @@ export function Contests() {
                     <div className="min-w-0 flex-1">
                       <a href={contest.url} target="_blank" rel="noreferrer" className="block truncate font-bold hover:underline">{contest.name}</a>
                       <p className="text-xs text-muted"><PlatformCode platform={contest.platform} /> · {formatIST(contest.startAt).split(' · ')[0]} · {contestResult(contest)}</p>
+                      {contest.note && <p className="text-xs text-muted">Note from a coordinator: {contest.note}</p>}
                     </div>
+                    {contest.claimedAt && !contest.status && <Pill tone="sun">Waiting for a coordinator</Pill>}
+                    {contest.source === 'other' && !contest.claimedAt && contest.status !== 'present' && (
+                      <Button variant="secondary" onClick={() => api(`/contests/${contest.id}/took-part`, 'POST').then(past.reload).catch(() => undefined)}>I took part</Button>
+                    )}
                   </div>
                 ))}
               </div>

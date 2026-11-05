@@ -163,6 +163,7 @@ export function ContestRow({ contest }: { contest: Contest }) {
         <Text style={styles.contestName} numberOfLines={1}>{contest.name}</Text>
         <Text style={common.small}><Text style={{ color: contest.kind === 'virtual' ? theme.violetSoft : platformColor(contest.platform) }}>{contest.kind === 'virtual' ? 'CLUB VIRTUAL' : PLATFORM_NAMES[contest.platform]}</Text> · {time}</Text>
       </View>
+      {contest.mandatory ? <Pill tone="sun" label="★ Must attend" /> : null}
       {RSVP_PILLS[contest.rsvp ?? ''] ?? <Pill tone="muted" label="Not answered" />}
     </Pressable>
   );
@@ -171,6 +172,7 @@ export function ContestRow({ contest }: { contest: Contest }) {
 export function CellMark({ status, reasonType }: { status: string | null; reasonType: string | null }) {
   if (!status) return <View style={[styles.cell, { backgroundColor: theme.card2 }]} />;
   if (status === 'present') return <View style={[styles.cell, { backgroundColor: theme.lime }]}><Text style={styles.cellText}>✓</Text></View>;
+  if (status === 'excused') return <View style={[styles.cell, { backgroundColor: '#13263A' }]}><Text style={[styles.cellText, { color: '#7DD3FC' }]}>X</Text></View>;
   if (!reasonType) return <View style={[styles.cell, styles.cellPending]}><Text style={[styles.cellText, { color: theme.sun }]}>?</Text></View>;
   return <View style={[styles.cell, { backgroundColor: theme.pink }]}><Text style={styles.cellText}>{REASONS.find((r) => r.id === reasonType)?.letter ?? 'O'}</Text></View>;
 }

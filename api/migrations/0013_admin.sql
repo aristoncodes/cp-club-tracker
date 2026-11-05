@@ -54,6 +54,7 @@ ALTER TABLE users ADD COLUMN deactivated_at INTEGER;
 UPDATE users SET deactivated_at = unixepoch() WHERE active = 0;
 
 ALTER TABLE solves ADD COLUMN voided_points REAL;
+ALTER TABLE solves ADD COLUMN fingerprint TEXT; -- language, time and memory of a Codeforces solve, for the matching-solves check
 
 CREATE TABLE settings (
   key TEXT PRIMARY KEY,
@@ -178,7 +179,8 @@ CREATE TABLE seasons (
   start_at INTEGER NOT NULL,
   end_at INTEGER NOT NULL,
   frozen_at INTEGER,
-  board TEXT
+  board TEXT,
+  created_by INTEGER NOT NULL REFERENCES users(id)
 );
 CREATE TABLE member_of_month (
   month TEXT PRIMARY KEY,

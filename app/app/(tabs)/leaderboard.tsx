@@ -7,7 +7,7 @@ import { FeedPanel } from '../../lib/feed-panel';
 import { Avatar, AvatarButton, common, initials, Rating } from '../../lib/ui';
 import { theme } from '../../theme';
 
-type Period = 'day' | 'week' | 'month';
+type Period = 'day' | 'week' | 'month' | 'season';
 type Row = {
   rank: number;
   moved: number | null;
@@ -57,6 +57,7 @@ function Podium({ rows }: { rows: Row[] }) {
 
 export default function Leaderboard() {
   const [view, setView] = useState<'rankings' | 'feed'>('rankings');
+  const [season, setSeason] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>('week');
   const [rows, setRows] = useState<Row[]>([]);
   const [me, setMe] = useState<Me | null>(null);
@@ -68,7 +69,8 @@ export default function Leaderboard() {
     setError('');
     setRefreshing(true);
     try {
-      const [data, meData] = await Promise.all([api<Row[]>(`/leaderboard?period=${period}`), api<Me>('/me')]);
+      const [data, meData, currentSeason] = await Promise.all([api<Row[]>(`/leaderboard?period=${period}`), api<Me>('/me'), api<{ name: string } | null>('/seasons/current')]);
+      setSeason(currentSeason?.name ?? null);
       setRows(data);
       setMe(meData);
     } catch (err) {
@@ -104,7 +106,7 @@ export default function Leaderboard() {
       {view === 'feed' ? <FeedPanel /> : null}
       {view === 'rankings' ? <>
       <View style={styles.tabs} accessibilityRole="tablist">
-        {TABS.map((tab) => {
+        {(season ? [...TABS, { id: 'season' as const, label: 'Season', empty: 'No solves this season yet. One problem gets you on the board.' }] : TABS).map((tab) => {
           const active = tab.id === period;
           return (
             <Pressable

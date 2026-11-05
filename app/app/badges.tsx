@@ -14,10 +14,12 @@ export default function Badges() {
   const { user } = useLocalSearchParams<{ user?: string }>();
   const [rows, setRows] = useState<BadgeRow[] | null>(null);
   const [error, setError] = useState('');
+  const [extra, setExtra] = useState<{ id: string; label: string; earnedAt: number }[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       api<BadgeRow[]>(`/badges${user ? `?user=${user}` : ''}`).then(setRows).catch((err) => setError(err.message));
+      api<typeof extra>(`/badges/extra${user ? `?user=${user}` : ''}`).then(setExtra).catch(console.warn);
     }, [user]),
   );
 
@@ -28,6 +30,12 @@ export default function Badges() {
       <Text style={common.muted}>{earned} of {BADGES.length} earned</Text>
       {error ? <Text style={common.error}>{error}</Text> : null}
       <View style={styles.grid}>
+        {extra.map((badge) => (
+          <View key={badge.id} style={[common.card, styles.tile]}>
+            <Text style={common.bold}>★ {badge.label}</Text>
+            <Text style={styles.date}>{formatIST(badge.earnedAt).split(', ')[1].split(' · ')[0]}</Text>
+          </View>
+        ))}
         {rows?.map((row) => {
           const badge = BADGES.find((b) => b.id === row.id)!;
           return (

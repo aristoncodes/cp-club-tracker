@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { istDay, periodStart } from 'shared/time';
 import { requireUser, type AppEnv, type Bindings } from './auth';
 import { pushUsers } from './push';
+import { adjustmentSum } from './records';
 
 const CHANGE_AFTER = 7 * 86400;
 
@@ -11,7 +12,7 @@ function weekStats(db: D1Database, userId: number, week: number): D1PreparedStat
   return db
     .prepare(
       `SELECT
-         (SELECT COALESCE(SUM(points), 0) FROM solves WHERE user_id = ?1 AND solved_at >= ?2) AS points,
+         (SELECT COALESCE(SUM(points), 0) FROM solves WHERE user_id = ?1 AND solved_at >= ?2) + ${adjustmentSum('?1', '?2')} AS points,
          (SELECT COUNT(*) FROM solves WHERE user_id = ?1 AND solved_at >= ?2 AND points > 0) AS solves,
          (SELECT COUNT(*) FROM attendance a JOIN contests c ON c.id = a.contest_id WHERE a.user_id = ?1 AND a.status = 'present' AND c.start_at >= ?2) AS contests,
          (SELECT COUNT(*) FROM duels WHERE winner_id = ?1 AND finished_at >= ?2) AS duels`,
@@ -58,8 +59,8 @@ export async function checkRivals(env: Bindings, now: number): Promise<void> {
   const today = istDay(now);
   const { results } = await env.DB.prepare(
     `SELECT u.id, u.rival_ahead AS wasAhead, u.rival_pushed_day AS pushedDay, r.username, r.name,
-       (SELECT COALESCE(SUM(points), 0) FROM solves WHERE user_id = u.id AND solved_at >= ?1) AS mine,
-       (SELECT COALESCE(SUM(points), 0) FROM solves WHERE user_id = r.id AND solved_at >= ?1) AS theirs
+       (SELECT COALESCE(SUM(points), 0) FROM solves WHERE user_id = u.id AND solved_at >= ?1) + ${adjustmentSum('u.id', '?1')} AS mine,
+       (SELECT COALESCE(SUM(points), 0) FROM solves WHERE user_id = r.id AND solved_at >= ?1) + ${adjustmentSum('r.id', '?1')} AS theirs
      FROM users u JOIN users r ON r.id = u.rival_id WHERE u.active = 1 AND r.active = 1`,
   )
     .bind(week)

@@ -50,7 +50,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
       ) : (
         <div className="flex flex-wrap items-center gap-2">
           <span className="handle">@{linked?.handle}</span>
-          <Pill tone={linked?.approved ? 'lime' : 'sun'}>{linked?.approved ? 'Approved' : 'Waiting for approval'}</Pill>
+          <Pill tone={linked?.status === 'rejected' ? 'pink' : linked?.approved ? 'lime' : 'sun'}>{linked?.status === 'rejected' ? 'Rejected — contact an admin' : linked?.approved ? 'Approved' : 'Waiting for approval'}</Pill>
           <button className="min-h-11 cursor-pointer px-2 font-bold text-lime hover:underline" onClick={() => setEditing(true)}>Edit</button>
         </div>
       )}

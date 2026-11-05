@@ -203,6 +203,7 @@ export function ContestRow({ contest }: { contest: Contest }) {
           {contest.kind === 'virtual' ? <VirtualTag /> : <span className={contest.platform === 'cf' ? 'text-cf-blue' : 'text-orange'}>{platformLabel(contest.platform)}</span>} · {time}
         </p>
       </div>
+      {contest.mandatory ? <Pill tone="sun">★ Must attend</Pill> : null}
       {RSVP_PILLS[contest.rsvp as 'yes' | 'no'] ?? <Pill tone="muted">Not answered</Pill>}
     </div>
   );
@@ -257,6 +258,7 @@ export function CellMark({ status, reasonType }: { status: string | null | undef
   const base = 'num flex size-6 shrink-0 items-center justify-center rounded-[7px] text-xs text-ink';
   if (!status) return <span className={`${base} bg-card-2`} />;
   if (status === 'present') return <span className={`${base} bg-lime`}>✓</span>;
+  if (status === 'excused') return <span className="num flex size-6 shrink-0 items-center justify-center rounded-[7px] bg-[#13263A] text-xs text-[#7DD3FC]">X</span>;
   if (!reasonType) return <span className="num flex size-6 shrink-0 items-center justify-center rounded-[7px] border-2 border-dashed border-sun text-xs text-sun">?</span>;
   return <span className={`${base} bg-pink`}>{REASONS.find((r) => r.id === reasonType)?.letter ?? 'O'}</span>;
 }

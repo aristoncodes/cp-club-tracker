@@ -23,6 +23,7 @@ export type IngestSolve = {
   url?: string;
   solvedAt: number;
   live: boolean;
+  fingerprint?: string;
 };
 
 export type HealthReport = {

@@ -2,9 +2,12 @@ import { Hono } from 'hono';
 import { closestTarget, GOAL_RATINGS, GOAL_TARGETS, goalLocked, goalSuggestion } from 'shared/goal';
 import { potdBand, potdBonus, potdRating, POTD_BANDS } from 'shared/potd';
 import { IST_OFFSET, istDay, periodStart, solveStreak, weekStrip } from 'shared/time';
+import type { Settings } from 'shared/settings';
 import { contestType, upsolveItems, upsolveReminderDue } from 'shared/upsolve';
+import { inExamWeek } from './admin-jobs';
 import { requireUser, type AppEnv, type Bindings } from './auth';
 import { pushUsers } from './push';
+import { getSettings } from './settings';
 
 const DAY = 86400;
 const RECENT_ROUND_SECONDS = 90 * DAY;
@@ -63,7 +66,9 @@ export async function sendUpsolveReminders(env: Bindings, now: number): Promise<
     await env.DB.prepare('UPDATE contests SET upsolve_pushes = upsolve_pushes + 1 WHERE id = ?').bind(contest.id).run();
     const { results } = await env.DB.prepare(
       `SELECT x.user_id AS userId, COUNT(*) AS left_count FROM upsolves x
-       WHERE x.contest_id = ? AND NOT EXISTS (SELECT 1 FROM solves s WHERE s.user_id = x.user_id AND s.platform = 'cf' AND s.problem_id IN (x.problem_id, x.alt_problem_id))
+       JOIN users u ON u.id = x.user_id
+       WHERE x.contest_id = ? AND COALESCE(u.batch_year, 0) NOT IN (${inExamWeek('mute_practice', now)})
+         AND NOT EXISTS (SELECT 1 FROM solves s WHERE s.user_id = x.user_id AND s.platform = 'cf' AND s.problem_id IN (x.problem_id, x.alt_problem_id))
        GROUP BY x.user_id`,
     )
       .bind(contest.id)
@@ -118,7 +123,7 @@ export async function sendPotdPush(env: Bindings, now: number): Promise<void> {
   const [members, picks] = await db.batch([
     db.prepare(
       `SELECT u.id, u.cf_rating AS rating FROM users u JOIN handles h ON h.user_id = u.id
-       WHERE u.active = 1 AND h.platform = 'cf' AND h.approved_at IS NOT NULL`,
+       WHERE u.active = 1 AND h.platform = 'cf' AND h.approved_at IS NOT NULL AND COALESCE(u.batch_year, 0) NOT IN (${inExamWeek('mute_practice', now)})`,
     ),
     db.prepare('SELECT band FROM potd WHERE day = ?').bind(day),
   ]);
@@ -139,6 +144,7 @@ export async function sendPotdPush(env: Bindings, now: number): Promise<void> {
 export async function potdBonuses(
   db: D1Database,
   solves: { userId: number; rating: number | null; problemId: string; solvedAt: number }[],
+  settings: Settings,
 ): Promise<Map<string, number>> {
   const bonuses = new Map<string, number>();
   if (!solves.length) return bonuses;
@@ -151,7 +157,7 @@ export async function potdBonuses(
     const day = istDay(solve.solvedAt);
     if (!picks.some((p) => p.day === day && p.band === potdBand(solve.rating) && p.problemId === solve.problemId)) continue;
     const reveal = await db.prepare('SELECT revealed_at AS at FROM potd_reveals WHERE user_id = ? AND day = ?').bind(solve.userId, day).first<{ at: number }>();
-    bonuses.set(`${solve.userId}:${solve.problemId}`, potdBonus(!!reveal && reveal.at < solve.solvedAt));
+    bonuses.set(`${solve.userId}:${solve.problemId}`, potdBonus(!!reveal && reveal.at < solve.solvedAt, settings.potd_bonus, settings.potd_bonus_revealed));
   }
   return bonuses;
 }
@@ -241,12 +247,15 @@ practiceRoutes.get('/potd', async (c) => {
   const solved = mine?.solvedAt ?? null;
   const revealedFirst = revealedAt !== null && (solved === null || revealedAt < solved);
   const showTags = revealedAt !== null || solved !== null;
+  const settings = await getSettings(db, now);
   return c.json({
     day,
     band,
+    bonusFull: settings.potd_bonus,
+    bonusRevealed: settings.potd_bonus_revealed,
     problem: { problemId: problem.problemId, name: problem.name, rating: problem.rating, url: problem.url, tags: showTags ? JSON.parse(problem.tags ?? '[]') : null },
     revealed: revealedFirst,
-    bonus: potdBonus(revealedFirst),
+    bonus: potdBonus(revealedFirst, settings.potd_bonus, settings.potd_bonus_revealed),
     solvedAt: solved,
     solvedCount: bandMembers.filter((m) => m.solvedAt !== null).length,
     bandCount: bandMembers.length,

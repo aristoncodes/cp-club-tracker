@@ -13,6 +13,7 @@ export type ContestOutcome = { status: string | null; reasonType: string | null;
 
 export function contestResult({ status, reasonType, ratingDelta, liveSolves }: ContestOutcome): string {
   if (status === 'absent') return reasonType ? (REASONS.find((r) => r.id === reasonType)?.label ?? 'Reason given') : 'No reason yet';
+  if (status === 'excused') return 'Excused';
   if (status !== 'present') return 'Not recorded';
   if (ratingDelta !== null) return `${ratingDelta >= 0 ? '+' : ''}${ratingDelta} rating`;
   return `${liveSolves} solved live`;

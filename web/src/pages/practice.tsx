@@ -19,6 +19,8 @@ export type Potd =
       solvedCount: number;
       bandCount: number;
       nextAt: number;
+      bonusFull: number;
+      bonusRevealed: number;
       streak: number;
       strip: { label: string; state: 'done' | 'today' | 'other' }[];
       members: { userId: number; name: string; username: string | null; solvedAt: number | null }[];
@@ -65,15 +67,15 @@ export function PotdCard({ data, onChange, large }: { data: Potd; onChange: () =
       <p className="font-bold">
         {data.solvedAt ? <>Solved · streak <span className="num">{data.streak}</span> · </> : null}
         Solved by <span className="num">{data.solvedCount}</span> of <span className="num">{data.bandCount}</span> in your band ·{' '}
-        {data.revealed ? <><span className="num opacity-70">+2</span> bonus · tags revealed</> : <><span className="num">+{data.bonus}</span> bonus</>}
+        {data.revealed ? <><span className="num opacity-70">+{data.bonusRevealed}</span> bonus · tags revealed</> : <><span className="num">+{data.bonus}</span> bonus</>}
       </p>
       {problem.tags ? (
         <div className="flex flex-wrap gap-1.5">{problem.tags.map((tag) => <span key={tag} className="rounded-full bg-[rgba(14,14,20,.12)] px-3 py-1 text-xs font-bold">{tag}</span>)}</div>
       ) : !confirming ? (
-        <button onClick={() => setConfirming(true)} className="min-h-11 cursor-pointer self-start rounded-full border-2 border-dashed border-ink px-4 text-xs font-bold">Reveal tags · bonus +5 → +2</button>
+        <button onClick={() => setConfirming(true)} className="min-h-11 cursor-pointer self-start rounded-full border-2 border-dashed border-ink px-4 text-xs font-bold">Reveal tags · bonus +{data.bonusFull} → +{data.bonusRevealed}</button>
       ) : (
         <div role="dialog" aria-label="Reveal tags" className="flex flex-col gap-2 rounded-2xl bg-ink p-4 text-text">
-          <p className="font-bold">Reveal tags? Your bonus drops from +5 to +2.</p>
+          <p className="font-bold">Reveal tags? Your bonus drops from +{data.bonusFull} to +{data.bonusRevealed}.</p>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setConfirming(false)}>Keep hidden</Button>
             <Button variant="secondary" onClick={reveal}>Reveal</Button>

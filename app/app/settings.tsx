@@ -49,7 +49,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
           <Text style={common.bold}>{PLATFORM_NAMES[platform.id]}</Text>
           <Text style={common.small}>{linked ? `@${linked.handle}` : platform.required ? 'Required' : 'Optional'}</Text>
         </View>
-        {linked ? <Pill tone={linked.approved ? 'lime' : 'sun'} label={linked.approved ? 'Approved' : 'Waiting for approval'} /> : null}
+        {linked ? <Pill tone={linked.status === 'rejected' ? 'pink' : linked.approved ? 'lime' : 'sun'} label={linked.status === 'rejected' ? 'Rejected — contact an admin' : linked.approved ? 'Approved' : 'Waiting for approval'} /> : null}
         {!editing ? (
           <Pressable accessibilityRole="button" accessibilityLabel={`${linked ? 'Edit' : 'Link'} ${PLATFORM_NAMES[platform.id]}`} hitSlop={12} onPress={() => setEditing(true)}>
             <Text style={common.link}>{linked ? 'Edit' : 'Link'}</Text>

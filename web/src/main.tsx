@@ -4,7 +4,12 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { api, getSession, type Announcement, type Me } from './api';
 import './index.css';
-import { Admin } from './pages/admin';
+import { AdminLayout } from './pages/admin';
+import { Attendance as AdminAttendance, AtRisk, Contests as AdminContests, ExamWeeks, Overview, Sessions } from './pages/admin-club';
+import { Engagement, Fairness, Seasons } from './pages/admin-engage';
+import { AdminsAudit, Members, Students } from './pages/admin-people';
+import { Reports, Rules } from './pages/admin-reports';
+import { Announcements as AdminAnnouncements, Digest } from './pages/admin-tools';
 import { Badges, Celebration } from './pages/badges';
 import { Contests } from './pages/contests';
 import { Download } from './pages/download';
@@ -244,7 +249,25 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/reason/:contestId" element={<Reason />} />
-            <Route path="/admin" element={<Admin />} />
+          </Route>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="overview" element={<Overview />} />
+            <Route path="members" element={<Members />} />
+            <Route path="students" element={<Students />} />
+            <Route path="at-risk" element={<AtRisk />} />
+            <Route path="attendance" element={<AdminAttendance />} />
+            <Route path="exam-weeks" element={<ExamWeeks />} />
+            <Route path="contests" element={<AdminContests />} />
+            <Route path="sessions" element={<Sessions />} />
+            <Route path="engagement" element={<Engagement />} />
+            <Route path="fairness" element={<Fairness />} />
+            <Route path="seasons" element={<Seasons />} />
+            <Route path="announcements" element={<AdminAnnouncements />} />
+            <Route path="digest" element={<Digest />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="admins" element={<AdminsAudit />} />
+            <Route path="rules" element={<Rules />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

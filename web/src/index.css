@@ -102,6 +102,27 @@ body {
   text-transform: uppercase;
 }
 
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .print-sheet {
+    width: auto;
+    min-height: 0;
+    padding: 0;
+  }
+
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+}
+
 .lift {
   transition: transform 150ms ease-out, filter 150ms ease-out;
 }

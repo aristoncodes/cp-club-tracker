@@ -3,7 +3,7 @@ import type { BadgeId } from 'shared/badges';
 const API_URL = import.meta.env.VITE_API_URL;
 const SESSION_KEY = 'session';
 
-export type Handle = { platform: string; handle: string; approved: number };
+export type Handle = { platform: string; handle: string; approved: number; status?: string };
 export type User = {
   id: number;
   email: string;
@@ -34,6 +34,7 @@ export type Contest = {
   startAt: number;
   endAt: number;
   kind?: string;
+  mandatory?: number;
   rsvp: string | null;
   goingCount: number;
   participantCount: number;
@@ -49,6 +50,9 @@ export type PastContest = {
   rsvp: string | null;
   reasonType: string | null;
   reasonText: string | null;
+  note?: string | null;
+  source?: string;
+  claimedAt?: number | null;
   liveSolves: number;
   ratingDelta: number | null;
 };

@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import type { CfSubmission } from 'shared/cf';
 import { sortByIndex, problemLetter } from 'shared/upsolve';
 import { applySubmissions, rankVirtual, virtualStart, type VirtualResults } from 'shared/virtual';
-import { requireAdmin, requireUser, type AppEnv, type Bindings } from './auth';
+import { adminWrite } from './admin-write';
+import { requireUser, type AppEnv, type Bindings } from './auth';
 import { finishContest } from './records';
 
 const START_WINDOW = 900;
@@ -72,7 +73,6 @@ async function findRound(db: D1Database, cfContestId: number): Promise<Round | n
 }
 
 export const adminVirtualRoutes = new Hono<AppEnv>();
-adminVirtualRoutes.use(requireUser, requireAdmin);
 
 adminVirtualRoutes.get('/lookup', async (c) => {
   const round = await findRound(c.env.DB, Number(c.req.query('contestId')));
@@ -95,7 +95,9 @@ adminVirtualRoutes.post('/', async (c) => {
     .bind(`v${cfContestId}-${startAt}`, round.name, `https://codeforces.com/contest/${cfContestId}`, startAt, startAt! + round.duration, counts ? 1 : 0)
     .first<{ id: number }>();
   if (!created) return c.json({ error: 'That virtual is already scheduled' }, 409);
-  await db.prepare('INSERT INTO virtual_contests (contest_id, cf_contest_id, problems) VALUES (?, ?, ?)').bind(created.id, cfContestId, JSON.stringify(round.problems)).run();
+  await adminWrite(c, { area: 'contests', action: 'scheduled club virtual', target: round.name, after: { startAt, counts: !!counts } }, [
+    db.prepare('INSERT INTO virtual_contests (contest_id, cf_contest_id, problems) VALUES (?, ?, ?)').bind(created.id, cfContestId, JSON.stringify(round.problems)),
+  ]);
   return c.json({ id: created.id });
 });
 

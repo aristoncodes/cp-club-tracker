@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { batchForStudyYear } from 'shared/batch';
-import { requireAdmin, requireUser, type AppEnv, type Bindings } from './auth';
+import { adminWrite } from './admin-write';
+import { requireUser, type AppEnv, type Bindings } from './auth';
 import { pushUsers } from './push';
 
 const TITLE_MAX = 80;
@@ -42,7 +43,6 @@ announcementRoutes.post('/seen', async (c) => {
 });
 
 export const adminAnnouncementRoutes = new Hono<AppEnv>();
-adminAnnouncementRoutes.use(requireUser, requireAdmin);
 
 adminAnnouncementRoutes.get('/', async (c) => {
   const db = c.env.DB;
@@ -77,7 +77,7 @@ adminAnnouncementRoutes.post('/', async (c) => {
       Math.max(draft.sendAt ?? now, now),
       draft.pinned ? 1 : 0,
     );
-  await db.batch(draft.pinned ? [db.prepare('UPDATE announcements SET pinned = 0'), insert] : [insert]);
+  await adminWrite(c, { area: 'communicate', action: 'created announcement', target: draft.title!.trim(), after: { audience: draft.audience, pinned: !!draft.pinned } }, draft.pinned ? [db.prepare('UPDATE announcements SET pinned = 0'), insert] : [insert]);
   return c.json({ ok: true });
 });
 
@@ -86,13 +86,14 @@ adminAnnouncementRoutes.patch('/:id', async (c) => {
   if (typeof pinned !== 'boolean') return c.json({ error: 'pinned must be true or false' }, 400);
   const db = c.env.DB;
   const pin = db.prepare('UPDATE announcements SET pinned = ? WHERE id = ?').bind(pinned ? 1 : 0, Number(c.req.param('id')));
-  await db.batch(pinned ? [db.prepare('UPDATE announcements SET pinned = 0'), pin] : [pin]);
+  await adminWrite(c, { area: 'communicate', action: pinned ? 'pinned announcement' : 'unpinned announcement', target: c.req.param('id') }, pinned ? [db.prepare('UPDATE announcements SET pinned = 0'), pin] : [pin]);
   return c.json({ ok: true });
 });
 
 adminAnnouncementRoutes.delete('/:id', async (c) => {
-  const result = await c.env.DB.prepare('DELETE FROM announcements WHERE id = ? AND sent_at IS NULL').bind(Number(c.req.param('id'))).run();
-  if (!result.meta.changes) return c.json({ error: 'Only a scheduled announcement can be cancelled' }, 409);
+  const scheduled = await c.env.DB.prepare('SELECT title FROM announcements WHERE id = ? AND sent_at IS NULL').bind(Number(c.req.param('id'))).first<{ title: string }>();
+  if (scheduled) await adminWrite(c, { area: 'communicate', action: 'cancelled announcement', target: scheduled.title }, [c.env.DB.prepare('DELETE FROM announcements WHERE id = ? AND sent_at IS NULL').bind(Number(c.req.param('id')))]);
+  if (!scheduled) return c.json({ error: 'Only a scheduled announcement can be cancelled' }, 409);
   return c.json({ ok: true });
 });
 
