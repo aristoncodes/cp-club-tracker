@@ -28,6 +28,7 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 ### jobs
 
 - Every adapter's `parse*` runs against a saved real response in `jobs/fixtures/`. It keeps only accepted verdicts and extracts problem id, rating, tags and time correctly.
+- `readCodeChef` retries once after a challenge page and throws if it stays blocked.
 - When a site changes, update the fixture and the parser together.
 - `sync-contests` merges a parallel Div. 1 round into its Div. 2 round (fixture with two contests sharing a start time).
 
@@ -40,6 +41,7 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 
 ### accounts (api)
 
+- **Handles:** a pasted profile link is saved as just the handle, on all four platforms.
 - **Username:** valid and invalid forms, reserved names, case-insensitive uniqueness. The second user change gets 403; an admin can still change it.
 - **Onboarding:** finishing needs a username, a year and both required handles; admins may skip handles.
 - **Streak reminder:** targets only `notify_streak = 1`, streak ≥ 1, no solve today.

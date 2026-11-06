@@ -4,6 +4,8 @@ import type { IngestContest, IngestSolve } from 'shared/types';
 import { politeFetch } from '../lib';
 
 const BASE = 'https://www.codechef.com';
+const CC_GAP_MS = 7000;
+const BLOCK_WAIT_MS = 60_000;
 const IST_OFFSET_MS = 19800_000;
 const UNIT_SECONDS: Record<string, number> = { sec: 1, min: 60, hour: 3600 };
 
@@ -22,9 +24,18 @@ type CcContest = { status: string; time?: { start: number; end: number } };
 
 export type CcSubmission = { solvedAt: number; contestCode: string | null; problemCode: string; accepted: boolean };
 
-export async function fetchContests(): Promise<CcContestList> {
-  const response = await politeFetch(`${BASE}/api/list/contests/all?sort_by=START&sorting_order=asc&offset=0&mode=all`);
-  return response.json() as Promise<CcContestList>;
+// Past a limit CodeChef's Cloudflare answers with a challenge page instead of JSON, and lets requests through again shortly after.
+export async function readCodeChef<T>(url: string): Promise<T> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const body = await (await politeFetch(url, CC_GAP_MS)).text();
+    if (!body.startsWith('<')) return JSON.parse(body) as T;
+    if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, BLOCK_WAIT_MS));
+  }
+  throw new Error(`CodeChef blocked ${url}`);
+}
+
+export function fetchContests(): Promise<CcContestList> {
+  return readCodeChef(`${BASE}/api/list/contests/all?sort_by=START&sorting_order=asc&offset=0&mode=all`);
 }
 
 export function parseContests(raw: CcContestList): IngestContest[] {
@@ -40,9 +51,8 @@ export function parseContests(raw: CcContestList): IngestContest[] {
   }));
 }
 
-export async function fetchRecent(handle: string): Promise<{ content: string }> {
-  const response = await politeFetch(`${BASE}/recent/user?page=0&user_handle=${encodeURIComponent(handle)}`);
-  return response.json() as Promise<{ content: string }>;
+export function fetchRecent(handle: string): Promise<{ content: string }> {
+  return readCodeChef(`${BASE}/recent/user?page=0&user_handle=${encodeURIComponent(handle)}`);
 }
 
 export function parseTime(text: string, now: number): number {
@@ -81,14 +91,12 @@ export function tookPartLive(submissions: CcSubmission[], contest: string, start
   return submissions.some((s) => s.contestCode !== null && division.test(s.contestCode) && s.solvedAt >= start && s.solvedAt <= end);
 }
 
-async function fetchProblem(contestCode: string | null, problemCode: string): Promise<CcProblem> {
-  const response = await politeFetch(`${BASE}/api/contests/${contestCode ?? 'PRACTICE'}/problems/${problemCode}`);
-  return response.json() as Promise<CcProblem>;
+function fetchProblem(contestCode: string | null, problemCode: string): Promise<CcProblem> {
+  return readCodeChef(`${BASE}/api/contests/${contestCode ?? 'PRACTICE'}/problems/${problemCode}`);
 }
 
-async function fetchContest(contestCode: string): Promise<CcContest> {
-  const response = await politeFetch(`${BASE}/api/contests/${contestCode}`);
-  return response.json() as Promise<CcContest>;
+function fetchContest(contestCode: string): Promise<CcContest> {
+  return readCodeChef(`${BASE}/api/contests/${contestCode}`);
 }
 
 export function solveFrom(handle: string, submission: CcSubmission, problem: CcProblem, contest: CcContest | null): IngestSolve {

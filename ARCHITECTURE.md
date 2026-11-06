@@ -270,7 +270,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 
 **Platform notes:**
 - **Codeforces:** official API, 1 call per 2 s. Filtered `contest.standings` is rejected for non-admins; use `contest.status` with `handle`.
-- **CodeChef:** no official API. Use `/api/list/contests/all`, `/recent/user` (JSON wrapping an HTML table), `/api/contests/<code>` and `/api/contests/<code>/problems/<problem>`. `/api/rankings` isn't usable. Expect changes; keep parsing in `adapters/cc.ts` only.
+- **CodeChef:** no official API. One request per 7 s, measured: 1 per second is blocked at the 11th request and 1 per 4 s at the 12th, with a Cloudflare challenge page instead of JSON. `readCodeChef` waits 60 s and retries once; if it's still blocked it throws, so `participation.ts` posts nothing rather than marking people absent, and the hourly dispatch tries again. Use `/api/list/contests/all`, `/recent/user` (JSON wrapping an HTML table), `/api/contests/<code>` and `/api/contests/<code>/problems/<problem>`. `/api/rankings` isn't usable. Expect changes; keep parsing in `adapters/cc.ts` only.
 - **AtCoder:** AtCoder Problems API for submissions (`from_second`), difficulty estimates, problem names and contest times. A solve is live if it falls inside its contest, for contests up to a day long. Be polite: one request per second.
 - **LeetCode:** unofficial GraphQL `recentAcSubmissionList` (about the last 20) plus `question` difficulty. Solves are never live.
 

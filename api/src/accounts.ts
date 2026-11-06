@@ -12,6 +12,14 @@ export function usernameError(username: string): string | null {
   return null;
 }
 
+const PROFILE_LINK = /^(?:https?:\/\/)?(?:www\.)?(?:codeforces\.com\/profile|codechef\.com\/users|atcoder\.jp\/users|leetcode\.com(?:\/u)?)\/([^/?#\s]+)\/?(?:[?#].*)?$/i;
+
+// Members often paste their profile link; only the handle at the end of it is useful.
+export function handleFromInput(input: string): string {
+  const trimmed = input.trim();
+  return trimmed.match(PROFILE_LINK)?.[1] ?? trimmed;
+}
+
 export const normalizeUsername = (value: unknown) => String(value ?? '').trim().toLowerCase();
 
 export function canFinishOnboarding(profile: { hasUsername: boolean; hasBatch: boolean; hasRequiredHandles: boolean; isAdmin: boolean }): boolean {

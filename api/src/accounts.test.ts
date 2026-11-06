@@ -1,5 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { canFinishOnboarding, normalizeUsername, usernameError } from './accounts';
+import { canFinishOnboarding, handleFromInput, normalizeUsername, usernameError } from './accounts';
+
+describe('handleFromInput', () => {
+  it.each([
+    ['tourist', 'tourist'],
+    ['  tourist  ', 'tourist'],
+    ['https://codeforces.com/profile/BEENAXIS-_-', 'BEENAXIS-_-'],
+    ['codeforces.com/profile/Benq/', 'Benq'],
+    ['https://www.codechef.com/users/been_axis', 'been_axis'],
+    ['https://www.codechef.com/users/been_axis?tab=x', 'been_axis'],
+    ['https://atcoder.jp/users/snuke', 'snuke'],
+    ['https://leetcode.com/u/neal_wu/', 'neal_wu'],
+    ['https://leetcode.com/neal_wu', 'neal_wu'],
+  ])('reads %s', (input, handle) => {
+    expect(handleFromInput(input)).toBe(handle);
+  });
+});
 
 const COMPLETE = { hasUsername: true, hasBatch: true, hasRequiredHandles: true, isAdmin: false };
 

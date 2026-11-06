@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import ccFixture from '../fixtures/cc-contests.json';
 import cfFixture from '../fixtures/cf-contests.json';
-import { parseContests as parseCc } from './cc';
+import { parseContests as parseCc, readCodeChef } from './cc';
 import { parseContests as parseCf } from './cf';
 
 describe('parseContests (cf)', () => {
@@ -50,5 +50,44 @@ describe('parseContests (cc)', () => {
 
   it('skips contests that already started', () => {
     expect(contests.find((c) => c.externalId === 'START263')).toBeUndefined();
+  });
+});
+
+describe('readCodeChef', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const replies = (...bodies: string[]) => {
+    const fetchMock = vi.fn(async () => new Response(bodies.shift()));
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+    return fetchMock;
+  };
+
+  it('reads JSON straight away', async () => {
+    const fetchMock = replies('{"a":1}');
+    const result = readCodeChef('https://www.codechef.com/one');
+    await vi.runAllTimersAsync();
+    expect(await result).toEqual({ a: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits and retries once after a challenge page', async () => {
+    const fetchMock = replies('<!DOCTYPE html>', '{"a":2}');
+    const result = readCodeChef('https://www.codechef.com/two');
+    await vi.runAllTimersAsync();
+    expect(await result).toEqual({ a: 2 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails if it stays blocked, so attendance posts nothing', async () => {
+    const fetchMock = replies('<!DOCTYPE html>', '<!DOCTYPE html>');
+    const result = readCodeChef('https://www.codechef.com/three');
+    const failed = expect(result).rejects.toThrow('CodeChef blocked');
+    await vi.runAllTimersAsync();
+    await failed;
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

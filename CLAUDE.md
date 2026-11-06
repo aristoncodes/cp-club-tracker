@@ -37,7 +37,7 @@ Don't read whole code files when a section will do. When a file, route group or 
 - **Naming:** files kebab-case, React components PascalCase, functions camelCase.
 - **Errors:** the API returns `{ error: string }` with a correct HTTP status and never leaks stack traces. A failed external fetch is retried on the next scheduled run, never in a loop.
 - **Secrets** go only in `wrangler secret`, GitHub Actions secrets or a gitignored `.env`. Never commit them.
-- **Rate limits:** Codeforces at most 1 request per 2 s. Scrapers at most 1 request/s per site, with a descriptive User-Agent.
+- **Rate limits:** Codeforces at most 1 request per 2 s. CodeChef at most 1 request per 7 s: faster gets a Cloudflare block. Other scrapers at most 1 request/s per site. All with a descriptive User-Agent.
 - **Cloudflare free plan:** 10 ms CPU and 50 subrequests per Worker invocation. Network waits don't count, but JSON parsing does. Keep Worker jobs small; heavy fetching and parsing belongs in `jobs/`, which runs on GitHub Actions.
 
 ## Commands

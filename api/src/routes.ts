@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { CHALLENGE_MIN_RATING, CHALLENGE_TARGET } from 'shared/scoring';
 import { IST_OFFSET, istDay, periodStart, solveStreak } from 'shared/time';
 import type { Period } from 'shared/types';
-import { canFinishOnboarding, normalizeUsername, usernameError } from './accounts';
+import { canFinishOnboarding, handleFromInput, normalizeUsername, usernameError } from './accounts';
 import { requireUser, type AppEnv } from './auth';
 import { adjustmentSum } from './records';
 
@@ -180,9 +180,10 @@ studentRoutes.patch('/me/notifications', async (c) => {
 
 studentRoutes.put('/me/handles/:platform', async (c) => {
   const platform = c.req.param('platform');
-  const { handle } = await c.req.json<{ handle?: string }>();
+  const body = await c.req.json<{ handle?: string }>();
+  const handle = handleFromInput(body.handle ?? '');
   if (!PLATFORMS.includes(platform)) return c.json({ error: 'Unknown platform' }, 400);
-  if (!handle?.trim()) return c.json({ error: 'Handle is required' }, 400);
+  if (!handle) return c.json({ error: 'Handle is required' }, 400);
   try {
     await c.env.DB.prepare(
       `INSERT INTO handles (user_id, platform, handle) VALUES (?, ?, ?)
@@ -194,7 +195,7 @@ studentRoutes.put('/me/handles/:platform', async (c) => {
          history_imported_at = CASE WHEN handle = excluded.handle THEN history_imported_at END,
          status = CASE WHEN handle = excluded.handle THEN status ELSE 'waiting' END`,
     )
-      .bind(c.get('user').id, platform, handle.trim())
+      .bind(c.get('user').id, platform, handle)
       .run();
   } catch (err) {
     if (err instanceof Error && err.message.includes('UNIQUE')) {
