@@ -4,7 +4,7 @@ import { STUDY_YEARS, batchForStudyYear, studyYearLabel } from 'shared/batch';
 import { REASONS } from 'shared/reasons';
 import { formatIST, IST_OFFSET, timeAgo } from 'shared/time';
 import { api } from '../api';
-import { Avatar, CellMark, ErrorText, useLoad } from '../ui';
+import { Avatar, CellMark, ErrorText, ProgressBar, useLoad } from '../ui';
 import { AButton, AToggle, ATable, Chip, fieldClass, istInputToUnix, Modal, PageHeader, PlatformChip, Segmented, unixToIstDate, useAct } from './admin-ui';
 
 const DAY = 86400;
@@ -241,6 +241,29 @@ function describeCell(cell: Cell | undefined): string {
 
 const csvField = (value: string) => `"${(/^[=+\-@]/.test(value) ? `'${value}` : value).replace(/"/g, '""')}"`;
 
+const REASON_BARS: Record<string, string> = { exams: 'bg-pink', clash: 'bg-lilac', forgot: 'bg-sun', travel: 'bg-sky', illness: 'bg-orange', other: 'bg-lime' };
+
+function ReasonBreakdown({ cells, contests, students }: { cells: Cell[]; contests: GridContest[]; students: GridStudent[] }) {
+  const groups = REASONS.map((reason) => ({ ...reason, cells: cells.filter((c) => c.status === 'absent' && c.reasonType === reason.id) })).filter((g) => g.cells.length).sort((a, b) => b.cells.length - a.cells.length);
+  return (
+    <Card className="flex w-full flex-col gap-3">
+      <h2 className="display text-lg">Why people missed</h2>
+      {groups.length === 0 && <p className="text-muted">No reasons in this range yet.</p>}
+      {groups.map((group) => (
+        <div key={group.id} className="flex flex-col gap-1">
+          <details>
+            <summary className="flex min-h-8 cursor-pointer items-center justify-between font-bold">{group.label}<span className="num">{group.cells.length}</span></summary>
+            <ul className="mt-1 flex flex-col gap-1 text-xs text-muted">
+              {group.cells.map((c) => <li key={`${c.userId}:${c.contestId}`}>{students.find((s) => s.id === c.userId)?.name}, {contests.find((k) => k.id === c.contestId)?.name}{c.reasonText ? `: ${c.reasonText}` : ''}</li>)}
+            </ul>
+          </details>
+          <ProgressBar percent={(group.cells.length / groups[0].cells.length) * 100} color={REASON_BARS[group.id] ?? 'bg-lime'} />
+        </div>
+      ))}
+    </Card>
+  );
+}
+
 function EditPanel({ student, contest, cell, onClose, onSaved }: { student: GridStudent; contest: GridContest; cell: Cell | undefined; onClose: () => void; onSaved: () => void }) {
   const [status, setStatus] = useState(cell?.status ?? 'absent');
   const [note, setNote] = useState(cell?.note ?? '');
@@ -250,7 +273,7 @@ function EditPanel({ student, contest, cell, onClose, onSaved }: { student: Grid
     setNote(cell?.note ?? '');
   }, [student.id, contest.id, cell?.status, cell?.note]);
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-3 rounded-[20px] border border-line bg-card p-5 xl:sticky xl:top-4 xl:w-[320px]" aria-label="Edit entry">
+    <aside className="flex w-full flex-col gap-3 rounded-[20px] border border-line bg-card p-5" aria-label="Edit entry">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-bold">{student.name}</p>
@@ -289,9 +312,18 @@ export function Attendance() {
     return pct(mine.filter((c) => c?.status === 'present').length, mine.length);
   }
 
+  const countedIds = new Set(counted.map((c) => c.id));
+  const countedCells = data?.cells.filter((c) => countedIds.has(c.contestId)) ?? [];
+  const isNoShow = (c: Cell) => c.status === 'absent' && c.rsvp === 'yes';
+  const noShows = countedCells.filter(isNoShow);
+  const noShowsOf = (userId: number) => noShows.filter((c) => c.userId === userId).length;
+  const decided = countedCells.filter((c) => c.status === 'present' || c.status === 'absent');
+  const clubRate = pct(decided.filter((c) => c.status === 'present').length, decided.length);
+  const pending = countedCells.filter((c) => c.status === 'absent' && !c.reasonType).length;
+
   function exportCsv() {
     if (!data) return;
-    const rows = [['Student', 'Year', 'Rate', ...counted.map((c) => c.name)], ...data.students.map((s) => [s.name, studyYearLabel(s.batchYear, now), `${rate(s.id) ?? ''}`, ...counted.map((c) => describeCell(cellOf(s.id, c.id)))])];
+    const rows = [['Student', 'Year', 'Rate', 'Said yes, did not show', ...counted.map((c) => c.name)], ...data.students.map((s) => [s.name, studyYearLabel(s.batchYear, now), `${rate(s.id) ?? ''}`, `${noShowsOf(s.id)}`, ...counted.map((c) => describeCell(cellOf(s.id, c.id)))])];
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([rows.map((r) => r.map(csvField).join(',')).join('\n')], { type: 'text/csv' }));
     link.download = 'attendance.csv';
@@ -327,6 +359,17 @@ export function Attendance() {
       />
       {error && <ErrorText>{error}</ErrorText>}
       {data?.examWeek && <p className="rounded-2xl bg-[#13263A] p-3 font-bold text-[#7DD3FC]">Exam week: {data.examWeek.name}, until {formatIST(data.examWeek.toAt).split(' · ')[0]}.</p>}
+      {data && (
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <div className="rounded-[20px] bg-lime p-5 text-ink">
+            <p className="text-xs font-extrabold uppercase">Club attendance</p>
+            <p className="num text-[32px] leading-tight">{clubRate === null ? '—' : `${clubRate}%`}</p>
+          </div>
+          <Card><p className="label">Contests counted</p><p className="num text-[32px] leading-tight">{counted.length}</p></Card>
+          <Card><p className="label">Said yes, didn't show</p><p className="num text-[32px] leading-tight text-pink">{noShows.length}</p><p className="text-xs text-muted">across <span className="num">{new Set(noShows.map((c) => c.userId)).size}</span> members</p></Card>
+          <Card><p className="label">Reasons pending</p><p className="num text-[32px] leading-tight text-sun">{pending}</p></Card>
+        </div>
+      )}
       <div className="flex flex-wrap gap-4 rounded-2xl border border-line bg-card px-4 py-3 text-xs text-muted">
         <span className="flex items-center gap-2"><CellMark status="present" reasonType={null} /> Present</span>
         <span className="flex items-center gap-2"><CellMark status="excused" reasonType={null} /> Excused</span>
@@ -341,6 +384,7 @@ export function Attendance() {
                 <tr>
                   <th className="sticky top-0 left-0 z-20 border-b border-line bg-card p-3 text-left"><span className="label">Member</span></th>
                   <th className="label sticky top-0 z-10 border-b border-line bg-card p-3 text-right">Rate</th>
+                  <th className="label sticky top-0 z-10 border-b border-line bg-card p-3 text-right" title="Said yes, didn't show">No-show</th>
                   {counted.map((c) => (
                     <th key={c.id} title={c.name} className={`sticky top-0 z-10 min-w-16 border-b border-line p-2 text-center font-normal ${selected?.contestId === c.id ? 'bg-[#1F1F29]' : 'bg-card'}`}>
                       <span className={`num block text-[10px] ${c.platform === 'cf' ? 'text-[#60A5FA]' : c.platform === 'cc' ? 'text-orange' : 'text-violet-soft'}`}>{c.mandatory ? '★ ' : ''}{c.platform.toUpperCase()}</span>
@@ -359,6 +403,7 @@ export function Attendance() {
                         <span className="flex items-center gap-2 whitespace-nowrap"><Avatar userId={s.id} name={s.name} size={28} /><span><span className="block font-bold">{s.name}</span><span className="block text-xs text-muted">{studyYearLabel(s.batchYear, now)}</span></span></span>
                       </td>
                       <td className={`num border-b border-line p-2 text-right ${p === null ? 'text-muted' : rateColor(p)}`}>{p === null ? '—' : `${p}%`}</td>
+                      <td className={`num border-b border-line p-2 text-right ${noShowsOf(s.id) ? 'text-pink' : 'text-muted'}`}>{noShowsOf(s.id)}</td>
                       {counted.map((c, column) => {
                         const cell = cellOf(s.id, c.id);
                         const on = selected?.userId === s.id && selected.contestId === c.id;
@@ -384,7 +429,10 @@ export function Attendance() {
             </table>
             {counted.length === 0 && <p className="p-4 text-muted">No counted contests in this range.</p>}
           </div>
-          {open?.student && open.contest && <EditPanel student={open.student} contest={open.contest} cell={cellOf(open.student.id, open.contest.id)} onClose={() => setSelected(null)} onSaved={reload} />}
+          <div className="flex w-full shrink-0 flex-col gap-3 xl:sticky xl:top-4 xl:w-[320px]">
+            {open?.student && open.contest && <EditPanel student={open.student} contest={open.contest} cell={cellOf(open.student.id, open.contest.id)} onClose={() => setSelected(null)} onSaved={reload} />}
+            <ReasonBreakdown cells={countedCells} contests={counted} students={data.students} />
+          </div>
         </div>
       )}
     </>

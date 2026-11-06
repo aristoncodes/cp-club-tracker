@@ -97,7 +97,8 @@ This keeps the behaviour of the current page.
   - **No reason ?**.
   - Mandatory contests have a ★ in the header.
 - **Edit entry:** click a cell to open the side panel and set Present / Excused / Absent, with an optional note that is shown to the member. The change is logged as "Anushka changed X on R1094".
-- **Rate per member** = present ÷ (contests − excused).
+- **Rate per member** = present ÷ (contests − excused), next to their count of "said yes, didn't show".
+- **KPIs:** club attendance, contests counted, "said yes, didn't show" and reasons pending, plus reasons grouped by type.
 - **Exam-week banner** when one is active. Filter by date range and batch, plus **Export CSV**.
 - *Done when:* overrides survive the next automatic attendance run. A manual entry always wins over the automatic one.
 

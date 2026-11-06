@@ -54,10 +54,11 @@ This file covers only the admin area. Tokens, fonts and base components come fro
    - **Change username modal:** includes an availability line.
 4. **At-risk:** 3 signal KPI cards; one member card per person with signal chips, three mini stats, and OK for 2 weeks / Open / Nudge. The **Nudge modal** has template pills, a textarea, and a phone-notification preview on `#1B2233`.
 5. **Attendance**
-   - **Grid:** a sticky member column, contest headers (platform colour, ★ for mandatory), and 26 px cells.
+   - **KPI row:** club attendance (solid lime), contests counted, "said yes, didn't show" (pink) and reasons pending (sun).
+   - **Grid:** a sticky member column, a rate column, a No-show column ("said yes, didn't show"), contest headers (platform colour, ★ for mandatory), and 26 px cells.
    - **Cell styles:** Present = lime ✓, Excused = info-blue X, reason = pink with a letter, no reason = dashed sun ?.
    - **Selection:** the selected cell gets a white outline and its column a `#1F1F29` tint.
-   - **Edit panel** on the right, with a legend row above the grid and an exam-week banner (info blue).
+   - **Edit panel** on the right above a "Why people missed" reason breakdown, with a legend row above the grid and an exam-week banner (info blue).
 6. **Exam weeks:** a create card (fields, batch pills, 3 toggles, an info-blue preview box) next to a list of exam-week cards (Active gets a blue border).
 7. **Contests:** a table with toggles for Counts and Mandatory (rows with Counts off at 55% opacity) and an RSVP progress bar. Below it, the custom contest form (source pills switch the fields) next to a sun-tinted "What mandatory does" card (`#1E1A0E` / `#4A3B12`).
 8. **Sessions:** a violet-gradient card of suggested topics, the create form, and the session list (date tile + title + status chip). The check-in panel on the right has a big mono counter and tappable rows with a 26 px check box.
