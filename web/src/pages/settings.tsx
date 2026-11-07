@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { batchForStudyYear, STUDY_YEARS, studyYearOf } from 'shared/batch';
+import { isTracked, MEMBER_CHOICES, memberChoice, memberFromChoice } from 'shared/batch';
 import { api, setSession, type Me } from '../api';
 import { Avatar, Button, Card, ErrorText, inputClass, Pill, PLATFORMS, Toggle, useMe } from '../ui';
 
@@ -40,7 +40,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
       <span className={`handle flex size-10 shrink-0 items-center justify-center rounded-xl text-sm text-ink ${TILE_COLORS[platform.id]}`}>{TILE_CODES[platform.id]}</span>
       <div className="min-w-0 flex-1 basis-32">
         <p className="font-bold">{platform.label}</p>
-        <p className="text-xs text-muted">{platform.required ? 'Required' : 'Optional'}</p>
+        <p className="text-xs text-muted">{platform.required && (platform.id !== 'cc' || isTracked(me.user.kind, me.user.batchYear, Date.now() / 1000)) ? 'Required' : 'Optional'}</p>
       </div>
       {editing ? (
         <div className="flex items-center gap-2">
@@ -132,7 +132,7 @@ function Lock() {
 function AboutCard({ me, onChange }: { me: Me; onChange: () => void }) {
   const now = Date.now() / 1000;
   const [name, setName] = useState(me.user.name);
-  const [year, setYear] = useState(me.user.batchYear ? studyYearOf(me.user.batchYear, now) : 0);
+  const [year, setYear] = useState(memberChoice(me.user.kind, me.user.batchYear, now));
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   return (
@@ -147,7 +147,7 @@ function AboutCard({ me, onChange }: { me: Me; onChange: () => void }) {
         <span className="label">Year</span>
         <select className={inputClass} value={year} onChange={(e) => setYear(Number(e.target.value))}>
           <option value={0}>Choose your year</option>
-          {STUDY_YEARS.map((y) => <option key={y.value} value={y.value}>{y.label}</option>)}
+          {MEMBER_CHOICES.map((y) => <option key={y.value} value={y.value}>{y.label}</option>)}
         </select>
       </label>
       {error && <ErrorText>{error}</ErrorText>}
@@ -159,7 +159,7 @@ function AboutCard({ me, onChange }: { me: Me; onChange: () => void }) {
             setError('');
             setMessage('');
             try {
-              await api('/me', 'PUT', { name, batchYear: batchForStudyYear(year, now) });
+              await api('/me', 'PUT', { name, ...memberFromChoice(year, now) });
               setMessage('Saved.');
               onChange();
             } catch (err) {

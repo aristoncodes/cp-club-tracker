@@ -4,9 +4,11 @@ import { IST_OFFSET, istDay, periodStart, solveStreak } from 'shared/time';
 import type { Period } from 'shared/types';
 import { canFinishOnboarding, handleFromInput, normalizeUsername, usernameError } from './accounts';
 import { requireUser, type AppEnv } from './auth';
-import { adjustmentSum } from './records';
+import { adjustmentSum, trackedMember } from './records';
+import { isTracked } from 'shared/batch';
 
 const PLATFORMS = ['cf', 'cc', 'atcoder', 'leetcode'];
+const MEMBER_KINDS = ['student', 'coach', 'alumni'];
 const REASON_TYPES = ['exams', 'travel', 'illness', 'clash', 'forgot', 'other'];
 const PERIODS = ['day', 'week', 'month', 'season'];
 const FEED_SIZE = 30;
@@ -118,16 +120,19 @@ studentRoutes.get('/me', async (c) => {
 
 studentRoutes.put('/me', async (c) => {
   const user = c.get('user');
-  const body = await c.req.json<{ name?: string; batchYear?: number; username?: string }>();
-  if (!body.name?.trim() || !Number.isInteger(body.batchYear)) {
+  const body = await c.req.json<{ name?: string; batchYear?: number | null; username?: string; kind?: string }>();
+  const kind = body.kind ?? 'student';
+  if (!MEMBER_KINDS.includes(kind)) return c.json({ error: 'Choose a year, Alumni or Coach' }, 400);
+  if (!body.name?.trim() || (kind === 'student' && !Number.isInteger(body.batchYear))) {
     return c.json({ error: 'Name and year are required' }, 400);
   }
+  const batchYear = kind === 'student' ? body.batchYear! : null;
   const username = body.username === undefined || user.onboardingStep === 'done' ? user.username : normalizeUsername(body.username);
   const invalid = username && username !== user.username ? usernameError(username) : null;
   if (invalid) return c.json({ error: invalid }, 400);
   try {
-    await c.env.DB.prepare('UPDATE users SET name = ?, batch_year = ?, username = ? WHERE id = ?')
-      .bind(body.name.trim(), body.batchYear, username, user.id)
+    await c.env.DB.prepare('UPDATE users SET name = ?, batch_year = ?, kind = ?, username = ? WHERE id = ?')
+      .bind(body.name.trim(), batchYear, kind, username, user.id)
       .run();
   } catch (err) {
     if (err instanceof Error && err.message.includes('UNIQUE')) return c.json({ error: 'That name is taken' }, 409);
@@ -138,13 +143,15 @@ studentRoutes.put('/me', async (c) => {
 
 studentRoutes.post('/me/onboarding', async (c) => {
   const user = c.get('user');
-  const required = await c.env.DB.prepare(`SELECT COUNT(*) AS n FROM handles WHERE user_id = ? AND platform IN ('cf', 'cc')`)
+  const { results: linked } = await c.env.DB.prepare(`SELECT platform FROM handles WHERE user_id = ? AND platform IN ('cf', 'cc')`)
     .bind(user.id)
-    .first<{ n: number }>();
+    .all<{ platform: string }>();
   const allowed = canFinishOnboarding({
     hasUsername: !!user.username,
+    kind: user.kind,
     hasBatch: !!user.batchYear,
-    hasRequiredHandles: required?.n === 2,
+    hasCodeforces: linked.some((h) => h.platform === 'cf'),
+    hasCodechef: linked.some((h) => h.platform === 'cc'),
     isAdmin: user.role === 'admin',
   });
   if (!allowed) return c.json({ error: 'Add your username, year and handles first' }, 400);
@@ -221,8 +228,9 @@ studentRoutes.get('/contests/upcoming', async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT c.id, c.platform, c.name, c.url, c.start_at AS startAt, c.end_at AS endAt, c.kind, c.mandatory, c.source, a.rsvp, a.claimed_at AS claimedAt,
             (SELECT COUNT(*) FROM attendance x WHERE x.contest_id = c.id AND x.rsvp = 'yes') AS goingCount,
-            (SELECT COUNT(*) FROM users u WHERE u.active = 1 AND (c.platform = 'other' OR EXISTS (SELECT 1 FROM handles h WHERE h.user_id = u.id AND h.platform = c.platform AND h.approved_at IS NOT NULL))) AS participantCount
-     FROM contests c LEFT JOIN attendance a ON a.contest_id = c.id AND a.user_id = ?
+            (SELECT COUNT(*) FROM users u WHERE u.active = 1 AND ${trackedMember('u')} AND (c.platform = 'other' OR EXISTS (SELECT 1 FROM handles h WHERE h.user_id = u.id AND h.platform = c.platform AND h.approved_at IS NOT NULL))) AS participantCount,
+            (SELECT ${trackedMember('m')} FROM users m WHERE m.id = ?1) AS canRsvp
+     FROM contests c LEFT JOIN attendance a ON a.contest_id = c.id AND a.user_id = ?1
      WHERE (c.counts = 1 OR c.kind = 'virtual') AND c.start_at > unixepoch()
      ORDER BY c.start_at LIMIT 10`,
   )
@@ -244,6 +252,7 @@ studentRoutes.post('/contests/:id/rsvp', async (c) => {
   const invalid = body.going ? null : reasonError(body);
   if (invalid) return c.json({ error: invalid }, 400);
 
+  if (!isTracked(c.get('user').kind, c.get('user').batchYear, Math.floor(Date.now() / 1000))) return c.json({ error: "Coaches and alumni aren't tracked for attendance" }, 403);
   const contest = await c.env.DB.prepare(
     `SELECT c.stage FROM contests c
      WHERE c.id = ?2 AND (c.counts = 1 OR c.kind = 'virtual')
@@ -323,7 +332,7 @@ function leaderboardQueries(db: D1Database, { start, previousStart }: PeriodWind
   return [
     db
       .prepare(
-        `SELECT u.id AS userId, u.name, u.username, u.batch_year AS batchYear, u.cf_rating AS cfRating,
+        `SELECT u.id AS userId, u.name, u.username, u.batch_year AS batchYear, u.kind, u.cf_rating AS cfRating,
                 SUM(s.points) + ${adjustmentSum('u.id', '?1')} AS points, COUNT(*) AS solves, MAX(s.rp) AS hardest
          FROM solves s JOIN users u ON u.id = s.user_id
          WHERE s.solved_at >= ?1 AND s.points > 0 AND u.active = 1 ${filters(2, 3)}
@@ -459,7 +468,7 @@ studentRoutes.get('/users/:id', async (c) => {
   const today = istDay(now);
   const profile = await db
     .prepare(
-      'SELECT id, name, username, batch_year AS batchYear, cf_rating AS cfRating, cf_rating_history AS ratingHistory FROM users WHERE id = ? AND active = 1',
+      'SELECT id, name, username, batch_year AS batchYear, kind, cf_rating AS cfRating, cf_rating_history AS ratingHistory FROM users WHERE id = ? AND active = 1',
     )
     .bind(id)
     .first<{ ratingHistory: string | null }>();

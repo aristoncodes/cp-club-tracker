@@ -4,6 +4,7 @@ import { adminWrite } from './admin-write';
 import { AT_RISK_VISIBLE } from './admin-jobs';
 import type { AppEnv } from './auth';
 import { pushUsers } from './push';
+import { trackedMember } from './records';
 import { getSettings } from './settings';
 
 const DAY = 86400;
@@ -17,7 +18,7 @@ const SOURCES = ['gym', 'other', 'offline'];
 const ATTENDANCE_STATES = ['present', 'excused', 'absent'];
 const clock = () => Math.floor(Date.now() / 1000);
 const RSVP_COUNTS = `(SELECT COUNT(*) FROM attendance x WHERE x.contest_id = c.id AND x.rsvp = 'yes') AS going, (SELECT COUNT(*) FROM attendance x WHERE x.contest_id = c.id AND x.rsvp = 'no') AS notGoing`;
-const PARTICIPANTS = `(SELECT COUNT(*) FROM users u WHERE u.active = 1 AND (c.platform = 'other' OR EXISTS (SELECT 1 FROM handles h WHERE h.user_id = u.id AND h.platform = c.platform AND h.approved_at IS NOT NULL))) AS members`;
+const PARTICIPANTS = `(SELECT COUNT(*) FROM users u WHERE u.active = 1 AND ${trackedMember('u')} AND (c.platform = 'other' OR EXISTS (SELECT 1 FROM handles h WHERE h.user_id = u.id AND h.platform = c.platform AND h.approved_at IS NOT NULL))) AS members`;
 
 export const adminClubRoutes = new Hono<AppEnv>();
 
@@ -55,7 +56,7 @@ adminClubRoutes.get('/overview', async (c) => {
 
 adminClubRoutes.get('/members', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT u.id, u.name, u.username, u.email, u.batch_year AS batchYear, u.cf_rating AS cfRating, u.role, u.active,
+    `SELECT u.id, u.name, u.username, u.email, u.batch_year AS batchYear, u.kind, u.cf_rating AS cfRating, u.role, u.active,
        (SELECT MAX(solved_at) FROM solves s WHERE s.user_id = u.id) AS lastSolve,
        (SELECT COUNT(*) FROM attendance a JOIN contests k ON k.id = a.contest_id WHERE a.user_id = u.id AND k.counts = 1 AND a.status = 'present') AS present,
        (SELECT COUNT(*) FROM attendance a JOIN contests k ON k.id = a.contest_id WHERE a.user_id = u.id AND k.counts = 1 AND a.status IN ('present','absent')) AS total
@@ -177,7 +178,7 @@ adminClubRoutes.get('/attendance', async (c) => {
     db
       .prepare(`SELECT id, platform, source, name, start_at AS startAt, counts, mandatory FROM contests WHERE start_at >= ?1 AND start_at <= ?2 AND (?3 IS NULL OR platform = ?3) ORDER BY start_at`)
       .bind(from, to, platform),
-    db.prepare(`SELECT id, name, batch_year AS batchYear FROM users WHERE active = 1 AND name != '' AND (?1 IS NULL OR batch_year = ?1) ORDER BY name`).bind(batch),
+    db.prepare(`SELECT id, name, batch_year AS batchYear FROM users u WHERE active = 1 AND name != '' AND ${trackedMember('u', now)} AND (?1 IS NULL OR batch_year = ?1) ORDER BY name`).bind(batch),
     db
       .prepare(
         `SELECT a.contest_id AS contestId, a.user_id AS userId, a.rsvp, a.status, a.reason_type AS reasonType, a.reason_text AS reasonText, a.manual, a.note, a.claimed_at AS claimedAt

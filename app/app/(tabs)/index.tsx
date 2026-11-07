@@ -12,7 +12,7 @@ import { registerPushToken } from '../../lib/push';
 import { AvatarButton, BellButton, Button, openLink, StreakPill } from '../../lib/ui';
 import { theme } from '../../theme';
 
-type Contest = { id: number; platform: string; name: string; kind?: string; startAt: number; rsvp: string | null; goingCount: number; participantCount: number };
+type Contest = { id: number; platform: string; name: string; kind?: string; canRsvp?: number; startAt: number; rsvp: string | null; goingCount: number; participantCount: number };
 type Destination = 'login' | 'signup' | null;
 type LiveRival = Extract<Rival, { me: unknown }>;
 type Standing = { userId: number; name: string; rank: number; points: number; solves: number; cfRating: number | null };
@@ -61,19 +61,19 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
         <Tile value={Math.floor((left % 86400) / 3600)} label="HRS" />
         <Tile value={Math.floor((left % 3600) / 60)} label="MIN" />
       </View>
-      {contest.rsvp === 'yes' && !choosing ? (
+      {contest.canRsvp !== 0 && contest.rsvp === 'yes' && !choosing ? (
         <View style={styles.inStrip}>
           <Text style={styles.inText}>You're in. Good luck!</Text>
           <Pressable accessibilityRole="button" onPress={() => setChoosing(true)} hitSlop={12}><Text style={styles.change}>Change</Text></Pressable>
         </View>
       ) : null}
-      {!contest.rsvp && !choosing ? (
+      {contest.canRsvp !== 0 && !contest.rsvp && !choosing ? (
         <View style={styles.row}>
           <Button title="I'm in" flex onPress={() => send({ going: true })} />
           <Button title="Can't" flex variant="onViolet" onPress={() => setChoosing(true)} />
         </View>
       ) : null}
-      {contest.rsvp === 'no' && !choosing ? (
+      {contest.canRsvp !== 0 && contest.rsvp === 'no' && !choosing ? (
         <View style={styles.answered}>
           <Text style={styles.contestTime}>You can't make this one.</Text>
           <Button title="Actually, I'm in" onPress={() => send({ going: true })} />

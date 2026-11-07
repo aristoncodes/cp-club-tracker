@@ -204,7 +204,7 @@ export function ContestRow({ contest }: { contest: Contest }) {
         </p>
       </div>
       {contest.mandatory ? <Pill tone="sun">★ Must attend</Pill> : null}
-      {RSVP_PILLS[contest.rsvp as 'yes' | 'no'] ?? <Pill tone="muted">Not answered</Pill>}
+      {contest.canRsvp === 0 ? null : RSVP_PILLS[contest.rsvp as 'yes' | 'no'] ?? <Pill tone="muted">Not answered</Pill>}
     </div>
   );
 }

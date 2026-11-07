@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { MemberKind } from 'shared/batch';
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import { signSession, USER_COLUMNS, type AppEnv, type User } from './auth';
 
@@ -22,8 +23,11 @@ export function handleFromInput(input: string): string {
 
 export const normalizeUsername = (value: unknown) => String(value ?? '').trim().toLowerCase();
 
-export function canFinishOnboarding(profile: { hasUsername: boolean; hasBatch: boolean; hasRequiredHandles: boolean; isAdmin: boolean }): boolean {
-  return profile.hasUsername && profile.hasBatch && (profile.hasRequiredHandles || profile.isAdmin);
+// Students need a year and both Codeforces and CodeChef; coaches and alumni need only Codeforces.
+export function canFinishOnboarding(profile: { hasUsername: boolean; kind: MemberKind; hasBatch: boolean; hasCodeforces: boolean; hasCodechef: boolean; isAdmin: boolean }): boolean {
+  const student = profile.kind === 'student';
+  const handles = profile.hasCodeforces && (profile.hasCodechef || !student);
+  return profile.hasUsername && (profile.hasBatch || !student) && (handles || profile.isAdmin);
 }
 
 export const accountRoutes = new Hono<AppEnv>();

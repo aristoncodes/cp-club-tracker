@@ -263,6 +263,26 @@ describe('admin', { timeout: 120_000 }, () => {
     expect((await call(ADMIN, '/admin/admins', 'POST', { email: 'nobody@test.dev' })).status).toBe(404);
   });
 
+  it('coaches and alumni need only Codeforces, and are never tracked for attendance', async () => {
+    const COACH = 6;
+    sql(`INSERT INTO users (id, email, name, username, created_at) VALUES (${COACH}, 'coach@test.dev', 'Cora Coach', 'cora', 1); INSERT INTO handles (user_id, platform, handle, approved_at, status, broken) VALUES (${COACH}, 'cf', 'h_cora', 1, 'approved', 1)`);
+    expect((await call(COACH, '/me', 'PUT', { name: 'Cora Coach', kind: 'coach', batchYear: null })).status).toBe(200);
+    expect((await call(COACH, '/me', 'PUT', { name: 'Cora Coach', kind: 'nope' })).status).toBe(400);
+    expect((await call(COACH, '/me/onboarding', 'POST')).status).toBe(200);
+    expect((await call(COACH, '/me')).json.user).toMatchObject({ kind: 'coach', batchYear: null });
+    expect((await call(COACH, '/contests/4/rsvp', 'POST', { going: true })).status).toBe(403);
+    const upcoming = (await call(COACH, '/contests/upcoming')).json.find((c: { id: number }) => c.id === 4);
+    expect(upcoming.canRsvp).toBe(0);
+    expect((await call(ANA, '/contests/upcoming')).json.find((c: { id: number }) => c.id === 4).canRsvp).toBe(1);
+    sql(`INSERT INTO contests (id, platform, external_id, name, url, start_at, end_at, counts, stage, source) VALUES (9, 'cf', '909', 'Round K (Div. 2)', 'u', ${NOW - 3 * DAY}, ${NOW - 3 * DAY + 7200}, 1, 3, 'cf')`);
+    expect(await ingest('/participation', { platform: 'cf', externalId: '909', presentHandles: ['h_cora', 'h_ana'] })).toBe(200);
+    const rows = query<{ user_id: number }>('SELECT user_id FROM attendance WHERE contest_id = 9').map((r) => r.user_id);
+    expect(rows).toContain(ANA);
+    expect(rows).not.toContain(COACH);
+    await ingest('/solves', [solve('h_cora', 'K1', Math.floor(Date.now() / 1000))]);
+    expect((await call(ANA, '/leaderboard?period=day')).json.some((r: { userId: number; kind: string }) => r.userId === COACH && r.kind === 'coach')).toBe(true);
+  });
+
   it('10. the nightly jobs run on 50 members and 90 days of solves', async () => {
     const lines: string[] = [];
     const users = Array.from({ length: 50 }, (_, i) => 100 + i);

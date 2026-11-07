@@ -24,3 +24,32 @@ describe('study year', () => {
     expect(studyYearLabel(2027, NOV_2026)).toBe('');
   });
 });
+
+describe('coach and alumni', () => {
+  const now = Date.UTC(2026, 10, 7) / 1000;
+  it('turns a picker choice into a kind and batch, and back', async () => {
+    const { memberFromChoice, memberChoice, memberLabel, isTracked } = await import('./batch');
+    expect(memberFromChoice(2, now)).toEqual({ kind: 'student', batchYear: 2025 });
+    expect(memberFromChoice(5, now)).toEqual({ kind: 'alumni', batchYear: null });
+    expect(memberFromChoice(6, now)).toEqual({ kind: 'coach', batchYear: null });
+    expect(memberChoice('student', 2025, now)).toBe(2);
+    expect(memberChoice('coach', null, now)).toBe(6);
+    expect(memberLabel('coach', null, now)).toBe('Coach');
+    expect(memberLabel('alumni', null, now)).toBe('Alumni');
+    expect(memberLabel('student', 2025, now)).toBe('2nd year');
+    expect(isTracked('student', 2025, now)).toBe(true);
+    expect(isTracked('coach', null, now)).toBe(false);
+    expect(isTracked('alumni', null, now)).toBe(false);
+  });
+
+  it('makes 4th years alumni on 1 August without a job', async () => {
+    const { memberChoice, memberLabel, isTracked } = await import('./batch');
+    const july = Date.UTC(2027, 6, 31) / 1000;
+    const august = Date.UTC(2027, 7, 1) / 1000;
+    expect(memberChoice('student', 2023, july)).toBe(4);
+    expect(memberChoice('student', 2023, august)).toBe(5);
+    expect(memberLabel('student', 2023, august)).toBe('Alumni');
+    expect(isTracked('student', 2023, july)).toBe(true);
+    expect(isTracked('student', 2023, august)).toBe(false);
+  });
+});

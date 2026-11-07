@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import type { BadgeId } from 'shared/badges';
+import type { MemberKind } from 'shared/batch';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const SESSION_KEY = 'session';
@@ -13,6 +14,7 @@ export type User = {
   username: string | null;
   usernameChangesLeft: number;
   batchYear: number | null;
+  kind: MemberKind;
   role: string;
   onboardingStep: string;
   cfRating: number | null;
@@ -63,6 +65,7 @@ export type Contest = {
   mandatory?: number;
   rsvp: string | null;
   goingCount: number;
+  canRsvp?: number;
   participantCount: number;
 };
 

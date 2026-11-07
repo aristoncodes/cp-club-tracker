@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { STUDY_YEARS, batchForStudyYear, studyYearLabel, studyYearOf } from 'shared/batch';
+import { STUDY_YEARS, batchForStudyYear, memberChoice, memberLabel, type MemberKind } from 'shared/batch';
 import { formatIST, timeAgo } from 'shared/time';
 import { api } from '../api';
 import { Avatar, CellMark, ErrorText, Rating, useLoad, useMe } from '../ui';
 import { AButton, ATable, Chip, fieldClass, Modal, PageHeader, PlatformChip, Segmented, useAct } from './admin-ui';
 
-type AdminUser = { id: number; email: string; name: string; username: string | null; batchYear: number | null; role: string; active: number; cfRating: number | null };
+type AdminUser = { id: number; email: string; name: string; username: string | null; batchYear: number | null; kind: MemberKind; role: string; active: number; cfRating: number | null };
 type AdminHandle = { userId: number; platform: string; handle: string; status: string; broken: number; solved: number };
 
 const STATUS_CHIP = { approved: ['ok', 'Approved'], waiting: ['wait', 'Waiting'], rejected: ['problem', 'Rejected'] } as const;
@@ -72,7 +72,7 @@ export function Students() {
             <div className="min-w-0 flex-1 basis-48">
               <p className="flex flex-wrap items-center gap-2 font-bold">
                 <Link to={`/u/${user.id}`} className="hover:underline">{user.name || user.email}</Link>
-                <span className="font-normal text-muted">{studyYearLabel(user.batchYear, now)}</span>
+                <span className="font-normal text-muted">{memberLabel(user.kind, user.batchYear, now)}</span>
                 <Chip tone={user.active ? 'ok' : 'plain'}>{user.active ? 'Active' : 'Deactivated'}</Chip>
                 {user.role === 'admin' && <Chip tone="admin">Admin</Chip>}
               </p>
@@ -119,9 +119,10 @@ type MemberDetail = {
   note: { text: string; at: number; admin: string } | null;
 };
 
-function statusOf(member: Member, now: number): 'active' | 'deactivated' | 'alumni' {
+function statusOf(member: Member, now: number): 'active' | 'deactivated' | 'alumni' | 'coach' {
   if (!member.active) return 'deactivated';
-  return member.batchYear && studyYearOf(member.batchYear, now) > 4 ? 'alumni' : 'active';
+  const choice = memberChoice(member.kind, member.batchYear, now);
+  return choice === 6 ? 'coach' : choice === 5 ? 'alumni' : 'active';
 }
 
 function MemberDrawer({ member, onClose, onChange }: { member: Member; onClose: () => void; onChange: () => void }) {
@@ -215,6 +216,7 @@ export function Members() {
           <option value="active">Active</option>
           <option value="deactivated">Deactivated</option>
           <option value="alumni">Alumni</option>
+          <option value="coach">Coach</option>
         </select>
       </div>
       {error && <ErrorText>{error}</ErrorText>}
@@ -232,12 +234,12 @@ export function Members() {
                   return (
                     <tr key={member.id} className={`border-b border-line last:border-0 ${openId === member.id ? 'bg-[#1F1F29]' : ''}`}>
                       <td className="p-2"><button onClick={() => setOpenId(member.id)} className="flex cursor-pointer items-center gap-2 whitespace-nowrap font-bold hover:underline"><Avatar userId={member.id} name={member.name} size={28} />{member.name}</button></td>
-                      <td className="p-2 whitespace-nowrap text-muted">{studyYearLabel(member.batchYear, now)}</td>
+                      <td className="p-2 whitespace-nowrap text-muted">{memberLabel(member.kind, member.batchYear, now)}</td>
                       <td className="handle p-2 text-xs text-violet-soft">@{member.username}</td>
                       <td className="p-2 text-right"><Rating value={member.cfRating} /></td>
                       <td className="num p-2 text-right">{rate === null ? '—' : `${rate}%`}</td>
                       <td className="p-2 whitespace-nowrap text-xs text-muted">{member.lastSolve ? timeAgo(member.lastSolve, now) : 'Never'}</td>
-                      <td className="p-2"><Chip tone={state === 'active' ? 'ok' : state === 'alumni' ? 'info' : 'plain'}>{state}</Chip></td>
+                      <td className="p-2"><Chip tone={state === 'active' ? 'ok' : state === 'alumni' || state === 'coach' ? 'info' : 'plain'}>{state}</Chip></td>
                     </tr>
                   );
                 })}

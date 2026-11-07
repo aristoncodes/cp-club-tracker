@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { batchForStudyYear, STUDY_YEARS, studyYearOf } from 'shared/batch';
+import { MEMBER_CHOICES, memberChoice, memberFromChoice } from 'shared/batch';
 import { api, getSession, type Me } from '../api';
 import { Button, ErrorText, inputClass, Logo, PLATFORMS } from '../ui';
 
@@ -12,12 +12,14 @@ function Form({ me }: { me: Me }) {
   const isAdmin = me.user.role === 'admin';
   const [name, setName] = useState(me.user.name);
   const [username, setUsername] = useState(me.user.username ?? '');
-  const [year, setYear] = useState(me.user.batchYear ? studyYearOf(me.user.batchYear, now) : 0);
+  const [year, setYear] = useState(memberChoice(me.user.kind, me.user.batchYear, now));
   const [handles, setHandles] = useState<Record<string, string>>(Object.fromEntries(me.handles.map((h) => [h.platform, h.handle])));
   const [check, setCheck] = useState<{ available: boolean; error?: string } | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const required = PLATFORMS.filter((p) => p.required && !isAdmin);
+  const student = memberFromChoice(year, now).kind === 'student';
+  const isRequired = (id: string, required: boolean) => required && !isAdmin && (id !== 'cc' || student);
+  const required = PLATFORMS.filter((p) => isRequired(p.id, p.required));
 
   useEffect(() => {
     if (!username || username === me.user.username) return setCheck(username ? { available: true } : null);
@@ -31,7 +33,7 @@ function Form({ me }: { me: Me }) {
     setError('');
     setSaving(true);
     try {
-      await api('/me', 'PUT', { name, username, batchYear: batchForStudyYear(year, now) });
+      await api('/me', 'PUT', { name, username, ...memberFromChoice(year, now) });
       for (const { id } of PLATFORMS) {
         if (handles[id]?.trim()) await api(`/me/handles/${id}`, 'PUT', { handle: handles[id] });
       }
@@ -62,8 +64,8 @@ function Form({ me }: { me: Me }) {
       </label>
       <div className="flex flex-col gap-1">
         <span className="label">Year</span>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label="Year">
-          {STUDY_YEARS.map((option) => (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Year">
+          {MEMBER_CHOICES.map((option) => (
             <button
               key={option.value}
               role="radio"
@@ -77,9 +79,9 @@ function Form({ me }: { me: Me }) {
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        {PLATFORMS.map(({ id, label, required: isRequired }) => (
+        {PLATFORMS.map(({ id, label, required: needed }) => (
           <label key={id} className="flex flex-col gap-1">
-            <span className={`text-xs font-bold ${LABEL_COLORS[id] ?? 'text-muted'}`}>{label}{isRequired && !isAdmin ? '' : ' (optional)'}</span>
+            <span className={`text-xs font-bold ${LABEL_COLORS[id] ?? 'text-muted'}`}>{label}{isRequired(id, needed) ? '' : ' (optional)'}</span>
             <input className={`${inputClass} handle h-12 rounded-[14px]`} autoCapitalize="none" autoCorrect="off" value={handles[id] ?? ''} onChange={(e) => setHandles((current) => ({ ...current, [id]: e.target.value }))} />
           </label>
         ))}

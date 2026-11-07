@@ -43,7 +43,8 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 
 - **Handles:** a pasted profile link is saved as just the handle, on all four platforms.
 - **Username:** valid and invalid forms, reserved names, case-insensitive uniqueness. The second user change gets 403; an admin can still change it.
-- **Onboarding:** finishing needs a username, a year and both required handles; admins may skip handles.
+- **Onboarding:** a student needs a username, a year and both required handles; a coach or alumni needs only a username and Codeforces; admins may skip handles.
+- **Coach and alumni:** the picker choice round-trips; 4th years become Alumni on 1 August; neither is tracked for attendance or allowed to RSVP.
 - **Streak reminder:** targets only `notify_streak = 1`, streak ≥ 1, no solve today.
 - **Health check:** stays quiet when healthy; reports a stalled fetch, silent platforms (5+ students only), missing contests, stuck attendance, broken handles, push errors, late jobs and mostly failing jobs; ignores cancelled runs.
 - **Meal-time nudges:** fire only at 9 AM, 1 PM, 5 PM and 9 PM IST; no line repeats within its pool; a solver gets a congratulating line at lunch, snacks and dinner; only `notify_meals = 1` users receive them.

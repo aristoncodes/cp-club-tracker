@@ -39,15 +39,25 @@ describe('usernameError', () => {
 });
 
 describe('canFinishOnboarding', () => {
-  it('needs a username, a year and both required handles', () => {
-    expect(canFinishOnboarding(COMPLETE)).toBe(true);
-    expect(canFinishOnboarding({ ...COMPLETE, hasUsername: false })).toBe(false);
-    expect(canFinishOnboarding({ ...COMPLETE, hasBatch: false })).toBe(false);
-    expect(canFinishOnboarding({ ...COMPLETE, hasRequiredHandles: false })).toBe(false);
+  const base = { hasUsername: true, kind: 'student' as const, hasBatch: true, hasCodeforces: true, hasCodechef: true, isAdmin: false };
+
+  it('needs a username, a year and both handles from a student', () => {
+    expect(canFinishOnboarding(base)).toBe(true);
+    expect(canFinishOnboarding({ ...base, hasUsername: false })).toBe(false);
+    expect(canFinishOnboarding({ ...base, hasBatch: false })).toBe(false);
+    expect(canFinishOnboarding({ ...base, hasCodechef: false })).toBe(false);
+    expect(canFinishOnboarding({ ...base, hasCodeforces: false })).toBe(false);
+  });
+
+  it('needs only Codeforces from a coach or alumni, and no year', () => {
+    for (const kind of ['coach', 'alumni'] as const) {
+      expect(canFinishOnboarding({ ...base, kind, hasBatch: false, hasCodechef: false })).toBe(true);
+      expect(canFinishOnboarding({ ...base, kind, hasBatch: false, hasCodeforces: false })).toBe(false);
+    }
   });
 
   it('lets admins skip handles, but not a username', () => {
-    expect(canFinishOnboarding({ ...COMPLETE, hasRequiredHandles: false, isAdmin: true })).toBe(true);
-    expect(canFinishOnboarding({ ...COMPLETE, hasUsername: false, hasRequiredHandles: false, isAdmin: true })).toBe(false);
+    expect(canFinishOnboarding({ ...base, hasCodeforces: false, hasCodechef: false, isAdmin: true })).toBe(true);
+    expect(canFinishOnboarding({ ...base, hasUsername: false, isAdmin: true })).toBe(false);
   });
 });

@@ -2,7 +2,10 @@ import { problemRp, solvePoints } from 'shared/scoring';
 import type { IngestSolve } from 'shared/types';
 import type { Bindings } from './auth';
 import { potdBonuses } from './practice';
+import { batchForStudyYear } from 'shared/batch';
 import { pushUsers, sendPushes, type PushMessage } from './push';
+
+const LAST_STUDY_YEAR = 4;
 import { getSettings } from './settings';
 
 // Returns who got a new solve, so the caller can check their badges.
@@ -64,12 +67,16 @@ export function adjustmentSum(user: string, from: string, to?: string): string {
   return `COALESCE((SELECT SUM(adj.points) FROM point_adjustments adj WHERE adj.user_id = ${user} AND adj.kind = 'adjust' AND adj.undone_at IS NULL AND adj.at >= ${from}${to ? ` AND adj.at < ${to}` : ''}), 0)`;
 }
 
+// Coaches, alumni and students past 4th year are on the boards but not tracked for attendance.
+export const trackedMember = (alias: string, now = Math.floor(Date.now() / 1000)) =>
+  `(${alias}.kind = 'student' AND (${alias}.batch_year IS NULL OR ${alias}.batch_year >= ${batchForStudyYear(LAST_STUDY_YEAR, now)}))`;
+
 export function createAttendanceRows(db: D1Database, contest: { id: number; platform: string }): D1PreparedStatement {
   return db
     .prepare(
       `INSERT OR IGNORE INTO attendance (contest_id, user_id)
        SELECT ?1, u.id FROM users u
-       WHERE u.active = 1 AND (?2 = 'other' OR EXISTS (SELECT 1 FROM handles h WHERE h.user_id = u.id AND h.platform = ?2 AND h.approved_at IS NOT NULL))`,
+       WHERE u.active = 1 AND ${trackedMember('u')} AND (?2 = 'other' OR EXISTS (SELECT 1 FROM handles h WHERE h.user_id = u.id AND h.platform = ?2 AND h.approved_at IS NOT NULL))`,
     )
     .bind(contest.id, contest.platform);
 }

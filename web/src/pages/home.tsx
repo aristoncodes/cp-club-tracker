@@ -73,19 +73,19 @@ function NextContest({ contest, onChange }: { contest: Contest; onChange: () => 
           <Tile value={Math.floor((left % 3600) / 60)} label="Min" />
         </div>
       </div>
-      {contest.rsvp === 'yes' && !choosing && (
+      {contest.canRsvp !== 0 && contest.rsvp === 'yes' && !choosing && (
         <div className="flex items-center justify-between rounded-full bg-lime px-5 py-2 font-extrabold text-ink">
           <span>You're in. Good luck!</span>
           <button className="min-h-8 cursor-pointer font-bold underline" onClick={() => setChoosing(true)}>Change</button>
         </div>
       )}
-      {!contest.rsvp && !choosing && (
+      {contest.canRsvp !== 0 && !contest.rsvp && !choosing && (
         <div className="flex gap-2">
           <Button className="flex-1" onClick={() => send({ going: true })}>I'm in</Button>
           <Button variant="onViolet" className="flex-1" onClick={() => setChoosing(true)}>Can't make it</Button>
         </div>
       )}
-      {contest.rsvp === 'no' && !choosing && (
+      {contest.canRsvp !== 0 && contest.rsvp === 'no' && !choosing && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-violet-pale">You can't make this one.</span>
           <Button onClick={() => send({ going: true })}>Actually, I'm in</Button>

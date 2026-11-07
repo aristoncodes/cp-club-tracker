@@ -35,7 +35,7 @@ adminRoutes.get('/badges', async (c) => {
 adminRoutes.get('/students', async (c) => {
   const db = c.env.DB;
   const [users, handles] = await db.batch([
-    db.prepare('SELECT id, email, name, username, batch_year AS batchYear, role, active, cf_rating AS cfRating FROM users ORDER BY name'),
+    db.prepare('SELECT id, email, name, username, batch_year AS batchYear, kind, role, active, cf_rating AS cfRating FROM users ORDER BY name'),
     db.prepare(
       `SELECT h.user_id AS userId, h.platform, h.handle, h.status, h.broken,
               (SELECT COUNT(*) FROM solves s WHERE s.user_id = h.user_id AND s.platform = h.platform) AS solved

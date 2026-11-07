@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { batchForStudyYear, STUDY_YEARS, studyYearLabel } from 'shared/batch';
+import { batchForStudyYear, memberLabel, STUDY_YEARS, type MemberKind } from 'shared/batch';
 import { solvePoints } from 'shared/scoring';
 import { formatIST, IST_OFFSET, periodStart, solvesText } from 'shared/time';
 import type { Period } from 'shared/types';
@@ -14,6 +14,7 @@ type Row = {
   userId: number;
   name: string;
   batchYear: number | null;
+  kind: MemberKind;
   username: string | null;
   cfRating: number | null;
   points: number;
@@ -226,7 +227,7 @@ export function Leaderboard() {
                     <span className="flex min-w-0 items-center gap-2">
                       <Avatar userId={row.userId} name={row.name} />
                       <span className="min-w-0">
-                        <span className="block truncate font-bold">{mine ? 'You' : row.name} <span className="font-normal text-muted">{studyYearLabel(row.batchYear, now)}</span></span>
+                        <span className="block truncate font-bold">{mine ? 'You' : row.name} <span className="font-normal text-muted">{memberLabel(row.kind, row.batchYear, now)}</span></span>
                         {row.username && <span className="block truncate text-xs"><Rating value={row.cfRating}>@{row.username}</Rating></span>}
                         <span className="block text-xs text-muted sm:hidden">{solvesText(row.solves)} · max <Rating value={row.hardest} /></span>
                       </span>

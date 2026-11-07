@@ -26,7 +26,7 @@ Current state and what's left: `PROGRESS.md`.
 | `scoring.ts` | `problemRp`, `solvePoints`, challenge constants |
 | `contests.ts` | `countsForAttendance`, `SPECIAL_CF_ROUNDS` |
 | `time.ts` | IST helpers: `periodStart`, `istDay`, `formatIST`, `solveStreak`, `weekStrip`, `heatmapWeeks` |
-| `batch.ts` | Joining year ↔ year of study |
+| `batch.ts` | Joining year ↔ year of study; Coach and Alumni (`MEMBER_CHOICES`, `isTracked`) |
 | `reasons.ts` | Absence reasons, `contestResult` |
 | `rating-color.ts` | `ratingColor` |
 | `cf.ts` | `CfSubmission`, `cfSolves`, `isLiveSubmission` |
@@ -71,7 +71,7 @@ Current state and what's left: `PROGRESS.md`.
 | `web-push.ts` | | RFC 8291 encryption, VAPID |
 | `meal-pushes.ts` | | Meal lines and timing |
 
-Migrations: `0000` baseline, `0001` accounts, `0002` meals, `0003` push errors, `0004` announcements + `push_log`, `0005` upsolves, `0006` problem of the day + `cf_history`, `0007` goals, `0008` rivals, `0009` badges, `0010` duels, `0011` recap switch, `0012` virtuals, `0013` admin redesign.
+Migrations: `0000` baseline, `0001` accounts, `0002` meals, `0003` push errors, `0004` announcements + `push_log`, `0005` upsolves, `0006` problem of the day + `cf_history`, `0007` goals, `0008` rivals, `0009` badges, `0010` duels, `0011` recap switch, `0012` virtuals, `0013` admin redesign, `0014` member kind (coach, alumni).
 
 Tests: pure logic sits next to each file as `*.test.ts`. `admin.integration.test.ts` runs the real Worker on a throwaway local D1, and adds about 2 minutes to `pnpm -r test`.
 

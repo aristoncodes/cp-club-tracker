@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { studyYearLabel } from 'shared/batch';
+import { memberLabel, type MemberKind } from 'shared/batch';
 import { ratingColor } from 'shared/rating-color';
 import { formatIST, heatLevel, istDay, solvesText, timeAgo } from 'shared/time';
 import { contestResult } from 'shared/reasons';
@@ -13,6 +13,7 @@ type UserProfile = {
   name: string;
   username: string | null;
   batchYear: number | null;
+  kind: MemberKind;
   cfRating: number | null;
   ratingHistory: RatingPoint[];
   handles: { platform: string; handle: string; approved: number }[];
@@ -208,7 +209,7 @@ export function Profile() {
   if (!profile) return null;
   const { stats, attendance, contests } = profile;
   const own = me.user.id === profile.id;
-  const year = studyYearLabel(profile.batchYear, Date.now() / 1000);
+  const year = memberLabel(profile.kind, profile.batchYear, Date.now() / 1000);
   const now = Date.now() / 1000;
   const topCount = Math.max(1, ...profile.topTags.map((t) => t.count));
   const maxRating = profile.ratingHistory.length ? Math.max(...profile.ratingHistory.map((p) => p.rating)) : null;

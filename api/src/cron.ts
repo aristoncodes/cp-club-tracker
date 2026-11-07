@@ -12,7 +12,7 @@ import { sendPushes, type PushMessage } from './push';
 import { sendRecapPush } from './recap';
 import { checkRivals } from './rivals';
 import { finishVirtual } from './virtuals';
-import { createAttendanceRows, finishContest } from './records';
+import { createAttendanceRows, finishContest, trackedMember } from './records';
 import { getSettings } from './settings';
 
 const REMINDER_LEAD = 3600;
@@ -78,7 +78,7 @@ async function participantTokens(db: D1Database, platform: string, preference: '
     .prepare(
       `SELECT p.token FROM push_tokens p
        JOIN users u ON u.id = p.user_id
-       WHERE u.active = 1 AND u.${preference} = 1 AND COALESCE(u.batch_year, 0) NOT IN (${inExamWeek('excuse', now)})
+       WHERE u.active = 1 AND u.${preference} = 1 AND ${trackedMember('u', now)} AND COALESCE(u.batch_year, 0) NOT IN (${inExamWeek('excuse', now)})
          AND (?1 = 'other' OR EXISTS (SELECT 1 FROM handles h WHERE h.user_id = u.id AND h.platform = ?1 AND h.approved_at IS NOT NULL))`,
     )
     .bind(platform)

@@ -2,6 +2,7 @@ import type { Settings } from 'shared/settings';
 import { IST_OFFSET, istDay, periodStart } from 'shared/time';
 import type { Bindings } from './auth';
 import { pushUsers } from './push';
+import { trackedMember } from './records';
 import { getSettings } from './settings';
 
 const DAY = 86400;
@@ -54,7 +55,7 @@ export function buildAtRisk(db: D1Database, s: Settings, now: number): D1Prepare
              ${rate(`?1 - ${RATE_WINDOW}`, '?1')} AS recent,
              ${rate(`?1 - ${2 * RATE_WINDOW}`, `?1 - ${RATE_WINDOW}`)} AS prior
            FROM users u
-           WHERE u.active = 1 AND EXISTS (SELECT 1 FROM handles h WHERE h.user_id = u.id AND h.approved_at IS NOT NULL)
+           WHERE u.active = 1 AND ${trackedMember('u', now)} AND EXISTS (SELECT 1 FROM handles h WHERE h.user_id = u.id AND h.approved_at IS NOT NULL)
          )
        ) WHERE true
        ON CONFLICT (user_id) DO UPDATE SET signals = excluded.signals, built_at = excluded.built_at`,

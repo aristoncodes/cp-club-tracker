@@ -164,7 +164,7 @@ export function ContestRow({ contest }: { contest: Contest }) {
         <Text style={common.small}><Text style={{ color: contest.kind === 'virtual' ? theme.violetSoft : platformColor(contest.platform) }}>{contest.kind === 'virtual' ? 'CLUB VIRTUAL' : PLATFORM_NAMES[contest.platform]}</Text> · {time}</Text>
       </View>
       {contest.mandatory ? <Pill tone="sun" label="★ Must attend" /> : null}
-      {RSVP_PILLS[contest.rsvp ?? ''] ?? <Pill tone="muted" label="Not answered" />}
+      {contest.canRsvp === 0 ? null : RSVP_PILLS[contest.rsvp ?? ''] ?? <Pill tone="muted" label="Not answered" />}
     </Pressable>
   );
 }

@@ -1,4 +1,5 @@
 import { createMiddleware } from 'hono/factory';
+import type { MemberKind } from 'shared/batch';
 import { jwtVerify, SignJWT, type JWTPayload } from 'jose';
 
 export type Bindings = {
@@ -25,6 +26,7 @@ export type User = {
   username: string | null;
   usernameChangesLeft: number;
   batchYear: number | null;
+  kind: MemberKind;
   role: 'student' | 'admin';
   active: number;
   onboardingStep: string;
@@ -43,7 +45,7 @@ export type User = {
 
 export type AppEnv = { Bindings: Bindings; Variables: { user: User } };
 
-export const USER_COLUMNS = `id, email, name, username, 1 - username_changes AS usernameChangesLeft, batch_year AS batchYear,
+export const USER_COLUMNS = `id, email, name, username, 1 - username_changes AS usernameChangesLeft, batch_year AS batchYear, kind,
   role, active, onboarding_step AS onboardingStep,
   cf_rating AS cfRating, notify_hour AS notifyHour, notify_rsvp AS notifyRsvp, notify_result AS notifyResult, notify_streak AS notifyStreak, notify_meals AS notifyMeals, notify_practice AS notifyPractice, notify_rival AS notifyRival, notify_badges AS notifyBadges, notify_recap AS notifyRecap, rival_id AS rivalId`;
 const SESSION_DAYS = 30;

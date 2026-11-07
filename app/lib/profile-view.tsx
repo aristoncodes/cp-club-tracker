@@ -3,7 +3,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Polyline, Rect } from 'react-native-svg';
-import { studyYearLabel } from 'shared/batch';
+import { memberLabel, type MemberKind } from 'shared/batch';
 import { ratingColor } from 'shared/rating-color';
 import { contestResult, type ContestOutcome } from 'shared/reasons';
 import { formatIST, heatmapWeeks, solvesText } from 'shared/time';
@@ -17,6 +17,7 @@ type UserProfile = {
   name: string;
   username: string | null;
   batchYear: number | null;
+  kind: MemberKind;
   cfRating: number | null;
   ratingHistory: RatingPoint[];
   handles: { platform: string; handle: string; approved: number }[];
@@ -119,7 +120,7 @@ export function ProfileView({ id, own }: { id: number; own?: boolean }) {
 
   if (error) return <Text style={[common.error, styles.page]}>{error}</Text>;
   if (!profile) return null;
-  const year = studyYearLabel(profile.batchYear, Date.now() / 1000);
+  const year = memberLabel(profile.kind, profile.batchYear, Date.now() / 1000);
   const total = profile.heatmap.reduce((sum, d) => sum + d.count, 0);
   const topCount = Math.max(1, ...profile.topTags.map((t) => t.count));
   const { attendance, contests } = profile;

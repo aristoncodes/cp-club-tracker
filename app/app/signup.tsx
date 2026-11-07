@@ -1,7 +1,7 @@
 import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { batchForStudyYear, STUDY_YEARS, studyYearOf } from 'shared/batch';
+import { MEMBER_CHOICES, memberChoice, memberFromChoice } from 'shared/batch';
 import { api, getSession, type Me } from '../lib/api';
 import { Button, common, platformColor, PLATFORM_NAMES } from '../lib/ui';
 import { theme } from '../theme';
@@ -30,7 +30,7 @@ export default function Signup() {
           setMe(data);
           setName(data.user.name);
           setUsername(data.user.username ?? '');
-          setYear(data.user.batchYear ? studyYearOf(data.user.batchYear, Date.now() / 1000) : 0);
+          setYear(memberChoice(data.user.kind, data.user.batchYear, Date.now() / 1000));
           setHandles(Object.fromEntries(data.handles.map((h) => [h.platform, h.handle])));
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Could not load. Please try again.');
@@ -51,13 +51,15 @@ export default function Signup() {
   if (!ready) return null;
   if (!signedIn) return <Redirect href="/login" />;
   const isAdmin = me?.user.role === 'admin';
-  const missing = !isAdmin && REQUIRED.some((id) => !handles[id]?.trim());
+  const student = memberFromChoice(year, Date.now() / 1000).kind === 'student';
+  const needed = REQUIRED.filter((id) => id !== 'cc' || student);
+  const missing = !isAdmin && needed.some((id) => !handles[id]?.trim());
 
   async function submit() {
     setError('');
     setSaving(true);
     try {
-      await api('/me', 'PUT', { name, username, batchYear: batchForStudyYear(year, Date.now() / 1000) });
+      await api('/me', 'PUT', { name, username, ...memberFromChoice(year, Date.now() / 1000) });
       for (const id of [...REQUIRED, ...OPTIONAL]) {
         if (handles[id]?.trim()) await api(`/me/handles/${id}`, 'PUT', { handle: handles[id] });
       }
@@ -89,7 +91,7 @@ export default function Signup() {
       <View style={styles.field}>
         <Text style={common.label}>YEAR</Text>
         <View style={styles.years}>
-          {STUDY_YEARS.map((option) => (
+          {MEMBER_CHOICES.map((option) => (
             <Pressable key={option.value} accessibilityRole="radio" accessibilityState={{ selected: year === option.value }} onPress={() => setYear(option.value)} style={[styles.year, year === option.value && styles.yearOn]}>
               <Text style={[styles.yearText, year === option.value && styles.yearTextOn]}>{option.label.replace(' year', '')}</Text>
             </Pressable>
@@ -113,8 +115,8 @@ const styles = StyleSheet.create({
   title: { color: theme.text, fontFamily: theme.font.display, fontSize: 30, lineHeight: 34, letterSpacing: -0.9 },
   field: { gap: 6 },
   usernameInput: { flex: 1, color: theme.text, fontFamily: theme.font.monoBold, fontSize: 16, height: 48 },
-  years: { flexDirection: 'row', gap: 8 },
-  year: { flex: 1, height: 48, borderRadius: 14, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card, alignItems: 'center', justifyContent: 'center' },
+  years: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  year: { flexBasis: '30%', flexGrow: 1, height: 48, borderRadius: 14, borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card, alignItems: 'center', justifyContent: 'center' },
   yearOn: { backgroundColor: theme.lime, borderColor: theme.lime },
   yearText: { color: theme.text, fontFamily: theme.font.bold, fontSize: 14 },
   yearTextOn: { color: theme.ink },

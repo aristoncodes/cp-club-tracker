@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { batchForStudyYear, STUDY_YEARS, studyYearOf } from 'shared/batch';
+import { isTracked, MEMBER_CHOICES, memberChoice, memberFromChoice } from 'shared/batch';
 import { api, clearSession, type Me } from '../lib/api';
 import { Button, common, Pill, platformColor, PLATFORM_NAMES, ScreenHeader, Toggle } from '../lib/ui';
 import { theme } from '../theme';
@@ -47,7 +47,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
         <View style={[styles.platformTile, { backgroundColor: platformColor(platform.id) }]}><Text style={styles.platformCode}>{platform.code}</Text></View>
         <View style={styles.flex}>
           <Text style={common.bold}>{PLATFORM_NAMES[platform.id]}</Text>
-          <Text style={common.small}>{linked ? `@${linked.handle}` : platform.required ? 'Required' : 'Optional'}</Text>
+          <Text style={common.small}>{linked ? `@${linked.handle}` : platform.required && (platform.id !== 'cc' || isTracked(me.user.kind, me.user.batchYear, Date.now() / 1000)) ? 'Required' : 'Optional'}</Text>
         </View>
         {linked ? <Pill tone={linked.status === 'rejected' ? 'pink' : linked.approved ? 'lime' : 'sun'} label={linked.status === 'rejected' ? 'Rejected — contact an admin' : linked.approved ? 'Approved' : 'Waiting for approval'} /> : null}
         {!editing ? (
@@ -131,7 +131,7 @@ export default function Settings() {
     const data = await api<Me>('/me');
     setMe(data);
     setName(data.user.name);
-    setYear(data.user.batchYear ? studyYearOf(data.user.batchYear, Date.now() / 1000) : 0);
+    setYear(memberChoice(data.user.kind, data.user.batchYear, Date.now() / 1000));
   }, []);
 
   useFocusEffect(
@@ -187,7 +187,7 @@ export default function Settings() {
         <View style={styles.block}>
           <Text style={common.label}>YEAR</Text>
           <View style={styles.years}>
-            {STUDY_YEARS.map((option) => (
+            {MEMBER_CHOICES.map((option) => (
               <Pressable key={option.value} accessibilityRole="radio" accessibilityState={{ selected: year === option.value }} onPress={() => setYear(option.value)} style={[styles.year, year === option.value && styles.yearOn]}>
                 <Text style={[styles.yearText, year === option.value && styles.yearTextOn]}>{option.label.replace(' year', '')}</Text>
               </Pressable>
@@ -196,7 +196,7 @@ export default function Settings() {
         </View>
         {message ? <Text style={common.link}>{message}</Text> : null}
         <Button title="Save" disabled={!name.trim() || !year} onPress={() => run(async () => {
-          await api('/me', 'PUT', { name, batchYear: batchForStudyYear(year, Date.now() / 1000) });
+          await api('/me', 'PUT', { name, ...memberFromChoice(year, Date.now() / 1000) });
           setMessage('Saved.');
           await load();
         })} />
@@ -217,8 +217,8 @@ const styles = StyleSheet.create({
   platformCode: { color: theme.ink, fontFamily: theme.font.monoBold, fontSize: 13 },
   username: { color: theme.lime, fontFamily: theme.font.monoBold, fontSize: 18 },
   warning: { padding: 12, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.sunLine, backgroundColor: theme.sunTint, color: theme.sunText, fontFamily: theme.font.regular, fontSize: 13 },
-  years: { flexDirection: 'row', gap: 8 },
-  year: { flex: 1, height: 48, borderRadius: 14, borderWidth: 1, borderColor: theme.line, alignItems: 'center', justifyContent: 'center' },
+  years: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  year: { flexBasis: '30%', flexGrow: 1, height: 48, borderRadius: 14, borderWidth: 1, borderColor: theme.line, alignItems: 'center', justifyContent: 'center' },
   yearOn: { backgroundColor: theme.lime, borderColor: theme.lime },
   yearText: { color: theme.text, fontFamily: theme.font.bold, fontSize: 14 },
   yearTextOn: { color: theme.ink },

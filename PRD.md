@@ -26,7 +26,8 @@ The college competitive programming club (40–50 students across all years) has
 - **Sign in:** Google only. The same button signs up new members, who then fill in one page (name, username, year, handles) and go straight to Home.
 - **Approval never blocks the app.** Until a coordinator approves their handles, members can use everything; they just aren't tracked or on the leaderboard. Admins may leave handles empty.
 - **Username:** required on that page. Lowercase letters, numbers, `_` and `.`, 3–20 characters, unique, with a short reserved list. Changeable once by the user; after that only an admin can change it.
-- **Year:** chosen as 1st to 4th year; the joining year is stored, so everyone moves up on 1 August.
+- **Year:** chosen as 1st to 4th year, **Alumni** or **Coach**; the joining year is stored, so everyone moves up on 1 August and 4th years become Alumni then. Members pick it themselves.
+- **Coaches and alumni** are on the leaderboards, feed and profiles but aren't tracked for attendance: no contest reminders, RSVPs, Present/Absent or reasons, and they're left out of at-risk. They need only a Codeforces handle; CodeChef is optional for them.
 - **Onboarding is resumable:** the API says whether it's finished and clients route there until it is. Existing users see that page once, to pick a username.
 
 ## Platforms
@@ -45,7 +46,7 @@ The college competitive programming club (40–50 students across all years) has
 
 ### Rules
 
-- Every counted contest creates one attendance entry per active user, students and admins alike, with an approved handle on that contest's platform.
+- Every counted contest creates one attendance entry per active student (1st to 4th year, admins included), with an approved handle on that contest's platform. Coaches and alumni get none.
 - **Present** = the student made a submission in the contest as a live participant, during the contest. On Codeforces, `CONTESTANT` and `OUT_OF_COMPETITION` both count.
 - **Excused** = set by an admin or an exam week; doesn't count against the student (see `PRD_ADMIN.md`).
 - **Absent** = no live submission. A reason is required. A virtual or practice attempt later still counts as absent, but its solves count on the leaderboard. The one exception is a club virtual an admin has set to count (see `PRD_ADDONS.md`).
@@ -92,7 +93,7 @@ The college competitive programming club (40–50 students across all years) has
 
 ## Handles
 
-- Each student must link a Codeforces and a CodeChef handle to finish onboarding; admins may skip this. Other platforms are optional.
+- Each student must link a Codeforces and a CodeChef handle to finish onboarding; coaches and alumni need only Codeforces; admins may skip this. Other platforms are optional.
 - An admin approves each handle once; it stays approved for good. Only linking a different handle needs a new approval. Unapproved handles are not tracked.
 - One handle per platform per student. A handle can't be linked by two students.
 

@@ -75,6 +75,7 @@ CREATE TABLE users (
   active INTEGER NOT NULL DEFAULT 1,
   cf_rating INTEGER,                         -- NULL = unrated
   created_at INTEGER NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'student',      -- 'student', 'coach' or 'alumni' (0014); see trackedMember in records.ts
   username TEXT,                             -- lowercase; unique index, case-insensitive
   username_changes INTEGER NOT NULL DEFAULT 0,
   onboarding_step TEXT NOT NULL DEFAULT 'about', -- 'done' once the onboarding page is finished
@@ -226,7 +227,7 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | POST | /auth/google | none | `{ idToken }`. Verified with `jose` against Google's keys (audience = web + Android client ids). Creates the user on first sign-in; role `admin` if the email is in `ADMIN_EMAILS`. Returns `{ token, user }` |
 | GET | /auth/username-available?u= | none | `{ available, error? }`: rules, reserved list and uniqueness |
 | GET | /me | student | User (including `username`, `usernameChangesLeft`, `onboardingStep`, notification preferences), handles with approval state, contests with pending reasons, solve streak |
-| PUT | /me | student | `{ name, batchYear, username? }`. `username` only during onboarding, and it doesn't use up the one change |
+| PUT | /me | student | `{ name, batchYear, kind?, username? }`. `kind` is `student` (needs `batchYear`), `coach` or `alumni` (no year). `username` only during onboarding, and it doesn't use up the one change |
 | POST | /me/onboarding | student | Marks onboarding done. Needs a username, a year and Codeforces and CodeChef handles (admins may skip handles) |
 | PATCH | /me/username | student | `{ username }`. 409 if taken, 403 if the one change is used |
 | PATCH | /me/notifications | student | Any of `{ notifyHour, notifyRsvp, notifyResult, notifyStreak }` |
