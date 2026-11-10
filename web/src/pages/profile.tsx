@@ -16,7 +16,7 @@ type UserProfile = {
   kind: MemberKind;
   cfRating: number | null;
   ratingHistory: RatingPoint[];
-  handles: { platform: string; handle: string; approved: number }[];
+  handles: { platform: string; handle: string; rating: number | null; approved: number }[];
   stats: Record<'dayPoints' | 'daySolves' | 'weekPoints' | 'weekSolves' | 'monthPoints' | 'monthSolves' | 'totalSolves', number>;
   streak: number;
   topTags: { tag: string; count: number }[];
@@ -237,7 +237,7 @@ export function Profile() {
             {profile.handles.map((h) => (
               <span key={h.platform} className="flex items-center gap-1 rounded-full bg-card-2 px-3 py-1 text-xs" title={platformLabel(h.platform)}>
                 <PlatformCode platform={h.platform} />
-                {h.platform === 'cf' ? <Rating value={profile.cfRating}>{h.handle}{profile.cfRating ? ` · ${profile.cfRating}` : ''}</Rating> : <span className="handle">{h.handle}</span>}
+                {h.platform === 'cf' ? <Rating value={profile.cfRating}>{h.handle}{profile.cfRating ? ` · ${profile.cfRating}` : ''}</Rating> : <span className="handle">{h.handle}{h.rating ? ` · ${h.rating}` : ''}</span>}
                 {!h.approved && <span className="text-muted">pending</span>}
               </span>
             ))}

@@ -10,8 +10,8 @@ import ccRecent from '../fixtures/cc-recent.json';
 import cfSubmissions from '../fixtures/cf-submissions.json';
 import lcQuestion from '../fixtures/leetcode-question.json';
 import lcRecent from '../fixtures/leetcode-recent.json';
-import { parseSubmissions as parseAtcoder } from './atcoder';
-import { parseRecent, parseTime, solveFrom as ccSolve, tookPartLive as ccTookPart } from './cc';
+import { parseSubmissions as parseAtcoder, ratingFromHistory } from './atcoder';
+import { parseRating as ccRating, parseRecent, parseTime, solveFrom as ccSolve, tookPartLive as ccTookPart } from './cc';
 import * as cf from './cf';
 import { parseSubmissions as parseCf, tookPartLive as cfTookPart } from './cf';
 import { parseRecentAc, solveFrom as lcSolve } from './leetcode';
@@ -180,5 +180,19 @@ describe('upsolve and problem-of-the-day data', () => {
     );
     expect(data.rounds.map((round) => round.id)).toEqual([1]);
     expect(data.problems).toEqual([{ problemId: '1A', name: 'Keep', rating: 1400, tags: ['dp'], url: 'https://codeforces.com/contest/1/problem/A', contestAt: 1001 }]);
+  });
+});
+
+describe('ratings', () => {
+  it('reads the last CodeChef rating from the embedded history', () => {
+    const page = '<script>var x = {"date_versus_rating":{"all":[{"code":"JAN10","name":"Weird [name]","rating":"1396"},{"code":"START1","rating":"1834"}]},"rating":"9"}</script>';
+    expect(ccRating(page)).toBe(1834);
+    expect(ccRating('<script>{"date_versus_rating":{"all":[]}}</script>')).toBeNull();
+    expect(ccRating('<html>Just a moment...</html>')).toBeNull();
+  });
+
+  it('takes the last rated AtCoder contest', () => {
+    expect(ratingFromHistory([{ IsRated: true, NewRating: 900 }, { IsRated: true, NewRating: 1100 }, { IsRated: false, NewRating: 0 }])).toBe(1100);
+    expect(ratingFromHistory([])).toBeNull();
   });
 });

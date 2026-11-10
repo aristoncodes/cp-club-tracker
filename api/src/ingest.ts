@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { istDay } from 'shared/time';
-import type { HealthReport, IngestContest, IngestSolve } from 'shared/types';
+import type { HealthReport, IngestContest, IngestRating, IngestSolve } from 'shared/types';
 import type { AppEnv } from './auth';
 import { checkBadges } from './badges';
 import { createUpsolves, type ContestProblem } from './practice';
@@ -72,6 +72,13 @@ ingestRoutes.post('/contests', async (c) => {
 ingestRoutes.post('/solves', async (c) => {
   const solvers = await insertSolves(c.env.DB, await c.req.json<IngestSolve[]>());
   c.executionCtx.waitUntil(checkBadges(c.env, solvers).catch((err) => console.error('Badge check failed:', err)));
+  return c.json({ ok: true });
+});
+
+ingestRoutes.post('/ratings', async (c) => {
+  const ratings = await c.req.json<IngestRating[]>();
+  const update = c.env.DB.prepare('UPDATE handles SET rating = ? WHERE platform = ? AND lower(handle) = lower(?)');
+  if (ratings.length) await c.env.DB.batch(ratings.map((r) => update.bind(r.rating, r.platform, r.handle)));
   return c.json({ ok: true });
 });
 

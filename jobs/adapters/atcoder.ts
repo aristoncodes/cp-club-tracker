@@ -17,6 +17,15 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+type HistoryRow = { IsRated: boolean; NewRating: number };
+
+export const ratingFromHistory = (history: HistoryRow[]) => history.filter((row) => row.IsRated).at(-1)?.NewRating ?? null;
+
+export async function fetchRating(handle: string): Promise<number | null> {
+  const response = await politeFetch(`https://atcoder.jp/users/${encodeURIComponent(handle)}/history/json`);
+  return ratingFromHistory((await response.json()) as HistoryRow[]);
+}
+
 export async function fetchResources(): Promise<Resources> {
   return {
     models: await fetchJson(`${BASE}/resources/problem-models.json`),

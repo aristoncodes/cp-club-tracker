@@ -489,7 +489,7 @@ studentRoutes.get('/users/:id', async (c) => {
   const [handles, stats, days, topTags, weakTags, recent, attendance] = await db.batch([
     db
       .prepare(
-        `SELECT platform, handle, approved_at IS NOT NULL AS approved FROM handles WHERE user_id = ?1 AND (?2 OR approved_at IS NOT NULL)`,
+        `SELECT platform, handle, rating, approved_at IS NOT NULL AS approved FROM handles WHERE user_id = ?1 AND (?2 OR approved_at IS NOT NULL)`,
       )
       .bind(id, seesPrivate ? 1 : 0),
     db

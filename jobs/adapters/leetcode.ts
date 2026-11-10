@@ -27,6 +27,13 @@ function fetchQuestion(titleSlug: string): Promise<Question> {
   return graphql('query($titleSlug: String!) { question(titleSlug: $titleSlug) { difficulty topicTags { name } } }', { titleSlug });
 }
 
+// Null when the user has never taken a LeetCode contest. LeetCode sends the rating with decimals.
+export async function fetchRating(username: string): Promise<number | null> {
+  const raw = await graphql<{ data: { userContestRanking: { rating: number } | null } }>('query($username: String!) { userContestRanking(username: $username) { rating } }', { username });
+  const rating = raw.data.userContestRanking?.rating;
+  return rating ? Math.round(rating) : null;
+}
+
 export function parseRecentAc(raw: RecentAc, cutoff: number) {
   return (raw.data.recentAcSubmissionList ?? [])
     .map((s) => ({ title: s.title, slug: s.titleSlug, solvedAt: Number(s.timestamp) }))

@@ -71,7 +71,7 @@ Current state and what's left: `PROGRESS.md`.
 | `web-push.ts` | | RFC 8291 encryption, VAPID |
 | `meal-pushes.ts` | | Meal lines and timing |
 
-Migrations: `0000` baseline, `0001` accounts, `0002` meals, `0003` push errors, `0004` announcements + `push_log`, `0005` upsolves, `0006` problem of the day + `cf_history`, `0007` goals, `0008` rivals, `0009` badges, `0010` duels, `0011` recap switch, `0012` virtuals, `0013` admin redesign, `0014` member kind (coach, alumni).
+Migrations: `0000` baseline, `0001` accounts, `0002` meals, `0003` push errors, `0004` announcements + `push_log`, `0005` upsolves, `0006` problem of the day + `cf_history`, `0007` goals, `0008` rivals, `0009` badges, `0010` duels, `0011` recap switch, `0012` virtuals, `0013` admin redesign, `0014` member kind (coach, alumni), `0015` handle rating (CodeChef, AtCoder, LeetCode).
 
 Tests: pure logic sits next to each file as `*.test.ts`. `admin.integration.test.ts` runs the real Worker on a throwaway local D1, and adds about 2 minutes to `pnpm -r test`.
 
@@ -83,7 +83,7 @@ Tests: pure logic sits next to each file as `*.test.ts`. `admin.integration.test
 | `adapters/{cf,cc,atcoder,leetcode}.ts` | Fetch and parse per platform; tests use `fixtures/` |
 | `sync-contests.ts` | Contest list |
 | `sync-solves.ts` | Solves; Codeforces only in the first run of each hour |
-| `sync-problemset.ts` | Problems, rounds and full history import |
+| `sync-problemset.ts` | Problems, rounds, full history import, and nightly CodeChef/AtCoder/LeetCode ratings |
 | `participation.ts` | Attendance and upsolve data after a contest |
 | `backfill.ts` | 6 months of solves on approval |
 | `health.ts` | Daily check; failure emails via GitHub |

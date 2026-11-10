@@ -83,7 +83,7 @@ The college competitive programming club (40–50 students across all years) has
 - **Feed (week 2):** latest solves across the club, e.g. "Aman solved 1700 · dp, greedy · 12 min ago".
 - **Sidebar:** points per year of study, biggest climbers against the previous period, and the toughest solves.
 - **Weekly challenge:** the club solves 50 problems rated 1400+ this week, showing club progress and your contribution.
-- **Profile:** linked handles, CF rating and its history, stat tiles, solve streak, 6-month activity, recent solves, top topics with a weak-topic hint. Your own also shows attendance and contest history.
+- **Profile:** linked handles with each platform's current rating (CodeChef, AtCoder and LeetCode refresh nightly; display only, scoring uses CF rating), CF rating and its history, stat tiles, solve streak, 6-month activity, recent solves, top topics with a weak-topic hint. Your own also shows attendance and contest history.
 - **Streak reminder:** an opt-in push at 21:00 IST if you haven't solved today and have a streak of at least 1.
 - **Meal-time nudges:** four funny pushes a day, on by default: breakfast 9 AM (yesterday's problem), lunch 1 PM, snacks 5 PM and dinner 9 PM IST. Lines don't repeat for 30 days per meal. If you've already solved that day, lunch, snacks and dinner use a congratulating line instead (these repeat every 10 days). If you haven't, and at least 2 others have, the line adds "{n} clubmates already have." Anyone getting the 9 PM streak reminder gets that instead of dinner's line.
 - **Notification preferences:** a switch for each type: 1 hour before, 5 min RSVP, after contest, streak, meal-time nudges.

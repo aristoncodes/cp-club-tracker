@@ -100,6 +100,7 @@ CREATE TABLE handles (
   approved_at INTEGER,                       -- NULL = not approved; solves before this don't score
   broken INTEGER NOT NULL DEFAULT 0,         -- platform says the handle doesn't exist
   synced_at INTEGER,
+  rating INTEGER,                            -- cc/atcoder/leetcode only, shown on profiles (0015); never used for scoring
   PRIMARY KEY (user_id, platform),
   UNIQUE (platform, handle)
 );
@@ -250,6 +251,7 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | POST | /admin/admins | admin | `{ email }`. Promotes the user, or inserts a `users` row with `role = 'admin'` and an empty name, filled in at first sign-in |
 | GET | /admin/flags | admin | Users with > 30 solves in one IST day in the last 30 days, and handles with `broken = 1` |
 | POST | /ingest/contests | secret | `[{ platform, externalId, altExternalId?, name, url, startAt, endAt, counts }]`, upserted; `counts` applies only on insert |
+| POST | /ingest/ratings | secret | `[{ platform, handle, rating }]` from the nightly `sync-problemset`; sets `handles.rating` |
 | POST | /ingest/solves | secret | `[{ platform, handle, problemId, name?, rating?, tags?, url?, solvedAt, live }]`. The Worker maps handle → user, computes points and inserts with `OR IGNORE` |
 | POST | /ingest/participation | secret | `{ platform, externalId, presentHandles: string[], brokenHandles?: string[] }` |
 | GET | /ingest/handles?platform= | secret | Approved handles for the adapters to fetch |

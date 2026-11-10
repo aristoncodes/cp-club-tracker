@@ -13,6 +13,8 @@ export type IngestContest = {
   counts: boolean;
 };
 
+export type IngestRating = { platform: Platform; handle: string; rating: number };
+
 export type IngestSolve = {
   platform: Platform;
   handle: string;

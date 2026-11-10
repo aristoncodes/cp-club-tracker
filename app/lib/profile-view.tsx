@@ -20,7 +20,7 @@ type UserProfile = {
   kind: MemberKind;
   cfRating: number | null;
   ratingHistory: RatingPoint[];
-  handles: { platform: string; handle: string; approved: number }[];
+  handles: { platform: string; handle: string; rating: number | null; approved: number }[];
   stats: { monthPoints: number; monthSolves: number; totalSolves: number };
   streak: number;
   topTags: { tag: string; count: number }[];
@@ -165,7 +165,7 @@ export function ProfileView({ id, own }: { id: number; own?: boolean }) {
           {profile.handles.map((h) => (
             <View key={h.platform} style={styles.chip}>
               <Text style={[styles.chipCode, { color: platformColor(h.platform) }]}>{CODES[h.platform]} </Text>
-              {h.platform === 'cf' ? <Rating value={profile.cfRating}>{h.handle}{profile.cfRating ? ` · ${profile.cfRating}` : ''}</Rating> : <Text style={styles.chipHandle}>{h.handle}</Text>}
+              {h.platform === 'cf' ? <Rating value={profile.cfRating}>{h.handle}{profile.cfRating ? ` · ${profile.cfRating}` : ''}</Rating> : <Text style={styles.chipHandle}>{h.handle}{h.rating ? ` · ${h.rating}` : ''}</Text>}
               {h.approved ? null : <Text style={common.small}> pending</Text>}
             </View>
           ))}

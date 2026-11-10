@@ -1,5 +1,9 @@
+import type { IngestRating, Platform } from 'shared/types';
+import * as atcoder from './adapters/atcoder';
+import * as cc from './adapters/cc';
 import * as cf from './adapters/cf';
-import { getHistoryMissing, postIngest } from './lib';
+import * as leetcode from './adapters/leetcode';
+import { getHandles, getHistoryMissing, postIngest } from './lib';
 
 const CHUNK = 500;
 const HISTORY_CHUNK = 1000;
@@ -30,3 +34,20 @@ for (const handle of await getHistoryMissing()) {
   }
 }
 console.log(`Imported ${written} solved problems`);
+
+// Other platforms' ratings are shown on profiles only and change after contests, so nightly is enough.
+const RATING_SOURCES: [Platform, (handle: string) => Promise<number | null>][] = [['cc', cc.fetchRating], ['atcoder', atcoder.fetchRating], ['leetcode', leetcode.fetchRating]];
+for (const [platform, fetchRating] of RATING_SOURCES) {
+  const ratings: IngestRating[] = [];
+  for (const handle of await getHandles(platform)) {
+    try {
+      const rating = await fetchRating(handle);
+      if (rating) ratings.push({ platform, handle, rating });
+    } catch (err) {
+      console.error(`${platform} rating failed for ${handle}:`, err);
+      process.exitCode = 1;
+    }
+  }
+  if (ratings.length) await postIngest('/ratings', ratings);
+  console.log(`Sent ${ratings.length} ${platform} ratings`);
+}

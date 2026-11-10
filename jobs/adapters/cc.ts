@@ -55,6 +55,18 @@ export function fetchRecent(handle: string): Promise<{ content: string }> {
   return readCodeChef(`${BASE}/recent/user?page=0&user_handle=${encodeURIComponent(handle)}`);
 }
 
+// The profile page embeds the rating history as JSON; the current rating is its last entry.
+export function parseRating(html: string): number | null {
+  const history = html.match(/"date_versus_rating":\{"all":(\[\]|\[.*?\}\])/s)?.[1];
+  const last = history ? Number((JSON.parse(history) as { rating: string }[]).at(-1)?.rating) : 0;
+  return last > 0 ? last : null;
+}
+
+// A Cloudflare challenge page has no history, so it reads as unrated and the old rating stays.
+export async function fetchRating(handle: string): Promise<number | null> {
+  return parseRating(await (await politeFetch(`${BASE}/users/${encodeURIComponent(handle)}`, CC_GAP_MS)).text());
+}
+
 export function parseTime(text: string, now: number): number {
   const relative = text.match(/^(\d+) (sec|min|hour)s? ago$/);
   if (relative) return now - Number(relative[1]) * UNIT_SECONDS[relative[2]];
