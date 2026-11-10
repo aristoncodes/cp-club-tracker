@@ -54,6 +54,12 @@ rivalRoutes.put('/', async (c) => {
   return c.json({ ok: true });
 });
 
+// Removing is always allowed. rival_set_at stays, so the 7-day limit on choosing a new rival still holds.
+rivalRoutes.delete('/', async (c) => {
+  await c.env.DB.prepare('UPDATE users SET rival_id = NULL, rival_ahead = 0 WHERE id = ?').bind(c.get('user').id).run();
+  return c.json({ ok: true });
+});
+
 export async function checkRivals(env: Bindings, now: number): Promise<void> {
   const week = periodStart('week', now);
   const today = istDay(now);

@@ -90,16 +90,36 @@ function PointNotices() {
   );
 }
 
+function CoordinatorNote() {
+  const [note, setNote] = useState<{ text: string } | null>(null);
+  useEffect(() => {
+    api<typeof note>('/me/note').then(setNote).catch(console.warn);
+  }, []);
+  if (!note) return null;
+  return (
+    <View style={styles.notices}>
+      <Text style={styles.noticeText}>From your coordinators: {note.text}</Text>
+    </View>
+  );
+}
+
 function RivalButton({ id }: { id: number }) {
   const [current, setCurrent] = useState(false);
   const [error, setError] = useState('');
   useEffect(() => {
     api<Me>('/me').then((me) => setCurrent(me.user.rivalId === id)).catch(console.warn);
   }, [id]);
-  if (current) return <Pill tone="pink" label="Your rival" />;
+  const change = (method: 'PUT' | 'DELETE') => api('/me/rival', method, method === 'PUT' ? { userId: id } : undefined).then(() => setCurrent(method === 'PUT')).catch((err) => setError(err.message));
   return (
     <View>
-      <Button title="Set as rival" variant="secondary" onPress={() => api('/me/rival', 'PUT', { userId: id }).then(() => setCurrent(true)).catch((err) => setError(err.message))} />
+      {current ? (
+        <>
+          <Pill tone="pink" label="Your rival" />
+          <Button title="Remove rival" variant="secondary" onPress={() => change('DELETE')} />
+        </>
+      ) : (
+        <Button title="Set as rival" variant="secondary" onPress={() => change('PUT')} />
+      )}
       {error ? <Text style={common.error}>{error}</Text> : null}
     </View>
   );
@@ -152,6 +172,7 @@ export function ProfileView({ id, own }: { id: number; own?: boolean }) {
         </View>
       </View>
       {own ? null : <RivalButton id={profile.id} />}
+      {own ? <CoordinatorNote /> : null}
       {own ? <PointNotices /> : null}
       <View style={common.row}>
         <Pressable accessibilityRole="link" hitSlop={8} onPress={() => router.push({ pathname: '/badges', params: own ? {} : { user: String(profile.id) } })}>

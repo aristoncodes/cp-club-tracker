@@ -110,7 +110,7 @@ After every counted contest, each member gets an upsolve list: the problems in t
 - *Done when:* qualifying solves fill the ring, and the goal locks on Thursday.
 
 **B2. Rivals**
-- **Picking:** each member picks one rival with "Set as rival" on any profile. It can be changed once every 7 days.
+- **Picking:** each member picks one rival with "Set as rival" on any profile. It can be changed once every 7 days, and removed at any time (a removed rival still counts toward the 7 days).
 - **Pushes:** the member gets a push when their rival passes them this week, at most once a day. The person picked isn't told.
 - **Home card:** this week's points, solves, contests and duels side by side, plus who's ahead.
 - *Done when:* the card updates as both people solve, and the "passed you" push fires at most once a day.

@@ -183,17 +183,26 @@ function PointNotices() {
   );
 }
 
+function CoordinatorNote() {
+  const { data } = useLoad(() => api<{ text: string } | null>('/me/note'), []);
+  if (!data) return null;
+  return <p className="whitespace-pre-wrap rounded-2xl border border-sun-line bg-sun-tint p-3 text-sun-text"><b>From your coordinators:</b> {data.text}</p>;
+}
+
 function RivalButton({ id, current, onChange }: { id: number; current: boolean; onChange: () => void }) {
   const [error, setError] = useState('');
-  if (current) return <span className="inline-flex h-11 items-center rounded-full bg-pink-tint px-5 font-bold text-pink-text">Your rival</span>;
+  const change = (method: 'PUT' | 'DELETE') => api('/me/rival', method, method === 'PUT' ? { userId: id } : undefined).then(onChange).catch((err: Error) => setError(err.message));
+  const button = 'lift h-11 cursor-pointer rounded-full border-2 border-line px-5 font-bold';
   return (
     <div className="flex flex-col items-end gap-1">
-      <button
-        className="lift h-11 cursor-pointer rounded-full border-2 border-line px-5 font-bold"
-        onClick={() => api('/me/rival', 'PUT', { userId: id }).then(onChange).catch((err: Error) => setError(err.message))}
-      >
-        Set as rival
-      </button>
+      {current ? (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-11 items-center rounded-full bg-pink-tint px-5 font-bold text-pink-text">Your rival</span>
+          <button className={button} onClick={() => change('DELETE')}>Remove</button>
+        </div>
+      ) : (
+        <button className={button} onClick={() => change('PUT')}>Set as rival</button>
+      )}
       {error && <ErrorText>{error}</ErrorText>}
     </div>
   );
@@ -238,6 +247,7 @@ export function Profile() {
         {own && <Link to="/settings" className="lift inline-flex h-11 items-center gap-2 rounded-full border-2 border-line px-5 font-bold"><Gear />Settings</Link>}
         {own && me.user.role === 'admin' && <Link to="/admin" className="lift inline-flex h-11 items-center rounded-full border-2 border-line px-5 font-bold sm:hidden">Admin</Link>}
       </div>
+      {own && <CoordinatorNote />}
       {own && <PointNotices />}
       <div className="flex gap-4">
         <Link to={own ? '/badges' : `/badges?user=${profile.id}`} className="font-bold text-lime hover:underline">Badges →</Link>

@@ -85,8 +85,8 @@ export function fairnessChecks(db: D1Database, s: Settings, now: number): D1Prep
     db
       .prepare(
         `${flag('matching_solves', 'medium')} (SELECT s.user_id, json_group_array(${item('s')}) AS evidence FROM solves s
-           WHERE s.solved_at >= ?1 AND s.solved_at < ?2 AND s.points > 0 AND s.fingerprint IS NOT NULL AND EXISTS (
-             SELECT 1 FROM solves x WHERE x.platform = s.platform AND x.problem_id = s.problem_id AND x.user_id != s.user_id AND x.fingerprint = s.fingerprint AND ABS(x.solved_at - s.solved_at) <= ?3 * 60)
+           WHERE s.solved_at >= ?1 AND s.solved_at < ?2 AND s.points > 0 AND s.live = 0 AND s.fingerprint IS NOT NULL AND EXISTS (
+             SELECT 1 FROM solves x WHERE x.platform = s.platform AND x.problem_id = s.problem_id AND x.live = 0 AND x.user_id != s.user_id AND x.fingerprint = s.fingerprint AND ABS(x.solved_at - s.solved_at) <= ?3 * 60)
            GROUP BY s.user_id)`,
       )
       .bind(from, to, s.fairness_match_minutes),
@@ -94,6 +94,7 @@ export function fairnessChecks(db: D1Database, s: Settings, now: number): D1Prep
       .prepare(
         `${flag('duel_problem', 'medium')} (SELECT s.user_id, json_group_array(${item('s')}) AS evidence FROM solves s JOIN duels d ON d.problem_id = s.problem_id AND s.platform = 'cf'
            WHERE s.solved_at >= ?1 AND s.solved_at < ?2 AND s.points > 0 AND s.solved_at >= d.start_at AND s.solved_at < d.end_at AND s.user_id NOT IN (d.challenger_id, d.opponent_id)
+           AND NOT EXISTS (SELECT 1 FROM potd p WHERE p.day = ${day} AND p.problem_id = s.problem_id)
            GROUP BY s.user_id)`,
       )
       .bind(from, to),

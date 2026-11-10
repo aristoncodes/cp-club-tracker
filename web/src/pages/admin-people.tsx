@@ -171,7 +171,7 @@ function MemberDrawer({ member, onClose, onChange }: { member: Member; onClose: 
             ))}
           </div>
           <label className="flex flex-col gap-1">
-            <span className="label">Admin notes (never shown to the member)</span>
+            <span className="label">Note to the member (shown on their profile; saving a change pushes it)</span>
             <textarea className={`${fieldClass} h-24 py-2`} value={text} onChange={(e) => { setText(e.target.value); setSaved(false); }} />
           </label>
           <div className="flex items-center gap-2">

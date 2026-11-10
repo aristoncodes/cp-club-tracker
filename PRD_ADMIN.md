@@ -63,8 +63,8 @@ Badges show live counts: Overview = open inbox items, Students & handles = handl
 
 ### A2. Members
 - A table with name, batch, @username, CF rating, attendance %, last solve, and status (active / deactivated / alumni). Filter by batch and status, plus search.
-- **Member drawer:** clicking a row opens it on the right, showing stats, a strip of the last 8 contests, their handles, private **admin notes** (never shown to the member), and danger actions (deactivate, make admin).
-- *Done when:* notes save, are visible only to admins, and are logged.
+- **Member drawer:** clicking a row opens it on the right, showing stats, a strip of the last 8 contests, their handles, a **note to the member** (shown on their own profile, and a push is sent when an admin saves a change), and danger actions (deactivate, make admin).
+- *Done when:* notes save, are logged, appear on the member's own profile, and a changed note pushes to the member.
 
 ### A3. Students & handles (approval)
 This keeps the behaviour of the current page.
@@ -144,8 +144,8 @@ This keeps the behaviour of the current page.
 - **Nightly checks (thresholds from Rules):**
   - more than 30 solves in a day;
   - 3 or more solves rated ≥ 400 above the member's rating within 20 minutes;
-  - the same problem solved by two members within 10 minutes with identical language, time and memory (a weak signal, not proof);
-  - another club member solving a duel's problem during that duel.
+  - the same problem solved by two members within 10 minutes with identical language, time and memory (a weak signal, not proof; live contest solves are skipped, because easy problems match all the time there);
+  - another club member solving a duel's problem during that duel (not when it was that day's problem of the day).
 - **Flag card:** an evidence timeline, then one of:
   - **Clear;**
   - **Adjust points:** ± points, with a reason the member sees;

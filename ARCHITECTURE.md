@@ -541,7 +541,9 @@ Picks run in the Worker, not an Action, because GitHub's timing is unreliable an
 | GET | /practice/upsolves | student | Lists grouped by contest, with done state |
 | GET, PUT | /practice/goal | student | Current goal, progress and suggestion; 409 from Thursday |
 | PUT | /me/rival | student | `{ userId }`; 409 within 7 days of the last change |
+| DELETE | /me/rival | student | Clears the rival at any time; the 7-day limit on choosing a new one still counts from the last set |
 | GET | /me/rival | student | This week's side-by-side |
+| GET | /me/note | student | The coordinators' note to me, or `null` |
 | GET | /badges?user= | student | All 12 with earned date or progress |
 | POST | /badges/seen | student | Marks celebrations as shown |
 | GET | /duels | student | Hub: my rating and record, invites, live now, recent, board |
@@ -611,7 +613,7 @@ All need an admin session, validate input and write through `adminWrite`.
 | GET | /badges | Sidebar counts: inbox, waiting handles, at-risk, open flags |
 | GET | /overview | KPIs, inbox, trend, at-risk preview, upcoming RSVP splits |
 | GET | /members | Table; the page filters it |
-| GET, PUT | /members/:id, /members/:id/notes | Drawer data; notes |
+| GET, PUT | /members/:id, /members/:id/notes | Drawer data; notes (a changed, non-empty note pushes to the member) |
 | GET | /students | Cards with handles; the page filters them |
 | PATCH | /handles/:userId/:platform | `{ status }`: approve, reject or back to waiting |
 | POST | /handles/approve-all | |

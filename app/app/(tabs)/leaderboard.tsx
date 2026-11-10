@@ -1,6 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { batchForStudyYear, memberLabel, STUDY_YEARS, type MemberKind } from 'shared/batch';
 import { solvesText } from 'shared/time';
 import { api, type Me } from '../../lib/api';
 import { FeedPanel } from '../../lib/feed-panel';
@@ -13,6 +14,8 @@ type Row = {
   moved: number | null;
   userId: number;
   name: string;
+  kind: MemberKind;
+  batchYear: number | null;
   points: number;
   solves: number;
   hardest: number;
@@ -59,6 +62,7 @@ export default function Leaderboard() {
   const [view, setView] = useState<'rankings' | 'feed'>('rankings');
   const [season, setSeason] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>('week');
+  const [batch, setBatch] = useState(0);
   const [rows, setRows] = useState<Row[]>([]);
   const [me, setMe] = useState<Me | null>(null);
   const myId = me?.user.id ?? null;
@@ -69,7 +73,7 @@ export default function Leaderboard() {
     setError('');
     setRefreshing(true);
     try {
-      const [data, meData, currentSeason] = await Promise.all([api<Row[]>(`/leaderboard?period=${period}`), api<Me>('/me'), api<{ name: string } | null>('/seasons/current')]);
+      const [data, meData, currentSeason] = await Promise.all([api<Row[]>(`/leaderboard?period=${period}&batch=${batch || ''}`), api<Me>('/me'), api<{ name: string } | null>('/seasons/current')]);
       setSeason(currentSeason?.name ?? null);
       setRows(data);
       setMe(meData);
@@ -78,7 +82,7 @@ export default function Leaderboard() {
     } finally {
       setRefreshing(false);
     }
-  }, [period]);
+  }, [period, batch]);
 
   useFocusEffect(
     useCallback(() => {
@@ -121,6 +125,13 @@ export default function Leaderboard() {
           );
         })}
       </View>
+      <View style={styles.tabs} accessibilityRole="tablist">
+        {[{ id: 0, label: 'All' }, ...STUDY_YEARS.map((y) => ({ id: batchForStudyYear(y.value, Date.now() / 1000), label: y.label.replace(' year', '') }))].map((option) => (
+          <Pressable key={option.id} accessibilityRole="tab" accessibilityState={{ selected: batch === option.id }} style={[styles.tab, batch === option.id && styles.tabActive]} onPress={() => setBatch(option.id)}>
+            <Text style={[styles.tabText, batch === option.id && styles.tabTextActive]}>{option.label}</Text>
+          </Pressable>
+        ))}
+      </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <FlatList
         data={rows.slice(3)}
@@ -143,7 +154,7 @@ export default function Leaderboard() {
               </View>
               <Avatar userId={item.userId} name={item.name} />
               <View style={styles.who}>
-                <Text style={styles.name} numberOfLines={1}>{isMe ? 'You' : item.name}</Text>
+                <Text style={styles.name} numberOfLines={1}>{isMe ? 'You' : item.name} <Text style={styles.detail}>{memberLabel(item.kind, item.batchYear, Date.now() / 1000)}</Text></Text>
                 <Text style={styles.detail}>{solvesText(item.solves)} · max <Rating value={item.hardest} /></Text>
               </View>
               <Text style={styles.points}>{item.points}</Text>

@@ -405,6 +405,9 @@ studentRoutes.get('/leaderboard/extras', async (c) => {
 
 studentRoutes.get('/seasons/current', async (c) => c.json(await currentSeason(c.env.DB, Math.floor(Date.now() / 1000))));
 
+studentRoutes.get('/me/note', async (c) =>
+  c.json(await c.env.DB.prepare(`SELECT text, at FROM admin_notes WHERE user_id = ? AND text != ''`).bind(c.get('user').id).first()));
+
 studentRoutes.get('/me/point-notices', async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT id, kind, points, reason, at FROM point_adjustments WHERE user_id = ? AND undone_at IS NULL ORDER BY at DESC LIMIT 5`,

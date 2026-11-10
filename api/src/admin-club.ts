@@ -93,6 +93,8 @@ adminClubRoutes.put('/members/:id/notes', async (c) => {
   await adminWrite(c, { area: 'members', action: 'edited admin notes', target: String(id), before: before?.text, after: text }, [
     db.prepare(`INSERT INTO admin_notes (user_id, admin_id, text, at) VALUES (?, ?, ?, unixepoch()) ON CONFLICT (user_id) DO UPDATE SET admin_id = excluded.admin_id, text = excluded.text, at = excluded.at`).bind(id, c.get('user').id, text),
   ]);
+  // The member sees the note on their profile; a long one is cut to nudge length in the push.
+  if (text.trim() && text !== before?.text) await pushUsers(c.env, 'note', [{ userId: id, title: 'Note from your coordinators', body: text.slice(0, NUDGE_MAX), data: { path: '/profile' } }]);
   return c.json({ ok: true });
 });
 
