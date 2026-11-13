@@ -153,6 +153,13 @@ function Shell() {
         )}
         <Outlet context={{ me, reload } satisfies ShellContext} />
       </main>
+      <footer className="mx-auto flex max-w-[1200px] flex-col gap-3 border-t border-line px-4 py-6 text-sm text-muted sm:flex-row sm:items-end sm:justify-between sm:px-6">
+        <div>
+          <p className="font-bold text-text">What are we if not problem solvers.</p>
+          <p>Made with <span className="text-lime">♥</span> by joyboy24</p>
+        </div>
+        <Link to="/download" className="font-bold hover:text-text">Get the app</Link>
+      </footer>
       <nav className="fixed inset-x-0 bottom-0 grid auto-cols-fr grid-flow-col border-t border-line bg-card sm:hidden">
         {bottomLinks.map((link) => (
           <NavLink key={link.to} to={link.to} end className={bottomClass}>{link.label}</NavLink>
