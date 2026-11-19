@@ -8,7 +8,7 @@ Builds on `PRD.md` and `PRD_ADDONS.md`. Design: `DESIGN_ADMIN.md`. Mockups: canv
 
 - **Web only.** Admin lives at `/admin/*` on the website. The Android app has no admin screens, but admins still get pushes there.
 - **Everyone listed on the Admins page is a full admin.** There are no other roles and no batch coordinators.
-- **No join code or access gate.** Anyone can sign up as before. Admins control what counts by approving each **handle**.
+- **No join code or access gate.** Anyone can sign up as before. Members verify their own Codeforces and CodeChef **handles** (a code in their profile); admins can approve or reject any handle by hand.
 - **Every write is logged** in `audit_log` with who, when, what, and before → after.
 - **Nothing is punished automatically.** Fairness checks and at-risk checks only *flag*; an admin decides.
 - **Rules are data, not code.** Every threshold sits in the `settings` table, editable on the Rules page. Changing one never needs an APK.
@@ -72,7 +72,7 @@ This keeps the behaviour of the current page.
 - **One row per linked handle:** platform, handle, and a short detail (rating or solved count), with a status of **Waiting / Approved / Rejected**, plus a **Not found** chip if the platform says the handle doesn't exist.
   - Waiting → **Approve** / **Reject**.
   - Approved → **Remove approval**, which sets it back to Waiting.
-- The **"Only show handles waiting for approval"** checkbox, a search box, and **Approve all N**.
+- The **"Only show handles not verified yet"** checkbox and a search box. There is no bulk approve; members verify themselves, and Approve / Reject here is a manual override.
 - **Only approved handles** count for leaderboards, attendance and duels. A rejected handle's solves are ignored, and the member sees "Rejected — contact an admin".
 - An admin can change a username at any time, even after the member has used their one self-change. The new username is checked for being unique.
 - **Deactivate:** the member can't sign in, and is hidden from boards and attendance. All history is kept, and reactivating restores everything.

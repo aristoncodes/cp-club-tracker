@@ -29,6 +29,28 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(linked?.handle ?? '');
   const [error, setError] = useState('');
+  const [checking, setChecking] = useState(false);
+  const needsCode = linked && !linked.approved && linked.status !== 'rejected' && (platform.id === 'cf' || platform.id === 'cc');
+  const where = platform.id === 'cf' ? 'first name' : 'name';
+
+  async function verify() {
+    setError('');
+    setChecking(true);
+    try {
+      const { result } = await api<{ result: string }>(`/me/handles/${platform.id}/verify`, 'POST');
+      // CodeChef is read by a background job, so wait up to two minutes for it to finish.
+      let done = result === 'verified';
+      for (let i = 0; i < 12 && !done; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 10_000));
+        done = Boolean((await api<Me>('/me')).handles.find((h) => h.platform === platform.id)?.approved);
+      }
+      if (!done) setError(`We couldn't see ${linked?.verifyCode} in your ${PLATFORM_NAMES[platform.id]} ${where}. Save it there and try again.`);
+      onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not verify.');
+    }
+    setChecking(false);
+  }
 
   async function save() {
     setError('');
@@ -49,7 +71,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
           <Text style={common.bold}>{PLATFORM_NAMES[platform.id]}</Text>
           <Text style={common.small}>{linked ? `@${linked.handle}` : platform.required && (platform.id !== 'cc' || isTracked(me.user.kind, me.user.batchYear, Date.now() / 1000)) ? 'Required' : 'Optional'}</Text>
         </View>
-        {linked ? <Pill tone={linked.status === 'rejected' ? 'pink' : linked.approved ? 'lime' : 'sun'} label={linked.status === 'rejected' ? 'Rejected — contact an admin' : linked.approved ? 'Approved' : 'Waiting for approval'} /> : null}
+        {linked ? <Pill tone={linked.status === 'rejected' ? 'pink' : linked.approved ? 'lime' : 'sun'} label={linked.status === 'rejected' ? 'Rejected — contact an admin' : linked.approved ? 'Verified' : 'Not verified'} /> : null}
         {!editing ? (
           <Pressable accessibilityRole="button" accessibilityLabel={`${linked ? 'Edit' : 'Link'} ${PLATFORM_NAMES[platform.id]}`} hitSlop={12} onPress={() => setEditing(true)}>
             <Text style={common.link}>{linked ? 'Edit' : 'Link'}</Text>
@@ -60,6 +82,12 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
         <View style={common.row}>
           <TextInput style={[common.input, styles.flex, common.mono]} value={value} onChangeText={setValue} autoCapitalize="none" autoCorrect={false} accessibilityLabel={`${PLATFORM_NAMES[platform.id]} handle`} />
           <Button title="Save" disabled={!value.trim()} onPress={save} />
+        </View>
+      ) : null}
+      {needsCode && !editing ? (
+        <View style={styles.verify}>
+          <Text style={styles.verifyText}>To prove this is your account, add <Text style={common.mono}>{linked.verifyCode}</Text> to your {PLATFORM_NAMES[platform.id]} {where}, save it, then verify. You can remove it afterwards.</Text>
+          <Button title={checking ? 'Checking…' : 'Verify'} disabled={checking} onPress={verify} />
         </View>
       ) : null}
       {error ? <Text style={common.error}>{error}</Text> : null}
@@ -217,6 +245,8 @@ const styles = StyleSheet.create({
   platformCode: { color: theme.ink, fontFamily: theme.font.monoBold, fontSize: 13 },
   username: { color: theme.lime, fontFamily: theme.font.monoBold, fontSize: 18 },
   warning: { padding: 12, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.sunLine, backgroundColor: theme.sunTint, color: theme.sunText, fontFamily: theme.font.regular, fontSize: 13 },
+  verify: { gap: 10, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: theme.sunLine, backgroundColor: theme.sunTint },
+  verifyText: { color: theme.sunText, fontFamily: theme.font.regular, fontSize: 13 },
   years: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   year: { flexBasis: '30%', flexGrow: 1, height: 48, borderRadius: 14, borderWidth: 1, borderColor: theme.line, alignItems: 'center', justifyContent: 'center' },
   yearOn: { backgroundColor: theme.lime, borderColor: theme.lime },

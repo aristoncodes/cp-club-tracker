@@ -3,7 +3,7 @@ import type { Bindings } from './auth';
 import { checkBadges } from './badges';
 import { CfError, fetchContestStatus, fetchRatingHistory, fetchUserInfo, fetchUserStatus } from './cf';
 import { checkNextDuel } from './duels';
-import { insertSolves, markHandleBroken } from './records';
+import { insertSolves, reportBrokenHandle } from './records';
 import { nextVirtualRead, recordVirtual } from './virtuals';
 
 const HOUR = 3600;
@@ -15,9 +15,9 @@ const JUDGING_MARGIN = 600;
 const DUEL_READ_SUBMISSIONS = 30;
 const IDLE_WAIT_MS = 2000;
 
-async function reportIfBroken(db: D1Database, err: unknown): Promise<boolean> {
+async function reportIfBroken(env: Bindings, err: unknown): Promise<boolean> {
   const handle = err instanceof CfError ? brokenHandle(err.message) : null;
-  if (handle) await markHandleBroken(db, 'cf', handle).run();
+  if (handle) await reportBrokenHandle(env, 'cf', handle);
   return handle !== null;
 }
 
@@ -51,7 +51,7 @@ async function syncCfHandle(env: Bindings, row: CfHandleRow, now: number): Promi
     await db.prepare(`UPDATE handles SET synced_at = ? WHERE user_id = ? AND platform = 'cf'`).bind(now, row.userId).run();
     return submissions;
   } catch (err) {
-    if (!(await reportIfBroken(db, err))) console.error(`Solve sync failed for ${row.handle}:`, err);
+    if (!(await reportIfBroken(env, err))) console.error(`Solve sync failed for ${row.handle}:`, err);
     return [];
   }
 }
@@ -89,7 +89,8 @@ export async function runCfQueue(env: Bindings, now: number): Promise<void> {
   }
 }
 
-export async function refreshRatings(db: D1Database): Promise<void> {
+export async function refreshRatings(env: Bindings): Promise<void> {
+  const db = env.DB;
   const { results } = await db
     .prepare(
       `SELECT h.user_id AS userId, h.handle FROM handles h JOIN users u ON u.id = h.user_id
@@ -101,7 +102,7 @@ export async function refreshRatings(db: D1Database): Promise<void> {
   try {
     info = await fetchUserInfo(results.map((r) => r.handle));
   } catch (err) {
-    if (await reportIfBroken(db, err)) return;
+    if (await reportIfBroken(env, err)) return;
     throw err;
   }
   const ratings = new Map(info.map((user) => [user.handle.toLowerCase(), user.rating ?? null]));

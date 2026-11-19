@@ -1,0 +1,24 @@
+name: verify-handle
+on:
+  workflow_dispatch:
+    inputs:
+      handle:
+        required: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile --filter jobs...
+      - run: pnpm --filter jobs verify-handle
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          HANDLE: ${{ inputs.handle }}

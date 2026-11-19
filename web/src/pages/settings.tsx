@@ -23,6 +23,28 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
   const [editing, setEditing] = useState(!linked);
   const [value, setValue] = useState(linked?.handle ?? '');
   const [error, setError] = useState('');
+  const [checking, setChecking] = useState(false);
+  const needsCode = linked && !linked.approved && linked.status !== 'rejected' && (platform.id === 'cf' || platform.id === 'cc');
+  const where = platform.id === 'cf' ? 'first name' : 'name';
+
+  async function verify() {
+    setError('');
+    setChecking(true);
+    try {
+      const { result } = await api<{ result: string }>(`/me/handles/${platform.id}/verify`, 'POST');
+      // CodeChef is read by a background job, so wait up to two minutes for it to finish.
+      let done = result === 'verified';
+      for (let i = 0; i < 12 && !done; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 10_000));
+        done = Boolean((await api<Me>('/me')).handles.find((h) => h.platform === platform.id)?.approved);
+      }
+      if (!done) setError(`We couldn't see ${linked?.verifyCode} in your ${platform.label} ${where}. Save it there and try again.`);
+      onChange();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+    setChecking(false);
+  }
 
   async function save() {
     setError('');
@@ -50,8 +72,16 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
       ) : (
         <div className="flex flex-wrap items-center gap-2">
           <span className="handle">@{linked?.handle}</span>
-          <Pill tone={linked?.status === 'rejected' ? 'pink' : linked?.approved ? 'lime' : 'sun'}>{linked?.status === 'rejected' ? 'Rejected — contact an admin' : linked?.approved ? 'Approved' : 'Waiting for approval'}</Pill>
+          <Pill tone={linked?.status === 'rejected' ? 'pink' : linked?.approved ? 'lime' : 'sun'}>{linked?.status === 'rejected' ? 'Rejected — contact an admin' : linked?.approved ? 'Verified' : 'Not verified'}</Pill>
           <button className="min-h-11 cursor-pointer px-2 font-bold text-lime hover:underline" onClick={() => setEditing(true)}>Edit</button>
+        </div>
+      )}
+      {needsCode && !editing && (
+        <div className="flex w-full flex-wrap items-center gap-3 rounded-2xl border border-sun-line bg-sun-tint p-3 text-sm text-sun-text">
+          <p className="min-w-0 flex-1 basis-56">
+            To prove this is your account, add <span className="handle font-bold">{linked.verifyCode}</span> to your {platform.label} {where}, save it, then verify. You can remove it afterwards.
+          </p>
+          <Button disabled={checking} onClick={verify}>{checking ? 'Checking…' : 'Verify'}</Button>
         </div>
       )}
       {error && <div className="w-full"><ErrorText>{error}</ErrorText></div>}

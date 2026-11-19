@@ -71,7 +71,6 @@ export function Overview() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="display text-lg">Action inbox</h2>
           <Segmented label="Inbox type" value={tab} onChange={setTab} tabs={[{ id: 'handles', label: <>Handles <span className="num">{inbox.handles.length}</span></> }, { id: 'reasons', label: <>Reasons <span className="num">{inbox.reasons.length}</span></> }, { id: 'flags', label: <>Flags <span className="num">{inbox.flags.length}</span></> }]} />
-          {tab === 'handles' && inbox.handles.length > 0 && <AButton small disabled={act.busy} onClick={() => act.run(() => api('/admin/handles/approve-all', 'POST'))}>Approve all handles</AButton>}
         </div>
         {act.error && <ErrorText>{act.error}</ErrorText>}
         {tab === 'handles' && inbox.handles.length === 0 && <p className="text-muted">Nothing waiting. Every handle is reviewed ✓</p>}

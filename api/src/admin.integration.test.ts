@@ -126,12 +126,25 @@ describe('admin', { timeout: 120_000 }, () => {
     expect(await dayPoints(CAL)).toBe(earned);
   });
 
+
+  it('1b. LeetCode counts when linked, CodeChef counts only once its profile name shows the code', async () => {
+    expect((await call(CAL, '/me/handles/leetcode', 'PUT', { handle: 'cal_lc' })).status).toBe(200);
+    expect(query<{ status: string }>(`SELECT status FROM handles WHERE user_id = ${CAL} AND platform = 'leetcode'`)[0].status).toBe('approved');
+    expect((await call(CAL, '/me/handles/cc', 'PUT', { handle: 'cal_cc' })).status).toBe(200);
+    const [row] = query<{ status: string; verify_code: string }>(`SELECT status, verify_code FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`);
+    expect(row.status).toBe('waiting');
+    expect(row.verify_code).toMatch(/^oops-[0-9a-f]{6}$/);
+    await ingest('/verify', { handle: 'cal_cc', name: 'Cal Someone' });
+    expect(query<{ status: string }>(`SELECT status FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`)[0].status).toBe('waiting');
+    await ingest('/verify', { handle: 'cal_cc', name: `Cal ${row.verify_code.toUpperCase()}` });
+    expect(query<{ status: string }>(`SELECT status FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`)[0].status).toBe('approved');
+  });
   it('2. admin endpoints refuse students, and each write adds its audit row', async () => {
     const routes: [string, string][] = [
       ['GET', '/admin/badges'], ['GET', '/admin/overview'], ['GET', '/admin/members'], ['GET', '/admin/students'], ['GET', '/admin/audit'], ['GET', '/admin/at-risk'],
       ['GET', '/admin/attendance'], ['GET', '/admin/exam-weeks'], ['GET', '/admin/contests'], ['GET', '/admin/sessions'], ['GET', '/admin/engagement'], ['GET', '/admin/fairness'],
       ['GET', '/admin/seasons'], ['GET', '/admin/reports'], ['GET', '/admin/reports.csv'], ['GET', '/admin/rules'], ['GET', '/admin/digest'], ['GET', '/admin/announcements'],
-      ['POST', '/admin/handles/approve-all'], ['PUT', '/admin/rules'], ['POST', '/admin/seasons'], ['POST', '/admin/sessions'], ['POST', '/admin/exam-weeks'], ['POST', '/admin/contests'], ['POST', '/admin/virtuals'],
+      ['PUT', '/admin/rules'], ['POST', '/admin/seasons'], ['POST', '/admin/sessions'], ['POST', '/admin/exam-weeks'], ['POST', '/admin/contests'], ['POST', '/admin/virtuals'],
     ];
     for (const [method, path] of routes) expect([path, (await call(ANA, path, method, method === 'GET' ? undefined : {})).status]).toEqual([path, 403]);
 

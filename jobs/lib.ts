@@ -8,7 +8,15 @@ export async function politeFetch(url: string, gapMs = 1000, init: RequestInit =
   const wait = (lastCall.get(host) ?? 0) + gapMs - Date.now();
   if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
   lastCall.set(host, Date.now());
-  return fetch(url, { ...init, headers: { 'User-Agent': USER_AGENT, ...init.headers } });
+  const send = () => fetch(url, { ...init, headers: { 'User-Agent': USER_AGENT, ...init.headers } });
+  // A dropped connection (ECONNRESET, ETIMEDOUT) is retried once after another gap; HTTP error statuses are left to the caller.
+  try {
+    return await send();
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, gapMs));
+    lastCall.set(host, Date.now());
+    return send();
+  }
 }
 
 function ingestUrl(path: string): string {

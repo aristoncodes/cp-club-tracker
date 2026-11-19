@@ -10,6 +10,7 @@
     "sync-problemset": "tsx --env-file-if-exists=.env sync-problemset.ts",
     "participation": "tsx --env-file-if-exists=.env participation.ts",
     "backfill": "tsx --env-file-if-exists=.env backfill.ts",
+    "verify-handle": "tsx --env-file-if-exists=.env verify-handle.ts",
     "health": "tsx --env-file-if-exists=.env health.ts"
   },
   "devDependencies": {

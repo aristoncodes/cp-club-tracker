@@ -27,6 +27,6 @@ export function fetchRatingHistory(handle: string): Promise<{ contestId: number;
   return cfGet(`user.rating?handle=${encodeURIComponent(handle)}`);
 }
 
-export function fetchUserInfo(handles: string[]): Promise<{ handle: string; rating?: number }[]> {
+export function fetchUserInfo(handles: string[]): Promise<{ handle: string; rating?: number; firstName?: string; lastName?: string; organization?: string }[]> {
   return cfGet(`user.info?handles=${handles.map(encodeURIComponent).join(';')}`);
 }

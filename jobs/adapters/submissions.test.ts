@@ -11,7 +11,7 @@ import cfSubmissions from '../fixtures/cf-submissions.json';
 import lcQuestion from '../fixtures/leetcode-question.json';
 import lcRecent from '../fixtures/leetcode-recent.json';
 import { parseSubmissions as parseAtcoder, ratingFromHistory } from './atcoder';
-import { parseRating as ccRating, parseRecent, parseTime, solveFrom as ccSolve, tookPartLive as ccTookPart } from './cc';
+import { parseName as ccName, parseRating as ccRating, parseRecent, parseTime, solveFrom as ccSolve, tookPartLive as ccTookPart } from './cc';
 import * as cf from './cf';
 import { parseSubmissions as parseCf, tookPartLive as cfTookPart } from './cf';
 import { parseRecentAc, solveFrom as lcSolve } from './leetcode';
@@ -194,5 +194,12 @@ describe('ratings', () => {
   it('takes the last rated AtCoder contest', () => {
     expect(ratingFromHistory([{ IsRated: true, NewRating: 900 }, { IsRated: true, NewRating: 1100 }, { IsRated: false, NewRating: 0 }])).toBe(1100);
     expect(ratingFromHistory([])).toBeNull();
+  });
+});
+
+describe('cc profile name', () => {
+  it('reads the name shown on a profile, and nothing from a challenge page', () => {
+    expect(ccName('<div><h1 class="h2-style">Ada Lovelace oops-a1b2c3</h1>')).toBe('Ada Lovelace oops-a1b2c3');
+    expect(ccName('<html>Just a moment...</html>')).toBe('');
   });
 });

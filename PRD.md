@@ -24,7 +24,7 @@ The college competitive programming club (40–50 students across all years) has
 ## Accounts
 
 - **Sign in:** Google only. The same button signs up new members, who then fill in one page (name, username, year, handles) and go straight to Home.
-- **Approval never blocks the app.** Until a coordinator approves their handles, members can use everything; they just aren't tracked or on the leaderboard. Admins may leave handles empty.
+- **Verification never blocks the app.** Until a member verifies their handles, they can use everything; they just aren't tracked or on the leaderboard. Admins may leave handles empty.
 - **Username:** required on that page. Lowercase letters, numbers, `_` and `.`, 3–20 characters, unique, with a short reserved list. Changeable once by the user; after that only an admin can change it.
 - **Year:** chosen as 1st to 4th year, **Alumni** or **Coach**; the joining year is stored, so everyone moves up on 1 August and 4th years become Alumni then. Members pick it themselves.
 - **Coaches and alumni** are on the leaderboards, feed and profiles but aren't tracked for attendance: no contest reminders, RSVPs, Present/Absent or reasons, and they're left out of at-risk. They need only a Codeforces handle; CodeChef is optional for them.
@@ -94,7 +94,7 @@ The college competitive programming club (40–50 students across all years) has
 ## Handles
 
 - Each student must link a Codeforces and a CodeChef handle to finish onboarding; coaches and alumni need only Codeforces; admins may skip this. Other platforms are optional.
-- An admin approves each handle once; it stays approved for good. Only linking a different handle needs a new approval. Unapproved handles are not tracked.
+- **Members verify their own handles.** After linking, the app shows a code like `oops-a1b2c3`. For Codeforces it goes in the first name, for CodeChef in the name; the member taps **Verify** and it counts from then on, and the code can be removed. Codeforces answers at once; CodeChef takes about a minute. AtCoder and LeetCode count as soon as they're linked, with no check. A verified handle stays verified; linking a different handle needs verifying again. Admins can still approve or reject a handle by hand, which overrides verification. Unverified handles are not tracked.
 - One handle per platform per student. A handle can't be linked by two students.
 
 ## Out of scope

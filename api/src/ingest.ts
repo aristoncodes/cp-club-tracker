@@ -4,7 +4,8 @@ import type { HealthReport, IngestContest, IngestRating, IngestSolve } from 'sha
 import type { AppEnv } from './auth';
 import { checkBadges } from './badges';
 import { createUpsolves, type ContestProblem } from './practice';
-import { finishContest, insertSolves, markHandleBroken } from './records';
+import { finishContest, insertSolves, reportBrokenHandle } from './records';
+import { finishCcVerify } from './verify';
 
 const STUCK_CONTEST_SECONDS = 6 * 3600;
 
@@ -100,7 +101,7 @@ ingestRoutes.post('/participation', async (c) => {
   if (!contest) return c.json({ error: 'Contest not found' }, 404);
   if (contest.stage === 4) return c.json({ ok: true });
 
-  if (brokenHandles.length) await c.env.DB.batch(brokenHandles.map((h) => markHandleBroken(c.env.DB, platform, h)));
+  for (const handle of brokenHandles) await reportBrokenHandle(c.env, platform, handle);
   if (platform === 'cf') await createUpsolves(c.env.DB, contest, problems, altProblems, solved);
   await finishContest(c.env, contest, presentHandles);
   const { results: present } = await c.env.DB.prepare(`SELECT user_id AS id FROM attendance WHERE contest_id = ? AND status = 'present'`).bind(contest.id).all<{ id: number }>();
@@ -151,6 +152,11 @@ ingestRoutes.post('/cf-history', async (c) => {
   if (done) statements.push(db.prepare(`UPDATE handles SET history_imported_at = unixepoch() WHERE user_id = ? AND platform = 'cf'`).bind(owner.userId));
   await db.batch(statements);
   return c.json({ ok: true });
+});
+
+ingestRoutes.post('/verify', async (c) => {
+  const { handle, name } = await c.req.json<{ handle: string; name: string }>();
+  return c.json({ verified: await finishCcVerify(c.env, handle, name) });
 });
 
 ingestRoutes.get('/handles', async (c) => {

@@ -270,7 +270,7 @@ export async function runCron(env: Bindings, now: number): Promise<void> {
   if (isContestJobTick(now)) await attempt('contest job', () => dispatchWorkflow(env, 'sync-contests.yml'));
   if (isHealthJobTick(now)) await attempt('health job', () => dispatchWorkflow(env, 'health.yml'));
   if (isRatingRefreshTick(now)) {
-    await attempt('rating refresh', () => refreshRatings(env.DB));
+    await attempt('rating refresh', () => refreshRatings(env));
     await attempt('problem of the day', () => pickPotd(env.DB, istDay(now), now));
   }
   // The nightly admin jobs get these minutes to themselves, so the two costs don't add up. Solve sync catches up next minute.

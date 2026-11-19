@@ -207,7 +207,7 @@ The contest steps make no Codeforces calls. Other Codeforces calls in a run are 
    **At 03:30, 07:30, 11:30 and 15:30 UTC (9 AM, 1 PM, 5 PM, 9 PM IST):** meal-time push to users with `notify_meals = 1`, lines from `api/src/meal-pushes.ts`, chosen by IST day number. People the 15:30 streak reminder goes to skip dinner's line.
 7. **GitHub jobs:** because GitHub's own schedules proved unreliable, the Worker dispatches `sync-solves.yml` every 5 minutes (the workflow's concurrency group keeps at most one run and one queued) and `sync-contests.yml` every 6 hours.
 
-8. **Health check:** `health.yml` runs on GitHub's own schedule at 01:00 UTC and is also dispatched by the Worker at 00:30 UTC, so one still fires if the other fails. `jobs/health.ts` reads `GET /api/ingest/health` and recent GitHub runs. Any problem fails the run, and GitHub's failure email is the alert. It covers: a stalled Codeforces fetch, no solves on a platform with 5+ students for 14 days, no upcoming contests, attendance unfinished 6 hours after a contest, broken handles, push errors from Expo in the last 24 hours (other than `DeviceNotRegistered`, stored in `push_errors`), and late or failing jobs. It can't read Cloudflare's CPU or D1 usage; a Worker over its CPU limit shows up as the stalled-fetch problem.
+8. **Health check:** `health.yml` runs on GitHub's own schedule at 01:00 UTC and is also dispatched by the Worker at 00:30 UTC, so one still fires if the other fails. `jobs/health.ts` reads `GET /api/ingest/health` and recent GitHub runs. Any problem fails the run, and GitHub's failure email is the alert. It covers: a stalled Codeforces fetch, no solves on a platform with 5+ students for 14 days, no upcoming contests, attendance unfinished 6 hours after a contest, broken handles, push errors from Expo in the last 24 hours (other than `DeviceNotRegistered`, stored in `push_errors`), and late or failing jobs. When a handle is first marked broken, its owner gets one push asking them to update it. Scraper fetches retry once on a dropped connection. It can't read Cloudflare's CPU or D1 usage; a Worker over its CPU limit shows up as the stalled-fetch problem.
 
 Every push checks its own preference column: reminder `notify_hour`, RSVP `notify_rsvp`, results `notify_result`, streak `notify_streak`, meal-time `notify_meals`.
 
@@ -232,7 +232,8 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | POST | /me/onboarding | student | Marks onboarding done. Needs a username, a year and Codeforces and CodeChef handles (admins may skip handles) |
 | PATCH | /me/username | student | `{ username }`. 409 if taken, 403 if the one change is used |
 | PATCH | /me/notifications | student | Any of `{ notifyHour, notifyRsvp, notifyResult, notifyStreak }` |
-| PUT | /me/handles/:platform | student | `{ handle }`. Clears `approved_at` only if the handle is different from the current one. 409 if the handle is taken |
+| PUT | /me/handles/:platform | student | `{ handle }`. A different handle clears `approved_at`, goes back to `waiting` and gets a new `verify_code` (`oops-` + 6 hex). AtCoder and LeetCode are approved at once. 409 if the handle is taken |
+| POST | /me/handles/:platform/verify | student | `cf`: reads `user.info` and approves if the code is in the first name, last name or organization, else 400 with what to do. `cc`: dispatches `verify-handle.yml` and returns `{ result: 'checking' }`; the app polls `/me`. Approving dispatches `backfill.yml` |
 | POST | /me/push-token | student | `{ token, kind }` |
 | GET | /contests/upcoming | student | Next 10 counted contests + my RSVP and length, plus how many said yes out of how many can take part. Counts only, never who |
 | GET | /contests/past?before= | student | 20 past counted contests with my status, RSVP and reason |
@@ -255,6 +256,7 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | POST | /ingest/solves | secret | `[{ platform, handle, problemId, name?, rating?, tags?, url?, solvedAt, live }]`. The Worker maps handle → user, computes points and inserts with `OR IGNORE` |
 | POST | /ingest/participation | secret | `{ platform, externalId, presentHandles: string[], brokenHandles?: string[] }` |
 | GET | /ingest/handles?platform= | secret | Approved handles for the adapters to fetch |
+| POST | /ingest/verify | secret | `{ handle, name }`: approves the waiting CodeChef handle if `name` contains its code |
 
 - Ingest routes check `X-Ingest-Secret` against `INGEST_SECRET`.
 - Batches are processed with `D1.batch()`.
@@ -268,6 +270,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 | `sync-contests.ts` | Every 6 hours, dispatched by the Worker | CF `contest.list?gym=false` (future contests only) + CodeChef upcoming contests → apply `countsForAttendance` and parallel-round merge → `/ingest/contests` |
 | `health.ts` | Daily | Fails the run with a list of problems if anything looks wrong |
 | `sync-solves.ts` | Every 5 minutes, dispatched by the Worker | cc, atcoder, leetcode (and cf as a backstop in the first run of each hour) accepted submissions from the last 48 hours for approved handles → `/ingest/solves`, one post per handle |
+| `verify-handle.ts` | `workflow_dispatch` (input `handle`) | CodeChef blocks Cloudflare, so this reads the profile name and posts it to `/ingest/verify`, which approves the handle if it holds the member's code |
 | `backfill.ts` | `workflow_dispatch` (inputs `platform`, `handle`) | On approval: up to 6 months of accepted submissions → `/ingest/solves`, 50 at a time. Codeforces and AtCoder give full history; CodeChef gives about the last page and LeetCode the last 20 |
 | `participation.ts` | `workflow_dispatch` (inputs `platform`, `contest`, `alt`, `start`, `end`) | **cf:** `contest.status?contestId=…&handle=…` for each handle, and for `alt`; any submission with participantType `CONTESTANT` or `OUT_OF_COMPETITION` → present. A handle Codeforces says doesn't exist is reported in `brokenHandles`. **cc:** each handle's recent submissions; any submission linked to the contest or one of its divisions (`START263`, `START263A`…) with a time inside the contest → present. Any other failure stops the run without posting, so nobody is wrongly marked absent → `/ingest/participation` |
 
@@ -618,7 +621,6 @@ All need an admin session, validate input and write through `adminWrite`.
 | GET, PUT | /members/:id, /members/:id/notes | Drawer data; notes (a changed, non-empty note pushes to the member) |
 | GET | /students | Cards with handles; the page filters them |
 | PATCH | /handles/:userId/:platform | `{ status }`: approve, reject or back to waiting |
-| POST | /handles/approve-all | |
 | PATCH | /users/:id | `{ active?, username?, role? }`; role refuses yourself, the last admin and `ADMIN_EMAILS` |
 | GET, POST | /admins | List; add by email, 404 "No account with this email" |
 | GET | /audit?area=&before= | 50 per page |

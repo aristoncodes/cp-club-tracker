@@ -59,8 +59,16 @@ export async function insertSolves(db: D1Database, solves: IngestSolve[]): Promi
   return [...new Set(solvers.filter((userId, index): userId is number => userId !== null && results[index].meta.changes > 0))];
 }
 
-export function markHandleBroken(db: D1Database, platform: string, handle: string): D1PreparedStatement {
-  return db.prepare('UPDATE handles SET broken = 1 WHERE platform = ? AND lower(handle) = lower(?)').bind(platform, handle);
+// Marks a handle broken and tells its owner, only the first time, so a handle that stays broken doesn't push again.
+export async function reportBrokenHandle(env: Bindings, platform: string, handle: string): Promise<void> {
+  const { results } = await env.DB.prepare('UPDATE handles SET broken = 1 WHERE platform = ? AND lower(handle) = lower(?) AND broken = 0 RETURNING user_id AS userId')
+    .bind(platform, handle)
+    .all<{ userId: number }>();
+  await pushUsers(
+    env,
+    'handle',
+    results.map(({ userId }) => ({ userId, title: 'Your handle is wrong', body: `We can't find "${handle}" on ${platform === 'cf' ? 'Codeforces' : platform}. Please update it in your profile.`, data: { path: '/profile' } })),
+  );
 }
 
 export function adjustmentSum(user: string, from: string, to?: string): string {

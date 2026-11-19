@@ -67,6 +67,14 @@ export async function fetchRating(handle: string): Promise<number | null> {
   return parseRating(await (await politeFetch(`${BASE}/users/${encodeURIComponent(handle)}`, CC_GAP_MS)).text());
 }
 
+export function parseName(html: string): string {
+  return html.match(/<h1 class="h2-style">\s*([^<]*)/)?.[1].trim() ?? '';
+}
+
+export async function fetchName(handle: string): Promise<string> {
+  return parseName(await (await politeFetch(`${BASE}/users/${encodeURIComponent(handle)}`, CC_GAP_MS)).text());
+}
+
 export function parseTime(text: string, now: number): number {
   const relative = text.match(/^(\d+) (sec|min|hour)s? ago$/);
   if (relative) return now - Number(relative[1]) * UNIT_SECONDS[relative[2]];

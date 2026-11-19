@@ -5,7 +5,7 @@ import type { MemberKind } from 'shared/batch';
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const SESSION_KEY = 'session';
 
-export type Handle = { platform: string; handle: string; approved: number; status?: string };
+export type Handle = { platform: string; handle: string; approved: number; status?: string; verifyCode?: string };
 
 export type User = {
   id: number;

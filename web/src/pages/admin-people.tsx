@@ -9,7 +9,7 @@ import { AButton, ATable, Chip, fieldClass, Modal, PageHeader, PlatformChip, Seg
 type AdminUser = { id: number; email: string; name: string; username: string | null; batchYear: number | null; kind: MemberKind; role: string; active: number; cfRating: number | null };
 type AdminHandle = { userId: number; platform: string; handle: string; status: string; broken: number; solved: number };
 
-const STATUS_CHIP = { approved: ['ok', 'Approved'], waiting: ['wait', 'Waiting'], rejected: ['problem', 'Rejected'] } as const;
+const STATUS_CHIP = { approved: ['ok', 'Verified'], waiting: ['wait', 'Not verified'], rejected: ['problem', 'Rejected'] } as const;
 
 function UsernameModal({ user, onClose, onSaved }: { user: AdminUser; onClose: () => void; onSaved: () => void }) {
   const [value, setValue] = useState(user.username ?? '');
@@ -49,18 +49,17 @@ export function Students() {
   const now = Date.now() / 1000;
   const q = query.trim().toLowerCase();
   const handlesOf = (id: number) => data?.handles.filter((h) => h.userId === id) ?? [];
-  const waiting = data?.handles.filter((h) => h.status === 'waiting' && data.users.find((u) => u.id === h.userId)?.active) ?? [];
   const users = (data?.users ?? []).filter((u) => (!onlyWaiting || handlesOf(u.id).some((h) => h.status === 'waiting')) && (!q || `${u.name} ${u.email} ${u.username} ${handlesOf(u.id).map((h) => h.handle).join(' ')}`.toLowerCase().includes(q)));
 
   const setStatus = (handle: AdminHandle, status: string) => act.run(() => api(`/admin/handles/${handle.userId}/${handle.platform}`, 'PATCH', { status }));
 
   return (
     <>
-      <PageHeader title="Students & handles" line="Only approved handles count for leaderboards, attendance and duels." action={waiting.length > 0 && <AButton disabled={act.busy} onClick={() => act.run(() => api('/admin/handles/approve-all', 'POST'))}>Approve all <span className="num">{waiting.length}</span></AButton>} />
+      <PageHeader title="Students & handles" line="Members verify their own Codeforces and CodeChef handles. Only verified handles count for leaderboards, attendance and duels; approve or reject here to override." />
       <div className="flex flex-wrap items-center gap-2">
         <input className={`${fieldClass} max-w-[360px]`} placeholder="Search names, emails, handles" aria-label="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
         <label className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 font-bold ${onlyWaiting ? 'border-lime-line bg-lime-tint' : 'border-line'}`}>
-          <input type="checkbox" checked={onlyWaiting} onChange={(e) => setOnlyWaiting(e.target.checked)} /> Only show handles waiting for approval
+          <input type="checkbox" checked={onlyWaiting} onChange={(e) => setOnlyWaiting(e.target.checked)} /> Only show handles not verified yet
         </label>
       </div>
       {(error || act.error) && <ErrorText>{error || act.error}</ErrorText>}

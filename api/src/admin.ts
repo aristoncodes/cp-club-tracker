@@ -75,20 +75,6 @@ adminRoutes.patch('/handles/:userId/:platform', async (c) => {
   return c.json({ ok: true });
 });
 
-adminRoutes.post('/handles/approve-all', async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT h.user_id AS userId, h.platform, h.handle FROM handles h JOIN users u ON u.id = h.user_id WHERE h.status = 'waiting' AND u.active = 1`,
-  ).all<{ userId: number; platform: string; handle: string }>();
-  if (!results.length) return c.json({ approved: 0 });
-  await adminWrite(
-    c,
-    results.map((h) => ({ area: 'handles' as const, action: 'set handle to approved', target: `${h.platform}:${h.handle}`, before: 'waiting', after: 'approved' })),
-    results.map((h) => setHandleStatus(c, h.userId, h.platform, 'approved')),
-  );
-  for (const h of results) backfill(c, h.platform, h.handle);
-  return c.json({ approved: results.length });
-});
-
 adminRoutes.patch('/users/:id', async (c) => {
   const id = Number(c.req.param('id'));
   const db = c.env.DB;
