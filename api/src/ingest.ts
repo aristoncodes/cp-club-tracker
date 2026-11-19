@@ -157,8 +157,8 @@ ingestRoutes.post('/cf-history', async (c) => {
 });
 
 ingestRoutes.post('/verify', async (c) => {
-  const { handle, name } = await c.req.json<{ handle: string; name: string }>();
-  return c.json({ verified: await finishCcVerify(c.env, handle, name) });
+  const { handle, compileErrors } = await c.req.json<{ handle: string; compileErrors: { problemCode: string; at: number }[] }>();
+  return c.json({ verified: await finishCcVerify(c.env, handle, compileErrors) });
 });
 
 // due=1 is the solve sync: members who solved or linked in the last week every run, everyone else once a day.

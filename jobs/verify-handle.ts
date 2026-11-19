@@ -4,6 +4,10 @@ import { postIngest } from './lib';
 const { HANDLE: handle } = process.env;
 if (!handle) throw new Error('HANDLE is required');
 
-const name = await cc.fetchName(handle);
-await postIngest('/verify', { handle, name });
-console.log(`cc ${handle}: profile name read`);
+const now = Math.floor(Date.now() / 1000);
+const compileErrors = cc
+  .parseRecent(await cc.fetchRecent(handle), now)
+  .filter((s) => s.compileError)
+  .map((s) => ({ problemCode: s.problemCode, at: s.solvedAt }));
+await postIngest('/verify', { handle, compileErrors });
+console.log(`cc ${handle}: ${compileErrors.length} recent compilation errors sent`);

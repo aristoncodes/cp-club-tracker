@@ -5,7 +5,8 @@ import type { Period } from 'shared/types';
 import { canFinishOnboarding, handleFromInput, normalizeUsername, usernameError } from './accounts';
 import { requireUser, type AppEnv } from './auth';
 import { adjustmentSum, trackedMember } from './records';
-import { approveHandle, AUTO_VERIFIED, NEW_CODE_SQL, verifyHandle, VerifyError } from './verify';
+import { getSettings } from './settings';
+import { approveHandle, AUTO_VERIFIED, startVerify, verifyHandle, VerifyError } from './verify';
 import { isTracked } from 'shared/batch';
 
 const PLATFORMS = ['cf', 'cc', 'atcoder', 'leetcode'];
@@ -97,10 +98,13 @@ studentRoutes.use(requireUser);
 studentRoutes.get('/me', async (c) => {
   const user = c.get('user');
   const now = Math.floor(Date.now() / 1000);
+  const { verify_minutes: verifyMinutes } = await getSettings(c.env.DB, now);
   const [handles, pendingReasons, days, unread, newBadges] = await c.env.DB.batch([
     c.env.DB.prepare(
-      `SELECT platform, handle, status, approved_at IS NOT NULL AS approved, verify_code AS verifyCode FROM handles WHERE user_id = ?`,
-    ).bind(user.id),
+      `SELECT h.platform, h.handle, h.status, h.approved_at IS NOT NULL AS approved, h.verify_started_at + ? * 60 AS verifyDeadline,
+              p.problem_id AS verifyProblem, p.name AS verifyProblemName, p.url AS verifyProblemUrl
+       FROM handles h LEFT JOIN problems p ON p.platform = h.platform AND p.problem_id = h.verify_problem WHERE h.user_id = ?`,
+    ).bind(verifyMinutes, user.id),
     c.env.DB.prepare(
       `SELECT c.id, c.name FROM attendance a JOIN contests c ON c.id = a.contest_id
        WHERE a.user_id = ? AND a.status = 'absent' AND a.reason_type IS NULL AND c.counts = 1
@@ -194,14 +198,15 @@ studentRoutes.put('/me/handles/:platform', async (c) => {
   if (!handle) return c.json({ error: 'Handle is required' }, 400);
   try {
     await c.env.DB.prepare(
-      `INSERT INTO handles (user_id, platform, handle, verify_code) VALUES (?, ?, ?, ${NEW_CODE_SQL})
+      `INSERT INTO handles (user_id, platform, handle) VALUES (?, ?, ?)
        ON CONFLICT (user_id, platform) DO UPDATE SET
          handle = excluded.handle,
          approved_at = CASE WHEN handle = excluded.handle THEN approved_at END,
          broken = CASE WHEN handle = excluded.handle THEN broken ELSE 0 END,
          synced_at = CASE WHEN handle = excluded.handle THEN synced_at END,
          history_imported_at = CASE WHEN handle = excluded.handle THEN history_imported_at END,
-         verify_code = CASE WHEN handle = excluded.handle THEN verify_code ELSE excluded.verify_code END,
+         verify_problem = CASE WHEN handle = excluded.handle THEN verify_problem END,
+         verify_started_at = CASE WHEN handle = excluded.handle THEN verify_started_at END,
          status = CASE WHEN handle = excluded.handle THEN status ELSE 'waiting' END`,
     )
       .bind(c.get('user').id, platform, handle)
@@ -214,6 +219,16 @@ studentRoutes.put('/me/handles/:platform', async (c) => {
   }
   if (AUTO_VERIFIED.includes(platform)) await approveHandle(c.env, c.get('user').id, platform);
   return c.json({ ok: true });
+});
+
+studentRoutes.post('/me/handles/:platform/verify/start', async (c) => {
+  try {
+    await startVerify(c.env, c.get('user').id, c.req.param('platform'));
+    return c.json({ ok: true });
+  } catch (err) {
+    if (err instanceof VerifyError) return c.json({ error: err.message }, 400);
+    throw err;
+  }
 });
 
 studentRoutes.post('/me/handles/:platform/verify', async (c) => {

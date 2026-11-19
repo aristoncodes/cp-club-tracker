@@ -4,7 +4,16 @@ import type { MemberKind } from 'shared/batch';
 const API_URL = import.meta.env.VITE_API_URL;
 const SESSION_KEY = 'session';
 
-export type Handle = { platform: string; handle: string; approved: number; status?: string; verifyCode?: string };
+export type Handle = {
+  platform: string;
+  handle: string;
+  approved: number;
+  status?: string;
+  verifyDeadline?: number | null;
+  verifyProblem?: string | null;
+  verifyProblemName?: string | null;
+  verifyProblemUrl?: string | null;
+};
 export type User = {
   id: number;
   email: string;

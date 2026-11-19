@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { isTracked, MEMBER_CHOICES, memberChoice, memberFromChoice } from 'shared/batch';
 import { api, clearSession, type Me } from '../lib/api';
 import { Button, common, Pill, platformColor, PLATFORM_NAMES, ScreenHeader, Toggle } from '../lib/ui';
@@ -24,14 +24,36 @@ const SWITCHES = [
   { key: 'notifyRecap', title: 'Weekly recap', detail: 'Your week, on Sunday at 9 PM.' },
 ] as const;
 
+const formatLeft = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+
+function useSecondsLeft(deadline?: number | null): number {
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  useEffect(() => {
+    if (!deadline) return;
+    const timer = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [deadline]);
+  return deadline ? Math.max(0, deadline - now) : 0;
+}
+
 function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[number]; me: Me; onChange: () => void }) {
   const linked = me.handles.find((h) => h.platform === platform.id);
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(linked?.handle ?? '');
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
-  const needsCode = linked && !linked.approved && linked.status !== 'rejected' && (platform.id === 'cf' || platform.id === 'cc');
-  const where = platform.id === 'cf' ? 'first name' : 'name';
+  const needsVerify = linked && !linked.approved && linked.status !== 'rejected' && (platform.id === 'cf' || platform.id === 'cc');
+  const left = useSecondsLeft(linked?.verifyDeadline);
+
+  async function start() {
+    setError('');
+    try {
+      await api(`/me/handles/${platform.id}/verify/start`, 'POST');
+      onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start.');
+    }
+  }
 
   async function verify() {
     setError('');
@@ -44,7 +66,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
         await new Promise((resolve) => setTimeout(resolve, 10_000));
         done = Boolean((await api<Me>('/me')).handles.find((h) => h.platform === platform.id)?.approved);
       }
-      if (!done) setError(`We couldn't see ${linked?.verifyCode} in your ${PLATFORM_NAMES[platform.id]} ${where}. Save it there and try again.`);
+      if (!done) setError(`No compilation error on ${linked?.verifyProblem} in time. Submit one, or start again for a new problem.`);
       onChange();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not verify.');
@@ -84,10 +106,22 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
           <Button title="Save" disabled={!value.trim()} onPress={save} />
         </View>
       ) : null}
-      {needsCode && !editing ? (
+      {needsVerify && !editing ? (
         <View style={styles.verify}>
-          <Text style={styles.verifyText}>To prove this is your account, add <Text style={common.mono}>{linked.verifyCode}</Text> to your {PLATFORM_NAMES[platform.id]} {where}, save it, then verify. You can remove it afterwards.</Text>
-          <Button title={checking ? 'Checking…' : 'Verify'} disabled={checking} onPress={verify} />
+          {linked.verifyProblem ? (
+            <Text style={styles.verifyText}>
+              Submit any code that gives a <Text style={common.bold}>Compilation Error</Text> on{' '}
+              <Text style={[common.bold, styles.underline]} onPress={() => linked.verifyProblemUrl && Linking.openURL(linked.verifyProblemUrl)}>{linked.verifyProblemName ?? linked.verifyProblem}</Text>{' '}
+              from @{linked.handle}, then tap Verify.{' '}
+              {left > 0 ? <Text style={common.bold}>{formatLeft(left)} left</Text> : "Time's up. If you submitted in time, tap Verify; otherwise get a new problem."}
+            </Text>
+          ) : (
+            <Text style={styles.verifyText}>Prove this account is yours: we'll give you a {PLATFORM_NAMES[platform.id]} problem to submit a Compilation Error on within a few minutes.</Text>
+          )}
+          <View style={common.row}>
+            <Button title={linked.verifyProblem ? 'New problem' : 'Start verification'} variant="secondary" flex disabled={checking} onPress={start} />
+            {linked.verifyProblem ? <Button title={checking ? 'Checking…' : 'Verify'} flex disabled={checking} onPress={verify} /> : null}
+          </View>
         </View>
       ) : null}
       {error ? <Text style={common.error}>{error}</Text> : null}
@@ -246,6 +280,7 @@ const styles = StyleSheet.create({
   username: { color: theme.lime, fontFamily: theme.font.monoBold, fontSize: 18 },
   warning: { padding: 12, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.sunLine, backgroundColor: theme.sunTint, color: theme.sunText, fontFamily: theme.font.regular, fontSize: 13 },
   verify: { gap: 10, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: theme.sunLine, backgroundColor: theme.sunTint },
+  underline: { textDecorationLine: 'underline' },
   verifyText: { color: theme.sunText, fontFamily: theme.font.regular, fontSize: 13 },
   years: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   year: { flexBasis: '30%', flexGrow: 1, height: 48, borderRadius: 14, borderWidth: 1, borderColor: theme.line, alignItems: 'center', justifyContent: 'center' },

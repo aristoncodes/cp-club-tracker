@@ -18,14 +18,36 @@ const SWITCHES = [
   { key: 'notifyRecap', title: 'Weekly recap', detail: 'Your week, on Sunday at 9 PM.' },
 ] as const;
 
+const formatLeft = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+
+function useSecondsLeft(deadline?: number | null): number {
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  useEffect(() => {
+    if (!deadline) return;
+    const timer = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [deadline]);
+  return deadline ? Math.max(0, deadline - now) : 0;
+}
+
 function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[number]; me: Me; onChange: () => void }) {
   const linked = me.handles.find((h) => h.platform === platform.id);
   const [editing, setEditing] = useState(!linked);
   const [value, setValue] = useState(linked?.handle ?? '');
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
-  const needsCode = linked && !linked.approved && linked.status !== 'rejected' && (platform.id === 'cf' || platform.id === 'cc');
-  const where = platform.id === 'cf' ? 'first name' : 'name';
+  const needsVerify = linked && !linked.approved && linked.status !== 'rejected' && (platform.id === 'cf' || platform.id === 'cc');
+  const left = useSecondsLeft(linked?.verifyDeadline);
+
+  async function start() {
+    setError('');
+    try {
+      await api(`/me/handles/${platform.id}/verify/start`, 'POST');
+      onChange();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
 
   async function verify() {
     setError('');
@@ -38,7 +60,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
         await new Promise((resolve) => setTimeout(resolve, 10_000));
         done = Boolean((await api<Me>('/me')).handles.find((h) => h.platform === platform.id)?.approved);
       }
-      if (!done) setError(`We couldn't see ${linked?.verifyCode} in your ${platform.label} ${where}. Save it there and try again.`);
+      if (!done) setError(`No compilation error on ${linked?.verifyProblem} in time. Submit one, or start again for a new problem.`);
       onChange();
     } catch (err) {
       setError((err as Error).message);
@@ -76,12 +98,22 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
           <button className="min-h-11 cursor-pointer px-2 font-bold text-lime hover:underline" onClick={() => setEditing(true)}>Edit</button>
         </div>
       )}
-      {needsCode && !editing && (
+      {needsVerify && !editing && (
         <div className="flex w-full flex-wrap items-center gap-3 rounded-2xl border border-sun-line bg-sun-tint p-3 text-sm text-sun-text">
-          <p className="min-w-0 flex-1 basis-56">
-            To prove this is your account, add <span className="handle font-bold">{linked.verifyCode}</span> to your {platform.label} {where}, save it, then verify. You can remove it afterwards.
-          </p>
-          <Button disabled={checking} onClick={verify}>{checking ? 'Checking…' : 'Verify'}</Button>
+          {linked.verifyProblem ? (
+            <p className="min-w-0 flex-1 basis-56">
+              Submit any code that gives a <span className="font-bold">Compilation Error</span> on{' '}
+              <a className="font-bold underline" href={linked.verifyProblemUrl ?? undefined} target="_blank" rel="noreferrer">{linked.verifyProblemName ?? linked.verifyProblem}</a>{' '}
+              from @{linked.handle}, then tap Verify.{' '}
+              {left > 0 ? <span className="num font-bold">{formatLeft(left)} left</span> : "Time's up. If you submitted in time, tap Verify; otherwise get a new problem."}
+            </p>
+          ) : (
+            <p className="min-w-0 flex-1 basis-56">Prove this account is yours: we'll give you a {platform.label} problem to submit a Compilation Error on within a few minutes.</p>
+          )}
+          <div className="flex gap-2">
+            <Button variant="secondary" disabled={checking} onClick={start}>{linked.verifyProblem ? 'New problem' : 'Start verification'}</Button>
+            {linked.verifyProblem && <Button disabled={checking} onClick={verify}>{checking ? 'Checking…' : 'Verify'}</Button>}
+          </div>
         </div>
       )}
       {error && <div className="w-full"><ErrorText>{error}</ErrorText></div>}

@@ -22,7 +22,7 @@ type CcContestList = {
 type CcProblem = { status: string; problem_name?: string; difficulty_rating?: string; user_tags?: string[] };
 type CcContest = { status: string; time?: { start: number; end: number } };
 
-export type CcSubmission = { solvedAt: number; contestCode: string | null; problemCode: string; accepted: boolean };
+export type CcSubmission = { solvedAt: number; contestCode: string | null; problemCode: string; accepted: boolean; compileError: boolean };
 
 // Past a limit CodeChef's Cloudflare answers with a challenge page instead of JSON, and lets requests through again shortly after.
 export async function readCodeChef<T>(url: string): Promise<T> {
@@ -67,14 +67,6 @@ export async function fetchRating(handle: string): Promise<number | null> {
   return parseRating(await (await politeFetch(`${BASE}/users/${encodeURIComponent(handle)}`, CC_GAP_MS)).text());
 }
 
-export function parseName(html: string): string {
-  return html.match(/<h1 class="h2-style">\s*([^<]*)/)?.[1].trim() ?? '';
-}
-
-export async function fetchName(handle: string): Promise<string> {
-  return parseName(await (await politeFetch(`${BASE}/users/${encodeURIComponent(handle)}`, CC_GAP_MS)).text());
-}
-
 export function parseTime(text: string, now: number): number {
   const relative = text.match(/^(\d+) (sec|min|hour)s? ago$/);
   if (relative) return now - Number(relative[1]) * UNIT_SECONDS[relative[2]];
@@ -95,12 +87,14 @@ export function parseRecent(raw: { content: string }, now: number): CcSubmission
       const parts = link?.match(/^\/(?:([^/]+)\/)?problems\/([^/]+)/);
       if (!parts) return [];
       const time = $(row).find('td').first();
+      const verdicts = $(row).find('span[title]').toArray().map((span) => $(span).attr('title') ?? '');
       return [
         {
           solvedAt: parseTime(time.attr('title') || time.text().trim(), now),
           contestCode: parts[1] ?? null,
           problemCode: parts[2],
-          accepted: $(row).find('span[title]').toArray().some((span) => $(span).attr('title') === 'accepted'),
+          accepted: verdicts.includes('accepted'),
+          compileError: verdicts.some((v) => /compil/i.test(v)),
         },
       ];
     });

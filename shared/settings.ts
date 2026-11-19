@@ -20,6 +20,7 @@ export const SETTING_DEFAULTS = {
   mandatory_reminder_hours: 3,
   streak_push_minute: 1260,
   recap_push_minute: 1260,
+  verify_minutes: 5,
 };
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;

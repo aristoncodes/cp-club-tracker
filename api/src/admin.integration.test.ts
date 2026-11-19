@@ -127,19 +127,24 @@ describe('admin', { timeout: 120_000 }, () => {
   });
 
 
-  it('1b. LeetCode counts when linked, CodeChef counts only once its profile name shows the code', async () => {
+  it('1b. LeetCode counts when linked, CodeChef counts only after a compilation error on the given problem in time', async () => {
     expect((await call(CAL, '/me/handles/leetcode', 'PUT', { handle: 'cal_lc' })).status).toBe(200);
     expect(query<{ status: string }>(`SELECT status FROM handles WHERE user_id = ${CAL} AND platform = 'leetcode'`)[0].status).toBe('approved');
     expect((await call(CAL, '/me/handles/cc', 'PUT', { handle: 'cal_cc' })).status).toBe(200);
-    const [row] = query<{ status: string; verify_code: string }>(`SELECT status, verify_code FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`);
-    expect(row.status).toBe('waiting');
-    expect(row.verify_code).toMatch(/^oops-[0-9a-f]{6}$/);
-    await ingest('/verify', { handle: 'cal_cc', name: 'Cal Someone' });
-    expect(query<{ status: string }>(`SELECT status FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`)[0].status).toBe('waiting');
-    await ingest('/verify', { handle: 'cal_cc', name: `Cal ${row.verify_code.toUpperCase()}` });
-    expect(query<{ status: string }>(`SELECT status FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`)[0].status).toBe('approved');
+    expect((await call(CAL, '/me/handles/cc/verify', 'POST')).status).toBe(400);
+    sql(`INSERT INTO problems (platform, problem_id, name, url) VALUES ('cc', 'START01', 'Start', 'https://www.codechef.com/problems/START01')`);
+    expect((await call(CAL, '/me/handles/cc/verify/start', 'POST')).status).toBe(200);
+    const me = (await call(CAL, '/me')).json;
+    const cc = me.handles.find((h: { platform: string }) => h.platform === 'cc');
+    expect(cc).toMatchObject({ verifyProblem: 'START01', verifyProblemUrl: 'https://www.codechef.com/problems/START01' });
+    const [{ startedAt }] = query<{ startedAt: number }>(`SELECT verify_started_at AS startedAt FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`);
+    expect(cc.verifyDeadline).toBe(startedAt + 300);
+    const status = () => query<{ status: string }>(`SELECT status FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`)[0].status;
+    await ingest('/verify', { handle: 'cal_cc', compileErrors: [{ problemCode: 'OTHER', at: startedAt + 30 }, { problemCode: 'START01', at: startedAt + 900 }] });
+    expect(status()).toBe('waiting');
+    await ingest('/verify', { handle: 'CAL_CC', compileErrors: [{ problemCode: 'START01', at: startedAt + 60 }] });
+    expect(status()).toBe('approved');
   });
-
   it('1c. the solve sync reads recently active members every run and everyone else once a day', async () => {
     const due = async () => (await (await fetch(`${BASE}/api/ingest/handles?platform=cc&due=1`, { headers: { 'X-Ingest-Secret': INGEST } })).json()) as string[];
     sql(`INSERT INTO handles (user_id, platform, handle, approved_at, status) VALUES (${ANA}, 'cc', 'ana_cc', 1, 'approved')`);

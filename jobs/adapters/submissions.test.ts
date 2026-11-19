@@ -11,7 +11,7 @@ import cfSubmissions from '../fixtures/cf-submissions.json';
 import lcQuestion from '../fixtures/leetcode-question.json';
 import lcRecent from '../fixtures/leetcode-recent.json';
 import { parseSubmissions as parseAtcoder, ratingFromHistory } from './atcoder';
-import { parseName as ccName, parseRating as ccRating, parseRecent, parseTime, solveFrom as ccSolve, tookPartLive as ccTookPart } from './cc';
+import { parseRating as ccRating, parseRecent, parseTime, solveFrom as ccSolve, tookPartLive as ccTookPart } from './cc';
 import * as cf from './cf';
 import { parseSubmissions as parseCf, tookPartLive as cfTookPart } from './cf';
 import { parseRecentAc, solveFrom as lcSolve } from './leetcode';
@@ -61,6 +61,7 @@ describe('cc', () => {
       contestCode: 'START86A',
       problemCode: 'LEASTSIZE',
       accepted: true,
+      compileError: false,
     });
   });
 
@@ -103,7 +104,7 @@ describe('cc', () => {
   });
 
   it('treats a missing rating and practice submissions as not rated, not live', () => {
-    const submission = { solvedAt: NOW, contestCode: null, problemCode: 'X', accepted: true };
+    const submission = { solvedAt: NOW, contestCode: null, problemCode: 'X', accepted: true, compileError: false };
     expect(ccSolve('me', submission, { status: 'success', difficulty_rating: '-1' }, null)).toMatchObject({ rating: undefined, live: false });
   });
 });
@@ -197,9 +198,11 @@ describe('ratings', () => {
   });
 });
 
-describe('cc profile name', () => {
-  it('reads the name shown on a profile, and nothing from a challenge page', () => {
-    expect(ccName('<div><h1 class="h2-style">Ada Lovelace oops-a1b2c3</h1>')).toBe('Ada Lovelace oops-a1b2c3');
-    expect(ccName('<html>Just a moment...</html>')).toBe('');
+describe('cc compilation errors', () => {
+  it('marks a compilation error so handle verification can find it', () => {
+    const row = (problem: string, verdict: string) => `<tr><td title='08:11 PM 08/02/23'></td><td><a href='/problems/${problem}'>${problem}</a></td><td><span title='${verdict}'></span></td></tr>`;
+    const [error, accepted] = parseRecent({ content: `<table><tbody>${row('START01', 'compilation error')}${row('TEST', 'accepted')}</tbody></table>` }, NOW);
+    expect(error).toMatchObject({ problemCode: 'START01', compileError: true, accepted: false });
+    expect(accepted).toMatchObject({ problemCode: 'TEST', compileError: false, accepted: true });
   });
 });
