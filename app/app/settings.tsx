@@ -44,6 +44,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
   const [checking, setChecking] = useState(false);
   const needsVerify = linked && !linked.approved && linked.status !== 'rejected' && (platform.id === 'cf' || platform.id === 'cc');
   const left = useSecondsLeft(linked?.verifyDeadline);
+  const verdict = platform.id === 'cf' ? 'Compilation Error' : 'Wrong Answer';
 
   async function start() {
     setError('');
@@ -66,7 +67,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
         await new Promise((resolve) => setTimeout(resolve, 10_000));
         done = Boolean((await api<Me>('/me')).handles.find((h) => h.platform === platform.id)?.approved);
       }
-      if (!done) setError(`No compilation error on ${linked?.verifyProblem} in time. Submit one, or start again for a new problem.`);
+      if (!done) setError(`No ${verdict} on ${linked?.verifyProblem} in time. Submit one, or start again for a new problem.`);
       onChange();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not verify.');
@@ -110,13 +111,13 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
         <View style={styles.verify}>
           {linked.verifyProblem ? (
             <Text style={styles.verifyText}>
-              Submit any code that gives a <Text style={common.bold}>Compilation Error</Text> on{' '}
+              Submit any code that gives a <Text style={common.bold}>{verdict}</Text> on{' '}
               <Text style={[common.bold, styles.underline]} onPress={() => linked.verifyProblemUrl && Linking.openURL(linked.verifyProblemUrl)}>{linked.verifyProblemName ?? linked.verifyProblem}</Text>{' '}
               from @{linked.handle}, then tap Verify.{' '}
               {left > 0 ? <Text style={common.bold}>{formatLeft(left)} left</Text> : "Time's up. If you submitted in time, tap Verify; otherwise get a new problem."}
             </Text>
           ) : (
-            <Text style={styles.verifyText}>Prove this account is yours: we'll give you a {PLATFORM_NAMES[platform.id]} problem to submit a Compilation Error on within a few minutes.</Text>
+            <Text style={styles.verifyText}>Prove this account is yours: we'll give you a {PLATFORM_NAMES[platform.id]} problem to submit a {verdict} on within a few minutes.</Text>
           )}
           <View style={common.row}>
             <Button title={linked.verifyProblem ? 'New problem' : 'Start verification'} variant="secondary" flex disabled={checking} onPress={start} />

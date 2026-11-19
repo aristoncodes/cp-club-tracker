@@ -8,7 +8,7 @@ Builds on `PRD.md` and `PRD_ADDONS.md`. Design: `DESIGN_ADMIN.md`. Mockups: canv
 
 - **Web only.** Admin lives at `/admin/*` on the website. The Android app has no admin screens, but admins still get pushes there.
 - **Everyone listed on the Admins page is a full admin.** There are no other roles and no batch coordinators.
-- **No join code or access gate.** Anyone can sign up as before. Members verify their own Codeforces and CodeChef **handles** (a compilation error on a given problem within a few minutes); admins can approve or reject any handle by hand.
+- **No join code or access gate.** Anyone can sign up as before. Members verify their own Codeforces and CodeChef **handles** (a compilation error on Codeforces or a wrong answer on CodeChef, on a given problem within a few minutes); admins can approve or reject any handle by hand.
 - **Every write is logged** in `audit_log` with who, when, what, and before → after.
 - **Nothing is punished automatically.** Fairness checks and at-risk checks only *flag*; an admin decides.
 - **Rules are data, not code.** Every threshold sits in the `settings` table, editable on the Rules page. Changing one never needs an APK.

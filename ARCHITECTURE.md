@@ -258,7 +258,7 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | POST | /ingest/participation | secret | `{ platform, externalId, presentHandles: string[], brokenHandles?: string[] }` |
 | GET | /ingest/handles?platform=&due= | secret | Approved handles for the adapters to fetch. `due=1`: only members with a solve or a newly approved handle in the last 7 days, plus anyone whose `synced_at` is over a day old |
 | POST | /ingest/synced | secret | `{ platform, handles }`: sets `synced_at` for the handles a sync read |
-| POST | /ingest/verify | secret | `{ handle, compileErrors: [{ problemCode, at }] }`: approves the waiting CodeChef handle if one is on its `verify_problem` within the window (±60 s, as CodeChef times are to the minute) |
+| POST | /ingest/verify | secret | `{ handle, wrongAnswers: [{ problemCode, at }] }`: approves the waiting CodeChef handle if one is on its `verify_problem` within the window (±60 s, as CodeChef times are to the minute) |
 
 - Ingest routes check `X-Ingest-Secret` against `INGEST_SECRET`.
 - Batches are processed with `D1.batch()`.
@@ -272,7 +272,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 | `sync-contests.ts` | Every 6 hours, dispatched by the Worker | CF `contest.list?gym=false` (future contests only) + CodeChef upcoming contests → apply `countsForAttendance` and parallel-round merge → `/ingest/contests` |
 | `health.ts` | Daily | Fails the run with a list of problems if anything looks wrong |
 | `sync-solves.ts` | Every 5 minutes, dispatched by the Worker; matrix of `cc`, `leetcode`, `atcoder` in parallel | Accepted submissions from the last 48 hours for the platform's due handles (`/ingest/handles?due=1`) → `/ingest/solves`, one post per handle, then `/ingest/synced` with the handles that worked. Codeforces is left to the Worker |
-| `verify-handle.ts` | `workflow_dispatch` (input `handle`) | CodeChef blocks Cloudflare, so this reads the handle's recent submissions and posts the compilation errors to `/ingest/verify` |
+| `verify-handle.ts` | `workflow_dispatch` (input `handle`) | CodeChef blocks Cloudflare, so this reads the handle's recent submissions and posts the wrong answers (verdict `wrong answer`) to `/ingest/verify` |
 | `backfill.ts` | `workflow_dispatch` (inputs `platform`, `handle`) | On approval: up to 6 months of accepted submissions → `/ingest/solves`, 50 at a time. Codeforces and AtCoder give full history; CodeChef gives about the last page and LeetCode the last 20 |
 | `participation.ts` | `workflow_dispatch` (inputs `platform`, `contest`, `alt`, `start`, `end`) | **cf:** `contest.status?contestId=…&handle=…` for each handle, and for `alt`; any submission with participantType `CONTESTANT` or `OUT_OF_COMPETITION` → present. A handle Codeforces says doesn't exist is reported in `brokenHandles`. **cc:** each handle's recent submissions; any submission linked to the contest or one of its divisions (`START263`, `START263A`…) with a time inside the contest → present. Any other failure stops the run without posting, so nobody is wrongly marked absent → `/ingest/participation` |
 

@@ -22,7 +22,7 @@ type CcContestList = {
 type CcProblem = { status: string; problem_name?: string; difficulty_rating?: string; user_tags?: string[] };
 type CcContest = { status: string; time?: { start: number; end: number } };
 
-export type CcSubmission = { solvedAt: number; contestCode: string | null; problemCode: string; accepted: boolean; compileError: boolean };
+export type CcSubmission = { solvedAt: number; contestCode: string | null; problemCode: string; accepted: boolean; wrongAnswer: boolean };
 
 // Past a limit CodeChef's Cloudflare answers with a challenge page instead of JSON, and lets requests through again shortly after.
 export async function readCodeChef<T>(url: string): Promise<T> {
@@ -94,7 +94,7 @@ export function parseRecent(raw: { content: string }, now: number): CcSubmission
           contestCode: parts[1] ?? null,
           problemCode: parts[2],
           accepted: verdicts.includes('accepted'),
-          compileError: verdicts.some((v) => /compil/i.test(v)),
+          wrongAnswer: verdicts.includes('wrong answer'),
         },
       ];
     });

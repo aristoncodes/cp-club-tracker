@@ -38,6 +38,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
   const [checking, setChecking] = useState(false);
   const needsVerify = linked && !linked.approved && linked.status !== 'rejected' && (platform.id === 'cf' || platform.id === 'cc');
   const left = useSecondsLeft(linked?.verifyDeadline);
+  const verdict = platform.id === 'cf' ? 'Compilation Error' : 'Wrong Answer';
 
   async function start() {
     setError('');
@@ -60,7 +61,7 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
         await new Promise((resolve) => setTimeout(resolve, 10_000));
         done = Boolean((await api<Me>('/me')).handles.find((h) => h.platform === platform.id)?.approved);
       }
-      if (!done) setError(`No compilation error on ${linked?.verifyProblem} in time. Submit one, or start again for a new problem.`);
+      if (!done) setError(`No ${verdict} on ${linked?.verifyProblem} in time. Submit one, or start again for a new problem.`);
       onChange();
     } catch (err) {
       setError((err as Error).message);
@@ -102,13 +103,13 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
         <div className="flex w-full flex-wrap items-center gap-3 rounded-2xl border border-sun-line bg-sun-tint p-3 text-sm text-sun-text">
           {linked.verifyProblem ? (
             <p className="min-w-0 flex-1 basis-56">
-              Submit any code that gives a <span className="font-bold">Compilation Error</span> on{' '}
+              Submit any code that gives a <span className="font-bold">{verdict}</span> on{' '}
               <a className="font-bold underline" href={linked.verifyProblemUrl ?? undefined} target="_blank" rel="noreferrer">{linked.verifyProblemName ?? linked.verifyProblem}</a>{' '}
               from @{linked.handle}, then tap Verify.{' '}
               {left > 0 ? <span className="num font-bold">{formatLeft(left)} left</span> : "Time's up. If you submitted in time, tap Verify; otherwise get a new problem."}
             </p>
           ) : (
-            <p className="min-w-0 flex-1 basis-56">Prove this account is yours: we'll give you a {platform.label} problem to submit a Compilation Error on within a few minutes.</p>
+            <p className="min-w-0 flex-1 basis-56">Prove this account is yours: we'll give you a {platform.label} problem to submit a {verdict} on within a few minutes.</p>
           )}
           <div className="flex gap-2">
             <Button variant="secondary" disabled={checking} onClick={start}>{linked.verifyProblem ? 'New problem' : 'Start verification'}</Button>

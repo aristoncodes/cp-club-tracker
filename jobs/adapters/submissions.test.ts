@@ -61,7 +61,7 @@ describe('cc', () => {
       contestCode: 'START86A',
       problemCode: 'LEASTSIZE',
       accepted: true,
-      compileError: false,
+      wrongAnswer: false,
     });
   });
 
@@ -104,7 +104,7 @@ describe('cc', () => {
   });
 
   it('treats a missing rating and practice submissions as not rated, not live', () => {
-    const submission = { solvedAt: NOW, contestCode: null, problemCode: 'X', accepted: true, compileError: false };
+    const submission = { solvedAt: NOW, contestCode: null, problemCode: 'X', accepted: true, wrongAnswer: false };
     expect(ccSolve('me', submission, { status: 'success', difficulty_rating: '-1' }, null)).toMatchObject({ rating: undefined, live: false });
   });
 });
@@ -198,11 +198,11 @@ describe('ratings', () => {
   });
 });
 
-describe('cc compilation errors', () => {
-  it('marks a compilation error so handle verification can find it', () => {
+describe('cc wrong answers', () => {
+  it('marks a wrong answer so handle verification can find it', () => {
     const row = (problem: string, verdict: string) => `<tr><td title='08:11 PM 08/02/23'></td><td><a href='/problems/${problem}'>${problem}</a></td><td><span title='${verdict}'></span></td></tr>`;
-    const [error, accepted] = parseRecent({ content: `<table><tbody>${row('START01', 'compilation error')}${row('TEST', 'accepted')}</tbody></table>` }, NOW);
-    expect(error).toMatchObject({ problemCode: 'START01', compileError: true, accepted: false });
-    expect(accepted).toMatchObject({ problemCode: 'TEST', compileError: false, accepted: true });
+    const [error, accepted] = parseRecent({ content: `<table><tbody>${row('START01', 'wrong answer')}${row('TEST', 'accepted')}</tbody></table>` }, NOW);
+    expect(error).toMatchObject({ problemCode: 'START01', wrongAnswer: true, accepted: false });
+    expect(accepted).toMatchObject({ problemCode: 'TEST', wrongAnswer: false, accepted: true });
   });
 });

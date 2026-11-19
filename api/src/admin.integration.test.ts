@@ -127,7 +127,7 @@ describe('admin', { timeout: 120_000 }, () => {
   });
 
 
-  it('1b. LeetCode counts when linked, CodeChef counts only after a compilation error on the given problem in time', async () => {
+  it('1b. LeetCode counts when linked, CodeChef counts only after a wrong answer on the given problem in time', async () => {
     expect((await call(CAL, '/me/handles/leetcode', 'PUT', { handle: 'cal_lc' })).status).toBe(200);
     expect(query<{ status: string }>(`SELECT status FROM handles WHERE user_id = ${CAL} AND platform = 'leetcode'`)[0].status).toBe('approved');
     expect((await call(CAL, '/me/handles/cc', 'PUT', { handle: 'cal_cc' })).status).toBe(200);
@@ -140,9 +140,9 @@ describe('admin', { timeout: 120_000 }, () => {
     const [{ startedAt }] = query<{ startedAt: number }>(`SELECT verify_started_at AS startedAt FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`);
     expect(cc.verifyDeadline).toBe(startedAt + 300);
     const status = () => query<{ status: string }>(`SELECT status FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`)[0].status;
-    await ingest('/verify', { handle: 'cal_cc', compileErrors: [{ problemCode: 'OTHER', at: startedAt + 30 }, { problemCode: 'START01', at: startedAt + 900 }] });
+    await ingest('/verify', { handle: 'cal_cc', wrongAnswers: [{ problemCode: 'OTHER', at: startedAt + 30 }, { problemCode: 'START01', at: startedAt + 900 }] });
     expect(status()).toBe('waiting');
-    await ingest('/verify', { handle: 'CAL_CC', compileErrors: [{ problemCode: 'START01', at: startedAt + 60 }] });
+    await ingest('/verify', { handle: 'CAL_CC', wrongAnswers: [{ problemCode: 'START01', at: startedAt + 60 }] });
     expect(status()).toBe('approved');
   });
   it('1c. the solve sync reads recently active members every run and everyone else once a day', async () => {

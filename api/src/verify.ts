@@ -35,7 +35,7 @@ async function challengeOf(env: Bindings, userId: number, platform: string): Pro
   return row;
 }
 
-// Gives the member a random problem to submit a compilation error to within the window.
+// Gives the member a random problem to fail on purpose within the window: a compilation error on Codeforces, a wrong answer on CodeChef.
 export async function startVerify(env: Bindings, userId: number, platform: string): Promise<void> {
   const row = await challengeOf(env, userId, platform);
   if (row.status === 'approved') return;
@@ -69,7 +69,7 @@ export async function verifyHandle(env: Bindings, userId: number, platform: stri
   return 'verified';
 }
 
-export async function finishCcVerify(env: Bindings, handle: string, compileErrors: { problemCode: string; at: number }[]): Promise<boolean> {
+export async function finishCcVerify(env: Bindings, handle: string, wrongAnswers: { problemCode: string; at: number }[]): Promise<boolean> {
   const row = await env.DB.prepare(
     `SELECT user_id AS userId, verify_problem AS problem, verify_started_at AS startedAt FROM handles
      WHERE platform = 'cc' AND lower(handle) = lower(?) AND status = 'waiting' AND verify_started_at IS NOT NULL`,
@@ -78,7 +78,7 @@ export async function finishCcVerify(env: Bindings, handle: string, compileError
     .first<{ userId: number; problem: string; startedAt: number }>();
   if (!row) return false;
   const { verify_minutes: minutes } = await getSettings(env.DB);
-  if (!compileErrors.some((s) => s.problemCode === row.problem && inWindow(s.at, row.startedAt, minutes, CC_TIME_SLACK))) return false;
+  if (!wrongAnswers.some((s) => s.problemCode === row.problem && inWindow(s.at, row.startedAt, minutes, CC_TIME_SLACK))) return false;
   await approveHandle(env, row.userId, 'cc');
   return true;
 }
