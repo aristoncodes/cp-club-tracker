@@ -23,6 +23,7 @@ type OverviewData = {
     handles: { userId: number; name: string; platform: string; handle: string }[];
     reasons: { contestId: number; userId: number; name: string; contest: string; endAt: number }[];
     flags: { id: number; userId: number; name: string; rule: string; severity: string; day: number }[];
+    deletions: { userId: number; name: string; email: string; reason: string; at: number }[];
   };
   trend: { id: number; name: string; present: number; total: number }[];
   atRisk: { userId: number; name: string; signals: Signals }[];
@@ -48,7 +49,7 @@ const signalChips = (signals: Signals, t?: { noSolveDays: number; absences: numb
 export function Overview() {
   const { data, error, reload } = useLoad(() => api<OverviewData>('/admin/overview'), []);
   const act = useAct(reload);
-  const [tab, setTab] = useState<'handles' | 'reasons' | 'flags'>('handles');
+  const [tab, setTab] = useState<'handles' | 'reasons' | 'flags' | 'deletions'>('handles');
   const now = Date.now() / 1000;
   if (error) return <ErrorText>{error}</ErrorText>;
   if (!data) return null;
@@ -70,7 +71,7 @@ export function Overview() {
       <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="display text-lg">Action inbox</h2>
-          <Segmented label="Inbox type" value={tab} onChange={setTab} tabs={[{ id: 'handles', label: <>Handles <span className="num">{inbox.handles.length}</span></> }, { id: 'reasons', label: <>Reasons <span className="num">{inbox.reasons.length}</span></> }, { id: 'flags', label: <>Flags <span className="num">{inbox.flags.length}</span></> }]} />
+          <Segmented label="Inbox type" value={tab} onChange={setTab} tabs={[{ id: 'handles', label: <>Handles <span className="num">{inbox.handles.length}</span></> }, { id: 'reasons', label: <>Reasons <span className="num">{inbox.reasons.length}</span></> }, { id: 'flags', label: <>Flags <span className="num">{inbox.flags.length}</span></> }, { id: 'deletions', label: <>Deletion <span className="num">{inbox.deletions.length}</span></> }]} />
         </div>
         {act.error && <ErrorText>{act.error}</ErrorText>}
         {tab === 'handles' && inbox.handles.length === 0 && <p className="text-muted">Nothing waiting. Every handle is reviewed ✓</p>}
@@ -98,6 +99,15 @@ export function Overview() {
             <span className="min-w-0 flex-1 basis-40 font-bold">{f.name} <span className="font-normal text-muted">{RULE_LABELS[f.rule]}</span></span>
             <Link to="/admin/fairness" className="lift inline-flex min-h-8 items-center rounded-full border border-line px-3 text-xs font-bold">Review</Link>
             <AButton small onClick={() => act.run(() => api(`/admin/fairness/${f.id}/clear`, 'POST'))}>Clear</AButton>
+          </div>
+        ))}
+        {tab === 'deletions' && inbox.deletions.length === 0 && <p className="text-muted">Nobody has asked to be deleted.</p>}
+        {tab === 'deletions' && inbox.deletions.map((d) => (
+          <div key={d.userId} className="flex flex-wrap items-center gap-2 border-t border-line pt-2 first-of-type:border-0">
+            <Avatar userId={d.userId} name={d.name} size={30} /><Chip tone="problem">Delete</Chip>
+            <span className="min-w-0 flex-1 basis-40 font-bold">{d.name} <span className="font-normal text-muted">{d.email} · {timeAgo(d.at, now)}</span><span className="block font-normal">“{d.reason}”</span></span>
+            <AButton variant="secondary" small onClick={() => act.run(() => api(`/admin/deletion-requests/${d.userId}/dismiss`, 'POST'))}>Dismiss</AButton>
+            <AButton variant="danger" small onClick={() => window.confirm(`Delete ${d.name} and all their data? This can't be undone.`) && act.run(() => api(`/admin/users/${d.userId}`, 'DELETE'))}>Delete account</AButton>
           </div>
         ))}
       </Card>

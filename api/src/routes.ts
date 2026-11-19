@@ -4,6 +4,7 @@ import { IST_OFFSET, istDay, periodStart, solveStreak } from 'shared/time';
 import type { Period } from 'shared/types';
 import { canFinishOnboarding, handleFromInput, normalizeUsername, usernameError } from './accounts';
 import { requireUser, type AppEnv } from './auth';
+import { pushUsers } from './push';
 import { adjustmentSum, trackedMember } from './records';
 import { getSettings } from './settings';
 import { approveHandle, AUTO_VERIFIED, startVerify, verifyHandle, VerifyError } from './verify';
@@ -21,6 +22,7 @@ const RECENT_SOLVES = 8;
 const PROFILE_CONTESTS = 6;
 const PAST_CONTESTS = 20;
 const TOP_EXTRAS = 3;
+const DELETE_REASON_MAX = 500;
 const NOTIFY_COLUMNS: Record<string, string> = {
   notifyHour: 'notify_hour',
   notifyRsvp: 'notify_rsvp',
@@ -99,7 +101,7 @@ studentRoutes.get('/me', async (c) => {
   const user = c.get('user');
   const now = Math.floor(Date.now() / 1000);
   const { verify_minutes: verifyMinutes } = await getSettings(c.env.DB, now);
-  const [handles, pendingReasons, days, unread, newBadges] = await c.env.DB.batch([
+  const [handles, pendingReasons, days, unread, newBadges, deletion] = await c.env.DB.batch([
     c.env.DB.prepare(
       `SELECT h.platform, h.handle, h.status, h.approved_at IS NOT NULL AS approved, h.verify_started_at + ? * 60 AS verifyDeadline,
               p.problem_id AS verifyProblem, p.name AS verifyProblemName, p.url AS verifyProblemUrl
@@ -118,9 +120,10 @@ studentRoutes.get('/me', async (c) => {
        WHERE a.sent_at > u.inbox_seen_at AND (a.audience = 'all' OR (a.audience = 'admins' AND u.role = 'admin') OR (a.audience = 'batch' AND u.batch_year = a.batch_year))`,
     ).bind(user.id),
     c.env.DB.prepare('SELECT badge FROM badges WHERE user_id = ? AND seen_at IS NULL ORDER BY earned_at').bind(user.id),
+    c.env.DB.prepare('SELECT at FROM deletion_requests WHERE user_id = ?').bind(user.id),
   ]);
   const streak = solveStreak((days.results as { day: number }[]).map((d) => d.day), istDay(now));
-  return c.json({ user, handles: handles.results, pendingReasons: pendingReasons.results, streak, unreadAnnouncements: (unread.results[0] as { n: number }).n, newBadges: (newBadges.results as { badge: string }[]).map((row) => row.badge) });
+  return c.json({ user, handles: handles.results, pendingReasons: pendingReasons.results, streak, unreadAnnouncements: (unread.results[0] as { n: number }).n, newBadges: (newBadges.results as { badge: string }[]).map((row) => row.badge), deletionRequestedAt: (deletion.results[0] as { at: number } | undefined)?.at ?? null });
 });
 
 studentRoutes.put('/me', async (c) => {
@@ -238,6 +241,19 @@ studentRoutes.post('/me/handles/:platform/verify', async (c) => {
     if (err instanceof VerifyError) return c.json({ error: err.message }, 400);
     throw err;
   }
+});
+
+// Admins delete accounts; a member asks, with a reason, and every admin is told.
+studentRoutes.post('/me/delete-request', async (c) => {
+  const user = c.get('user');
+  const reason = (await c.req.json<{ reason?: string }>()).reason?.trim().slice(0, DELETE_REASON_MAX);
+  if (!reason) return c.json({ error: 'Tell us why you want to delete your account' }, 400);
+  await c.env.DB.prepare('INSERT OR REPLACE INTO deletion_requests (user_id, reason, at) VALUES (?, ?, unixepoch())').bind(user.id, reason).run();
+  const { results: admins } = await c.env.DB.prepare(`SELECT id FROM users WHERE role = 'admin' AND active = 1`).all<{ id: number }>();
+  c.executionCtx.waitUntil(
+    pushUsers(c.env, 'deletion', admins.map((a) => ({ userId: a.id, title: `${user.name} wants their account deleted`, body: reason }))).catch((err) => console.error('Deletion push failed:', err)),
+  );
+  return c.json({ ok: true });
 });
 
 studentRoutes.post('/me/push-token', async (c) => {
@@ -489,11 +505,14 @@ studentRoutes.get('/feed', async (c) => {
   return c.json([...solveItems, ...duelItems].sort((x, y) => y.solvedAt - x.solvedAt).slice(0, FEED_SIZE));
 });
 
+// A profile is looked up by id or by username; usernames always contain a letter.
 studentRoutes.get('/users/:id', async (c) => {
-  const id = Number(c.req.param('id'));
+  const db = c.env.DB;
+  const key = c.req.param('id');
+  const id = /^\d+$/.test(key) ? Number(key) : (await db.prepare('SELECT id FROM users WHERE username = ?').bind(key.toLowerCase()).first<{ id: number }>())?.id;
+  if (!id) return c.json({ error: 'Student not found' }, 404);
   const viewer = c.get('user');
   const seesPrivate = viewer.id === id || viewer.role === 'admin';
-  const db = c.env.DB;
   const now = Math.floor(Date.now() / 1000);
   const today = istDay(now);
   const profile = await db

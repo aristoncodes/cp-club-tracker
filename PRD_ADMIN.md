@@ -55,7 +55,7 @@ Badges show live counts: Overview = open inbox items, Students & handles = handl
 
 ### A1. Overview
 - **KPI row:** attendance over the last 4 weeks vs a 70% goal; active this week (solved ≥ 1); POTD solve rate; duels this week.
-- **Action inbox** with three types: **Handle** (waiting approval → Approve / Reject), **Reason** (absent with no reason for 2+ days → Remind / Excuse), **Flag** (fairness flag → Review / Clear). There are tabs per type with counts. Resolving an item removes it, and there's an "Approve all handles" button.
+- **Action inbox** with four types: **Handle** (waiting approval → Approve / Reject), **Reason** (absent with no reason for 2+ days → Remind / Excuse), **Flag** (fairness flag → Review / Clear), **Deletion** (a member asked to delete their account, with their reason → Delete account / Dismiss). There are tabs per type with counts. Resolving an item removes it.
 - **Attendance trend:** the last 10 contests as bars, with bars ≥ 70% in lime.
 - **At-risk preview:** the top 3 members, linking to At-risk.
 - **Upcoming contests:** RSVP split (going / not going / no reply), with a ★ chip on mandatory ones.

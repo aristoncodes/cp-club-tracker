@@ -65,6 +65,8 @@ export default function Signup() {
       }
       await api('/me/onboarding', 'POST');
       router.replace('/');
+      // A new Codeforces or CodeChef handle only counts once verified, so go straight to it.
+      if (handles.cf?.trim() || handles.cc?.trim()) router.push('/settings');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Please try again.');
       setSaving(false);

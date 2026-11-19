@@ -213,6 +213,10 @@ export function Profile() {
   const { me, reload: reloadMe } = useMe();
   const id = routeId ?? String(me.user.id);
   const { data: profile, error } = useLoad(() => api<UserProfile>(`/users/${id}`), [id]);
+  // Links pass the id; the address bar and shared links show the username instead.
+  useEffect(() => {
+    if (routeId && profile?.username && routeId !== profile.username) window.history.replaceState(window.history.state, '', `/u/${profile.username}`);
+  }, [routeId, profile?.username]);
 
   if (error) return <ErrorText>{error}</ErrorText>;
   if (!profile) return null;

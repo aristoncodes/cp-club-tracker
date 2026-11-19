@@ -38,7 +38,8 @@ function Form({ me }: { me: Me }) {
         if (handles[id]?.trim()) await api(`/me/handles/${id}`, 'PUT', { handle: handles[id] });
       }
       await api('/me/onboarding', 'POST');
-      navigate('/', { replace: true });
+      // A new Codeforces or CodeChef handle only counts once verified, so go straight to it.
+      navigate(handles.cf?.trim() || handles.cc?.trim() ? '/settings#handles' : '/', { replace: true });
     } catch (err) {
       setError((err as Error).message);
       setSaving(false);

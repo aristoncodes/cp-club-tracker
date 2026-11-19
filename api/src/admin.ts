@@ -75,6 +75,37 @@ adminRoutes.patch('/handles/:userId/:platform', async (c) => {
   return c.json({ ok: true });
 });
 
+// Deleting removes everything that is theirs, duels included. Admins and former admins keep history others rely on, so they are deactivated instead.
+adminRoutes.delete('/users/:id', async (c) => {
+  const id = Number(c.req.param('id'));
+  const db = c.env.DB;
+  const target = await db.prepare('SELECT email, name, role FROM users WHERE id = ?').bind(id).first<{ email: string; name: string; role: string }>();
+  if (!target) return c.json({ error: 'User not found' }, 404);
+  if (target.role === 'admin') return c.json({ error: 'Remove their admin role first' }, 400);
+  const own = ['attendance', 'handles', 'push_tokens', 'solves', 'push_log', 'upsolves', 'cf_history', 'potd_reveals', 'goals', 'badges', 'virtual_results', 'admin_notes', 'at_risk', 'fairness_flags', 'nudges', 'point_adjustments', 'session_checkins', 'deletion_requests'];
+  try {
+    await adminWrite(c, { area: 'members', action: 'delete account', target: target.email, before: target.name }, [
+      ...own.map((table) => db.prepare(`DELETE FROM ${table} WHERE user_id = ?`).bind(id)),
+      db.prepare('DELETE FROM duels WHERE ?1 IN (challenger_id, opponent_id)').bind(id),
+      db.prepare('UPDATE member_of_month SET user_id = CASE WHEN user_id = ?1 THEN NULL ELSE user_id END, auto_user_id = CASE WHEN auto_user_id = ?1 THEN NULL ELSE auto_user_id END WHERE ?1 IN (user_id, auto_user_id)').bind(id),
+      db.prepare('UPDATE users SET rival_id = NULL WHERE rival_id = ?').bind(id),
+      db.prepare('DELETE FROM users WHERE id = ?').bind(id),
+    ]);
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('FOREIGN KEY')) return c.json({ error: 'They have admin history others rely on. Deactivate them instead.' }, 409);
+    throw err;
+  }
+  return c.json({ ok: true });
+});
+
+adminRoutes.post('/deletion-requests/:userId/dismiss', async (c) => {
+  const userId = Number(c.req.param('userId'));
+  const row = await c.env.DB.prepare('SELECT u.email, d.reason FROM deletion_requests d JOIN users u ON u.id = d.user_id WHERE d.user_id = ?').bind(userId).first<{ email: string; reason: string }>();
+  if (!row) return c.json({ ok: true });
+  await adminWrite(c, { area: 'members', action: 'dismiss deletion request', target: row.email, before: row.reason }, [c.env.DB.prepare('DELETE FROM deletion_requests WHERE user_id = ?').bind(userId)]);
+  return c.json({ ok: true });
+});
+
 adminRoutes.patch('/users/:id', async (c) => {
   const id = Number(c.req.param('id'));
   const db = c.env.DB;

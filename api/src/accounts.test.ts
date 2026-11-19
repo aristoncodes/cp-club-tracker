@@ -24,7 +24,7 @@ describe('usernameError', () => {
     expect(usernameError(name)).toBeNull();
   });
 
-  it.each(['ab', 'a'.repeat(21), 'has space', 'UPPER', 'a-b', 'é_name', ''])('rejects %s', (name) => {
+  it.each(['ab', 'a'.repeat(21), 'has space', 'UPPER', 'a-b', 'é_name', '', '123', '4_2'])('rejects %s', (name) => {
     expect(usernameError(name)).not.toBeNull();
   });
 

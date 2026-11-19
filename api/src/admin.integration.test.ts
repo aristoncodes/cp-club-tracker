@@ -158,6 +158,41 @@ describe('admin', { timeout: 120_000 }, () => {
     expect(await due()).toContain('ana_cc');
     sql(`DELETE FROM solves WHERE user_id = ${ANA} AND problem_id = 'X1'; DELETE FROM handles WHERE handle = 'ana_cc'`);
   });
+
+  it('1d. a member asks to be deleted with a reason, and an admin deleting them removes everything of theirs', async () => {
+    const DEL = 60;
+    sql(`INSERT INTO users (id, email, name, username, batch_year, created_at, onboarding_step) VALUES (${DEL}, 'del@test.dev', 'Del', 'del', ${BATCH}, 1, 'done');
+      INSERT INTO handles (user_id, platform, handle, approved_at, status, broken) VALUES (${DEL}, 'cf', 'h_del', 1, 'approved', 1);
+      INSERT INTO solves (user_id, platform, problem_id, solved_at, rp, points) VALUES (${DEL}, 'cf', 'D1', 1, 800, 1);
+      INSERT INTO attendance (contest_id, user_id, status) VALUES (1, ${DEL}, 'present');
+      INSERT INTO duels (challenger_id, opponent_id, rating_min, rating_max, minutes, status, created_at, winner_id) VALUES (${ANA}, ${DEL}, 800, 900, 30, 'won', 1, ${DEL});
+      UPDATE users SET rival_id = ${DEL} WHERE id = ${ANA}`);
+    expect((await call(DEL, '/me/delete-request', 'POST', { reason: ' ' })).status).toBe(400);
+    expect((await call(DEL, '/me/delete-request', 'POST', { reason: 'Leaving the club' })).status).toBe(200);
+    expect((await call(DEL, '/me')).json.deletionRequestedAt).toBeGreaterThan(0);
+    const inbox = (await call(ADMIN, '/admin/overview')).json.inbox.deletions;
+    expect(inbox).toEqual([expect.objectContaining({ userId: DEL, reason: 'Leaving the club' })]);
+    expect((await call(ADMIN, `/admin/users/${OWNER}`, 'DELETE')).status).toBe(400);
+    const audits = auditCount();
+    expect((await call(ADMIN, `/admin/users/${DEL}`, 'DELETE')).status).toBe(200);
+    expect(auditCount()).toBe(audits + 1);
+    const left = query<{ n: number }>(`SELECT (SELECT COUNT(*) FROM users WHERE id = ${DEL}) + (SELECT COUNT(*) FROM handles WHERE user_id = ${DEL}) + (SELECT COUNT(*) FROM solves WHERE user_id = ${DEL})
+      + (SELECT COUNT(*) FROM attendance WHERE user_id = ${DEL}) + (SELECT COUNT(*) FROM duels WHERE ${DEL} IN (challenger_id, opponent_id)) + (SELECT COUNT(*) FROM deletion_requests) AS n`)[0].n;
+    expect(left).toBe(0);
+    expect(query<{ rival: number | null }>(`SELECT rival_id AS rival FROM users WHERE id = ${ANA}`)[0].rival).toBeNull();
+  });
+
+  it('1e. profiles open by username, and a rival can be changed and removed straight away', async () => {
+    expect((await call(BEN, '/users/ana')).json.id).toBe(ANA);
+    expect((await call(BEN, `/users/${ANA}`)).json.id).toBe(ANA);
+    expect((await call(BEN, '/users/nobody_here')).status).toBe(404);
+    expect((await call(BEN, '/me/rival', 'PUT', { userId: ANA })).status).toBe(200);
+    expect((await call(BEN, '/me/rival', 'PUT', { userId: CAL })).status).toBe(200);
+    expect((await call(BEN, '/me/rival', 'DELETE')).status).toBe(200);
+    expect((await call(BEN, '/me/rival', 'PUT', { userId: ANA })).status).toBe(200);
+    expect(query<{ rival: number }>(`SELECT rival_id AS rival FROM users WHERE id = ${BEN}`)[0].rival).toBe(ANA);
+    await call(BEN, '/me/rival', 'DELETE');
+  });
   it('2. admin endpoints refuse students, and each write adds its audit row', async () => {
     const routes: [string, string][] = [
       ['GET', '/admin/badges'], ['GET', '/admin/overview'], ['GET', '/admin/members'], ['GET', '/admin/students'], ['GET', '/admin/audit'], ['GET', '/admin/at-risk'],

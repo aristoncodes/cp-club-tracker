@@ -27,7 +27,7 @@ adminClubRoutes.get('/overview', async (c) => {
   const now = clock();
   const settings = await getSettings(db, now);
   const week = periodStart('week', now);
-  const [attendance, active, potd, duels, handles, reasons, flags, trend, risk, upcoming] = await db.batch<Record<string, unknown>>([
+  const [attendance, active, potd, duels, handles, reasons, flags, trend, risk, upcoming, deletions] = await db.batch<Record<string, unknown>>([
     db.prepare(`SELECT COUNT(CASE WHEN a.status = 'present' THEN 1 END) AS present, COUNT(CASE WHEN a.status IN ('present','absent') THEN 1 END) AS total FROM attendance a JOIN contests c ON c.id = a.contest_id WHERE c.counts = 1 AND c.start_at >= ?`).bind(now - 28 * DAY),
     db.prepare('SELECT COUNT(DISTINCT s.user_id) AS active, (SELECT COUNT(*) FROM users WHERE active = 1) AS total FROM solves s JOIN users u ON u.id = s.user_id WHERE s.solved_at >= ? AND u.active = 1').bind(week),
     db.prepare('SELECT COUNT(DISTINCT user_id) AS solved FROM solves WHERE potd_bonus > 0 AND solved_at >= ?').bind(week),
@@ -40,6 +40,7 @@ adminClubRoutes.get('/overview', async (c) => {
     db.prepare(`SELECT c.id, c.name, COUNT(CASE WHEN a.status = 'present' THEN 1 END) AS present, COUNT(CASE WHEN a.status IN ('present','absent') THEN 1 END) AS total FROM contests c JOIN attendance a ON a.contest_id = c.id WHERE c.counts = 1 AND c.stage = 4 GROUP BY c.id ORDER BY c.start_at DESC LIMIT ${TREND}`),
     db.prepare(`SELECT r.user_id AS userId, u.name, r.signals FROM at_risk r JOIN users u ON u.id = r.user_id WHERE ${AT_RISK_VISIBLE} ORDER BY json_extract(r.signals, '$.noSolveDays') DESC LIMIT ${RISK_PREVIEW}`).bind(now, settings.exam_grace_days),
     db.prepare(`SELECT c.id, c.name, c.platform, c.start_at AS startAt, c.mandatory, ${RSVP_COUNTS}, ${PARTICIPANTS} FROM contests c WHERE (c.counts = 1 OR c.kind = 'virtual') AND c.start_at > ? ORDER BY c.start_at LIMIT 5`).bind(now),
+    db.prepare('SELECT d.user_id AS userId, u.name, u.email, d.reason, d.at FROM deletion_requests d JOIN users u ON u.id = d.user_id ORDER BY d.at'),
   ]);
   return c.json({
     attendanceGoal: settings.attendance_goal,
@@ -47,7 +48,7 @@ adminClubRoutes.get('/overview', async (c) => {
     active: active.results[0],
     potdSolvers: (potd.results[0] as { solved: number }).solved,
     duels: (duels.results[0] as { n: number }).n,
-    inbox: { handles: handles.results, reasons: reasons.results, flags: flags.results },
+    inbox: { handles: handles.results, reasons: reasons.results, flags: flags.results, deletions: deletions.results },
     trend: trend.results.reverse(),
     atRisk: (risk.results as { signals: string }[]).map((row) => ({ ...row, signals: JSON.parse(row.signals) })),
     upcoming: upcoming.results,

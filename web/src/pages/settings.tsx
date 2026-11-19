@@ -275,8 +275,61 @@ function PushToggle() {
   );
 }
 
+function DeleteAccountCard({ me, onChange }: { me: Me; onChange: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+
+  if (me.deletionRequestedAt) {
+    return (
+      <Card className="flex flex-col gap-2">
+        <h2 className="display text-xl">Delete account</h2>
+        <p className="text-muted">You asked for your account to be deleted. A coordinator will delete it soon, along with all your data.</p>
+      </Card>
+    );
+  }
+  return (
+    <Card className="flex flex-col gap-3">
+      <h2 className="display text-xl">Delete account</h2>
+      <p className="text-muted">A coordinator deletes your account and everything in it: handles, solves, attendance, badges and duels. This can't be undone.</p>
+      {open ? (
+        <>
+          <label className="flex flex-col gap-1">
+            <span className="label">Why do you want to delete it?</span>
+            <textarea className={`${inputClass} h-24 py-2`} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+          </label>
+          {error && <ErrorText>{error}</ErrorText>}
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button
+              variant="danger"
+              disabled={!reason.trim()}
+              onClick={async () => {
+                setError('');
+                try {
+                  await api('/me/delete-request', 'POST', { reason });
+                  onChange();
+                } catch (err) {
+                  setError((err as Error).message);
+                }
+              }}
+            >
+              Send request to delete
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div><Button variant="danger" onClick={() => setOpen(true)}>Delete my account</Button></div>
+      )}
+    </Card>
+  );
+}
+
 export function Settings() {
   const { me, reload } = useMe();
+  useEffect(() => {
+    if (window.location.hash === '#handles') document.getElementById('handles')?.scrollIntoView();
+  }, []);
   const [error, setError] = useState('');
   const [prefs, setPrefs] = useState<Record<string, boolean>>({
     notifyHour: !!me.user.notifyHour,
@@ -311,7 +364,7 @@ export function Settings() {
         </Button>
       </Card>
       <Card>
-        <h2 className="display mb-1 text-xl">Coding handles</h2>
+        <h2 id="handles" className="display mb-1 scroll-mt-4 text-xl">Coding handles</h2>
         {PLATFORMS.map((platform) => <HandleRow key={platform.id} platform={platform} me={me} onChange={reload} />)}
       </Card>
       <Card>
@@ -347,6 +400,7 @@ export function Settings() {
         <a className="lift inline-flex h-11 items-center rounded-full bg-lime px-5 font-extrabold text-ink" href="/download">Get the app</a>
         <PushToggle />
       </section>
+      <DeleteAccountCard me={me} onChange={reload} />
     </div>
   );
 }

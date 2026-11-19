@@ -46,10 +46,11 @@ export type Me = {
   streak: number;
   unreadAnnouncements: number;
   newBadges: BadgeId[];
+  deletionRequestedAt: number | null;
 };
 
 export type RivalStats = { points: number; solves: number; contests: number; duels: number };
-export type Rival = { rival: null } | { rival: { id: number; name: string; username: string | null }; me: RivalStats; them: RivalStats; changeAt: number };
+export type Rival = { rival: null } | { rival: { id: number; name: string; username: string | null }; me: RivalStats; them: RivalStats };
 
 export type Announcement = {
   id: number;

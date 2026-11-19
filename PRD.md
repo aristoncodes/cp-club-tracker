@@ -25,7 +25,7 @@ The college competitive programming club (40–50 students across all years) has
 
 - **Sign in:** Google only. The same button signs up new members, who then fill in one page (name, username, year, handles) and go straight to Home.
 - **Verification never blocks the app.** Until a member verifies their handles, they can use everything; they just aren't tracked or on the leaderboard. Admins may leave handles empty.
-- **Username:** required on that page. Lowercase letters, numbers, `_` and `.`, 3–20 characters, unique, with a short reserved list. Changeable once by the user; after that only an admin can change it.
+- **Username:** required on that page. Lowercase letters, numbers, `_` and `.`, 3–20 characters with at least one letter, unique, with a short reserved list. Changeable once by the user; after that only an admin can change it.
 - **Year:** chosen as 1st to 4th year, **Alumni** or **Coach**; the joining year is stored, so everyone moves up on 1 August and 4th years become Alumni then. Members pick it themselves.
 - **Coaches and alumni** are on the leaderboards, feed and profiles but aren't tracked for attendance: no contest reminders, RSVPs, Present/Absent or reasons, and they're left out of at-risk. They need only a Codeforces handle; CodeChef is optional for them.
 - **Onboarding is resumable:** the API says whether it's finished and clients route there until it is. Existing users see that page once, to pick a username.
@@ -96,6 +96,7 @@ The college competitive programming club (40–50 students across all years) has
 - Each student must link a Codeforces and a CodeChef handle to finish onboarding; coaches and alumni need only Codeforces; admins may skip this. Other platforms are optional.
 - **Members verify their own handles.** After linking a Codeforces or CodeChef handle, the member taps **Start verification** and gets a random problem from that platform (Codeforces: rated 800). They submit any code that gives a **Compilation Error** (Codeforces) or a **Wrong Answer** (CodeChef) on it from that account within `verify_minutes` (5 by default), then tap **Verify**. We read the account's recent submissions and verify the handle if that submission is there in time; otherwise they can verify again or ask for a new problem. Codeforces answers at once; CodeChef takes about a minute. AtCoder and LeetCode count as soon as they're linked, with no check. A verified handle stays verified; linking a different handle needs verifying again. Admins can still approve or reject a handle by hand, which overrides verification. Unverified handles are not tracked.
 - One handle per platform per student. A handle can't be linked by two students.
+- **Deleting an account.** In Settings, a member taps **Delete my account** and writes why. Every admin gets a push with their name and reason, and the request waits in the admin inbox. An admin then deletes the account, which removes everything that is theirs (handles, solves, attendance, badges, duels they played), or dismisses the request. Admin accounts can't be deleted; remove the role first.
 
 ## Out of scope
 

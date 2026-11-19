@@ -236,6 +236,7 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | POST | /me/handles/:platform/verify/start | student | `cf`/`cc`: picks a random problem (`cf`: rating 800) into `verify_problem` and sets `verify_started_at`. `/me` returns the problem and `verifyDeadline` |
 | POST | /me/handles/:platform/verify | student | `cf`: reads the last 20 submissions and approves on a `COMPILATION_ERROR` on `verify_problem` within `verify_minutes` of the start, else 400. `cc`: dispatches `verify-handle.yml` and returns `{ result: 'checking' }`; the app polls `/me`. Approving dispatches `backfill.yml` |
 | POST | /me/push-token | student | `{ token, kind }` |
+| POST | /me/delete-request | student | `{ reason }` (up to 500 characters) into `deletion_requests`; pushes every admin. `/me` returns `deletionRequestedAt` |
 | GET | /contests/upcoming | student | Next 10 counted contests + my RSVP and length, plus how many said yes out of how many can take part. Counts only, never who |
 | GET | /contests/past?before= | student | 20 past counted contests with my status, RSVP and reason |
 | POST | /contests/:id/rsvp | student | `{ going: boolean, reasonType?, reasonText? }`; a reason is required when `going` is false. Accepted until the contest reaches `stage = 4`, then 409 |
@@ -244,7 +245,7 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | GET | /leaderboard/extras?period=&platform= | student | `{ years, climbers, toughest }`: points per batch, top 3 rank gains, 3 highest-rated solves. All from `solves`, with no rank-history table |
 | GET | /challenge | student | `{ solved, mine, target, minRating }`; target and rating are constants in `shared/` |
 | GET | /feed?before= | student | 30 latest solves with problem info. Clients poll it every minute while the feed is open |
-| GET | /users/:id | student | Profile, @username, period stats, total solves, streak, top and weak tags, heatmap counts, rating history, recent scored solves. `attendance` and `contests` only for your own profile or an admin |
+| GET | /users/:id | student | `:id` is a user id or a username (usernames always have a letter). The website shows `/u/<username>` in the address bar. Profile, @username, period stats, total solves, streak, top and weak tags, heatmap counts, rating history, recent scored solves. `attendance` and `contests` only for your own profile or an admin |
 | GET | /admin/attendance?from&to&platform&batch | admin | `{ contests, students, cells }`; the web builds the CSV |
 | PATCH | /admin/contests/:id | admin | `{ counts }` |
 | GET | /admin/students | admin | Students + handles + approval state |
@@ -390,7 +391,6 @@ CREATE TABLE goals (
 
 -- Rivals
 ALTER TABLE users ADD COLUMN rival_id INTEGER REFERENCES users(id);
-ALTER TABLE users ADD COLUMN rival_set_at INTEGER;
 ALTER TABLE users ADD COLUMN rival_ahead INTEGER NOT NULL DEFAULT 0;  -- last seen state, so a push fires only on a change
 ALTER TABLE users ADD COLUMN rival_pushed_day INTEGER;                -- istDay of the last "passed you"
 
@@ -547,8 +547,8 @@ Picks run in the Worker, not an Action, because GitHub's timing is unreliable an
 | POST | /practice/potd/reveal | student | Saved once with `INSERT OR IGNORE` |
 | GET | /practice/upsolves | student | Lists grouped by contest, with done state |
 | GET, PUT | /practice/goal | student | Current goal, progress and suggestion; 409 from Thursday |
-| PUT | /me/rival | student | `{ userId }`; 409 within 7 days of the last change |
-| DELETE | /me/rival | student | Clears the rival at any time; the 7-day limit on choosing a new one still counts from the last set |
+| PUT | /me/rival | student | `{ userId }`; any time |
+| DELETE | /me/rival | student | Clears the rival at any time |
 | GET | /me/rival | student | This week's side-by-side |
 | GET | /me/note | student | The coordinators' note to me, or `null` |
 | GET | /badges?user= | student | All 12 with earned date or progress |
@@ -623,6 +623,8 @@ All need an admin session, validate input and write through `adminWrite`.
 | GET, PUT | /members/:id, /members/:id/notes | Drawer data; notes (a changed, non-empty note pushes to the member) |
 | GET | /students | Cards with handles; the page filters them |
 | PATCH | /handles/:userId/:platform | `{ status }`: approve, reject or back to waiting |
+| DELETE | /users/:id | Deletes a non-admin member and every row that is theirs (duels included; `member_of_month` and others' `rival_id` set to NULL), logged. 409 if foreign keys from admin history block it |
+| POST | /deletion-requests/:userId/dismiss | Drops the request, logged |
 | PATCH | /users/:id | `{ active?, username?, role? }`; role refuses yourself, the last admin and `ADMIN_EMAILS` |
 | GET, POST | /admins | List; add by email, 404 "No account with this email" |
 | GET | /audit?area=&before= | 50 per page |

@@ -3,12 +3,13 @@ import type { MemberKind } from 'shared/batch';
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
 import { signSession, USER_COLUMNS, type AppEnv, type User } from './auth';
 
-const USERNAME = /^[a-z0-9_.]{3,20}$/;
+// At least one letter, so a profile link like /u/123 can only mean a user id.
+const USERNAME = /^(?=.*[a-z])[a-z0-9_.]{3,20}$/;
 const RESERVED_USERNAMES = ['admin', 'root', 'support', 'oops', 'grind', 'club', 'api', 'me', 'settings'];
 const googleKeys = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 
 export function usernameError(username: string): string | null {
-  if (!USERNAME.test(username)) return 'Use 3–20 lowercase letters, numbers, _ or .';
+  if (!USERNAME.test(username)) return 'Use 3–20 lowercase letters, numbers, _ or ., with at least one letter';
   if (RESERVED_USERNAMES.includes(username)) return "That name isn't available";
   return null;
 }

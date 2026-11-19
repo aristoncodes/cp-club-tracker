@@ -81,7 +81,7 @@ Run all of them with `pnpm -r test`. Tests sit next to the code as `*.test.ts`.
 - **Duels, other:** `duelRange` for all three difficulties; problem selection (unsolved by both, older than 3 months); the 10-live-duel cap queues further accepts; the 20 s check-now cooldown; a check-now request never calls Codeforces from the request; `elo` for a win, a loss and a draw; Elo applies once if a decision runs twice.
 - **Codeforces queue:** duels come before virtuals, and virtuals before solve sync; the run stops at its budget; a failed read leaves a duel `checking`.
 - **Weekly goal:** counts scored solves at or above the rating within the IST week; editable until Wednesday 23:59 IST and refused from Thursday 00:00 IST.
-- **Rivals:** "passed you" fires only on a change and at most once a day; the rival can't be changed within 7 days.
+- **Rivals:** "passed you" fires only on a change and at most once a day; the rival can be changed or removed at any time.
 - **Badges:** every one of the 12 rules at and just below its threshold; each is awarded exactly once when the event and the sweep both see it; the first sweep is silent.
 - **Virtual standings:** only virtuals started within 15 minutes count; wrong tries and solve times are correct; `counts = 0` writes no attendance.
 - **Digest:** the numbers match the admin queries.

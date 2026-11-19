@@ -130,6 +130,45 @@ function HandleRow({ platform, me, onChange }: { platform: (typeof PLATFORMS)[nu
   );
 }
 
+function DeleteAccount({ me, onChange }: { me: Me; onChange: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+
+  return (
+    <View style={styles.block}>
+      <Text style={common.label}>DELETE ACCOUNT</Text>
+      {me.deletionRequestedAt ? (
+        <Text style={common.small}>You asked for your account to be deleted. A coordinator will delete it soon, along with all your data.</Text>
+      ) : (
+        <>
+          <Text style={common.small}>A coordinator deletes your account and everything in it: handles, solves, attendance, badges and duels. This can't be undone.</Text>
+          {open ? (
+            <>
+              <TextInput style={[common.input, styles.reason]} value={reason} onChangeText={setReason} placeholder="Why do you want to delete it?" placeholderTextColor={theme.muted} maxLength={500} multiline accessibilityLabel="Why do you want to delete your account?" />
+              {error ? <Text style={common.error}>{error}</Text> : null}
+              <View style={common.row}>
+                <Button title="Cancel" variant="secondary" flex onPress={() => setOpen(false)} />
+                <Button title="Send request" variant="danger" flex disabled={!reason.trim()} onPress={async () => {
+                  setError('');
+                  try {
+                    await api('/me/delete-request', 'POST', { reason });
+                    onChange();
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Could not send.');
+                  }
+                }} />
+              </View>
+            </>
+          ) : (
+            <Button title="Delete my account" variant="danger" onPress={() => setOpen(true)} />
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
 function UsernameRow({ me, onChange }: { me: Me; onChange: () => void }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(me.user.username ?? '');
@@ -267,6 +306,7 @@ export default function Settings() {
 
       {error ? <Text style={common.error}>{error}</Text> : null}
       <Button title="Sign out" variant="danger" onPress={async () => { await clearSession(); router.replace('/login'); }} />
+      <DeleteAccount me={me} onChange={load} />
     </ScrollView>
   );
 }
@@ -282,6 +322,7 @@ const styles = StyleSheet.create({
   warning: { padding: 12, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: theme.sunLine, backgroundColor: theme.sunTint, color: theme.sunText, fontFamily: theme.font.regular, fontSize: 13 },
   verify: { gap: 10, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: theme.sunLine, backgroundColor: theme.sunTint },
   underline: { textDecorationLine: 'underline' },
+  reason: { height: 96, paddingTop: 12, textAlignVertical: 'top' },
   verifyText: { color: theme.sunText, fontFamily: theme.font.regular, fontSize: 13 },
   years: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   year: { flexBasis: '30%', flexGrow: 1, height: 48, borderRadius: 14, borderWidth: 1, borderColor: theme.line, alignItems: 'center', justifyContent: 'center' },
