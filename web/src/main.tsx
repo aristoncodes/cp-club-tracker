@@ -227,6 +227,46 @@ function RefreshToast() {
   );
 }
 
+const IOS_HINT_KEY = 'ios-home-hint';
+
+// iPhones never offer to install a site, so tell people how. Hidden once it's on the Home Screen or dismissed.
+function IosInstallHint() {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const installed = (navigator as Navigator & { standalone?: boolean }).standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  const safari = !/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem(IOS_HINT_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  if (!ios || installed || hidden) return null;
+  return (
+    <div role="status" className="fixed inset-x-4 bottom-20 z-20 flex items-start gap-3 rounded-2xl border border-line bg-card p-4 sm:bottom-4 sm:left-auto sm:max-w-sm">
+      <p className="flex-1 text-sm">
+        <span className="font-bold">Keep OOPS.Grind on your Home Screen.</span>{' '}
+        {safari ? 'Tap the Share button, then Add to Home Screen.' : 'Open this page in Safari, tap the Share button, then Add to Home Screen.'} Notifications only work from there.
+      </p>
+      <button
+        aria-label="Dismiss"
+        className="min-h-11 min-w-11 cursor-pointer font-bold text-muted"
+        onClick={() => {
+          try {
+            localStorage.setItem(IOS_HINT_KEY, '1');
+          } catch {
+            // The hint just comes back on the next visit.
+          }
+          setHidden(true);
+        }}
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 function App() {
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
@@ -235,6 +275,7 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <RefreshToast />
+      <IosInstallHint />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />

@@ -1,6 +1,8 @@
 {
   "name": "OOPS.Grind",
   "short_name": "OOPS.Grind",
+  "id": "/",
+  "scope": "/",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0E0E14",
