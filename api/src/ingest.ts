@@ -8,6 +8,8 @@ import { finishContest, insertSolves, reportBrokenHandle } from './records';
 import { finishCcVerify } from './verify';
 
 const STUCK_CONTEST_SECONDS = 6 * 3600;
+const DAY = 86400;
+const ACTIVE_SECONDS = 7 * DAY;
 
 export const ingestRoutes = new Hono<AppEnv>();
 
@@ -159,12 +161,25 @@ ingestRoutes.post('/verify', async (c) => {
   return c.json({ verified: await finishCcVerify(c.env, handle, name) });
 });
 
+// due=1 is the solve sync: members who solved or linked in the last week every run, everyone else once a day.
 ingestRoutes.get('/handles', async (c) => {
+  const now = Math.floor(Date.now() / 1000);
+  const due = c.req.query('due') === '1';
   const { results } = await c.env.DB.prepare(
     `SELECT h.handle FROM handles h JOIN users u ON u.id = h.user_id
-     WHERE h.platform = ? AND h.approved_at IS NOT NULL AND h.broken = 0 AND u.active = 1`,
+     WHERE h.platform = ?1 AND h.approved_at IS NOT NULL AND h.broken = 0 AND u.active = 1
+       AND (?2 = 0 OR COALESCE(h.synced_at, 0) < ?3 - ${DAY} OR h.approved_at >= ?3 - ${ACTIVE_SECONDS}
+            OR EXISTS (SELECT 1 FROM solves s WHERE s.user_id = h.user_id AND s.solved_at >= ?3 - ${ACTIVE_SECONDS}))`,
   )
-    .bind(c.req.query('platform') ?? '')
+    .bind(c.req.query('platform') ?? '', due ? 1 : 0, now)
     .all<{ handle: string }>();
   return c.json(results.map((r) => r.handle));
+});
+
+ingestRoutes.post('/synced', async (c) => {
+  const { platform, handles } = await c.req.json<{ platform: string; handles: string[] }>();
+  await c.env.DB.prepare(`UPDATE handles SET synced_at = unixepoch() WHERE platform = ? AND lower(handle) IN (SELECT lower(value) FROM json_each(?))`)
+    .bind(platform, JSON.stringify(handles))
+    .run();
+  return c.json({ ok: true });
 });

@@ -105,11 +105,6 @@ export function liveSolvedNames(submissions: CfSubmission[]): string[] {
   return [...new Set(submissions.filter((s) => s.verdict === 'OK' && isLiveSubmission(s)).map((s) => s.problem.name))];
 }
 
-export async function fetchUserStatus(handle: string): Promise<CfSubmissionList> {
-  const response = await politeFetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}&from=1&count=50`, CF_GAP_MS);
-  return response.json() as Promise<CfSubmissionList>;
-}
-
 export async function fetchAllSubmissions(handle: string): Promise<CfSubmissionList> {
   const response = await politeFetch(`https://codeforces.com/api/user.status?handle=${encodeURIComponent(handle)}`, CF_GAP_MS);
   return response.json() as Promise<CfSubmissionList>;

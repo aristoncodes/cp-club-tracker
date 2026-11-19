@@ -99,7 +99,7 @@ CREATE TABLE handles (
   handle TEXT NOT NULL,
   approved_at INTEGER,                       -- NULL = not approved; solves before this don't score
   broken INTEGER NOT NULL DEFAULT 0,         -- platform says the handle doesn't exist
-  synced_at INTEGER,
+  synced_at INTEGER,                         -- last solve read: the Worker for cf, sync-solves for the rest
   rating INTEGER,                            -- cc/atcoder/leetcode only, shown on profiles (0015); never used for scoring
   PRIMARY KEY (user_id, platform),
   UNIQUE (platform, handle)
@@ -205,7 +205,7 @@ The contest steps make no Codeforces calls. Other Codeforces calls in a run are 
 5. **Daily at 18:30 UTC (00:00 IST):** refresh `cf_rating` for all students with one `user.info?handles=…` call.
 6. **Daily at 15:30 UTC (21:00 IST):** streak reminder to users with `notify_streak = 1`, a streak of at least 1 and no solve today.
    **At 03:30, 07:30, 11:30 and 15:30 UTC (9 AM, 1 PM, 5 PM, 9 PM IST):** meal-time push to users with `notify_meals = 1`, lines from `api/src/meal-pushes.ts`, chosen by IST day number. People the 15:30 streak reminder goes to skip dinner's line.
-7. **GitHub jobs:** because GitHub's own schedules proved unreliable, the Worker dispatches `sync-solves.yml` every 5 minutes (the workflow's concurrency group keeps at most one run and one queued) and `sync-contests.yml` every 6 hours.
+7. **GitHub jobs:** because GitHub's own schedules proved unreliable, the Worker dispatches `sync-solves.yml` every 5 minutes (one matrix job per platform, each with its own concurrency group, so each platform keeps at most one run and one queued) and `sync-contests.yml` every 6 hours.
 
 8. **Health check:** `health.yml` runs on GitHub's own schedule at 01:00 UTC and is also dispatched by the Worker at 00:30 UTC, so one still fires if the other fails. `jobs/health.ts` reads `GET /api/ingest/health` and recent GitHub runs. Any problem fails the run, and GitHub's failure email is the alert. It covers: a stalled Codeforces fetch, no solves on a platform with 5+ students for 14 days, no upcoming contests, attendance unfinished 6 hours after a contest, broken handles, push errors from Expo in the last 24 hours (other than `DeviceNotRegistered`, stored in `push_errors`), and late or failing jobs. When a handle is first marked broken, its owner gets one push asking them to update it. Scraper fetches retry once on a dropped connection. It can't read Cloudflare's CPU or D1 usage; a Worker over its CPU limit shows up as the stalled-fetch problem.
 
@@ -255,7 +255,8 @@ Auth: `Authorization: Bearer <session JWT>`. The session is an HS256 JWT with `{
 | POST | /ingest/ratings | secret | `[{ platform, handle, rating }]` from the nightly `sync-problemset`; sets `handles.rating` |
 | POST | /ingest/solves | secret | `[{ platform, handle, problemId, name?, rating?, tags?, url?, solvedAt, live }]`. The Worker maps handle → user, computes points and inserts with `OR IGNORE` |
 | POST | /ingest/participation | secret | `{ platform, externalId, presentHandles: string[], brokenHandles?: string[] }` |
-| GET | /ingest/handles?platform= | secret | Approved handles for the adapters to fetch |
+| GET | /ingest/handles?platform=&due= | secret | Approved handles for the adapters to fetch. `due=1`: only members with a solve or a newly approved handle in the last 7 days, plus anyone whose `synced_at` is over a day old |
+| POST | /ingest/synced | secret | `{ platform, handles }`: sets `synced_at` for the handles a sync read |
 | POST | /ingest/verify | secret | `{ handle, name }`: approves the waiting CodeChef handle if `name` contains its code |
 
 - Ingest routes check `X-Ingest-Secret` against `INGEST_SECRET`.
@@ -269,7 +270,7 @@ Every adapter exports pure functions: `fetchX(...)` for network and `parseX(raw)
 |---|---|---|
 | `sync-contests.ts` | Every 6 hours, dispatched by the Worker | CF `contest.list?gym=false` (future contests only) + CodeChef upcoming contests → apply `countsForAttendance` and parallel-round merge → `/ingest/contests` |
 | `health.ts` | Daily | Fails the run with a list of problems if anything looks wrong |
-| `sync-solves.ts` | Every 5 minutes, dispatched by the Worker | cc, atcoder, leetcode (and cf as a backstop in the first run of each hour) accepted submissions from the last 48 hours for approved handles → `/ingest/solves`, one post per handle |
+| `sync-solves.ts` | Every 5 minutes, dispatched by the Worker; matrix of `cc`, `leetcode`, `atcoder` in parallel | Accepted submissions from the last 48 hours for the platform's due handles (`/ingest/handles?due=1`) → `/ingest/solves`, one post per handle, then `/ingest/synced` with the handles that worked. Codeforces is left to the Worker |
 | `verify-handle.ts` | `workflow_dispatch` (input `handle`) | CodeChef blocks Cloudflare, so this reads the profile name and posts it to `/ingest/verify`, which approves the handle if it holds the member's code |
 | `backfill.ts` | `workflow_dispatch` (inputs `platform`, `handle`) | On approval: up to 6 months of accepted submissions → `/ingest/solves`, 50 at a time. Codeforces and AtCoder give full history; CodeChef gives about the last page and LeetCode the last 20 |
 | `participation.ts` | `workflow_dispatch` (inputs `platform`, `contest`, `alt`, `start`, `end`) | **cf:** `contest.status?contestId=…&handle=…` for each handle, and for `alt`; any submission with participantType `CONTESTANT` or `OUT_OF_COMPETITION` → present. A handle Codeforces says doesn't exist is reported in `brokenHandles`. **cc:** each handle's recent submissions; any submission linked to the contest or one of its divisions (`START263`, `START263A`…) with a time inside the contest → present. Any other failure stops the run without posting, so nobody is wrongly marked absent → `/ingest/participation` |
@@ -496,7 +497,7 @@ Consequences:
 - At the 10-duel cap, automatic checks take 20 of the 24 calls, so "check now" has little room and solve sync stops until duels end. A live duel lasts at most 75 minutes. The health check's 30-minute "stalled fetch" alert may fire in that rare case.
 - 10 duels during the first 15 minutes of a virtual won't fit. Duels stay on time and standings can run late.
 
-**Actions** run from a different IP, so they keep their own 2 s gap and aren't counted against the Worker's budget. `sync-solves` reads Codeforces only in its first run of each hour, instead of every 5 minutes.
+**Actions** run from a different IP, so they keep their own 2 s gap and aren't counted against the Worker's budget. `sync-solves` doesn't read Codeforces; the Worker's queue does.
 
 | Source | Calls per minute at 50 handles |
 |---|---|

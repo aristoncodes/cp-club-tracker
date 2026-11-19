@@ -34,8 +34,8 @@ export async function postIngest(path: string, body: unknown): Promise<void> {
   if (!response.ok) throw new Error(`Ingest ${path} returned ${response.status}: ${await response.text()}`);
 }
 
-export async function getHandles(platform: string): Promise<string[]> {
-  const response = await fetch(ingestUrl(`/handles?platform=${platform}`), { headers: secretHeader() });
+export async function getHandles(platform: string, due = false): Promise<string[]> {
+  const response = await fetch(ingestUrl(`/handles?platform=${platform}${due ? '&due=1' : ''}`), { headers: secretHeader() });
   if (!response.ok) throw new Error(`Handles for ${platform} returned ${response.status}`);
   return response.json() as Promise<string[]>;
 }

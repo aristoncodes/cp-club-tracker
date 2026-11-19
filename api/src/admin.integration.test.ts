@@ -139,6 +139,20 @@ describe('admin', { timeout: 120_000 }, () => {
     await ingest('/verify', { handle: 'cal_cc', name: `Cal ${row.verify_code.toUpperCase()}` });
     expect(query<{ status: string }>(`SELECT status FROM handles WHERE user_id = ${CAL} AND platform = 'cc'`)[0].status).toBe('approved');
   });
+
+  it('1c. the solve sync reads recently active members every run and everyone else once a day', async () => {
+    const due = async () => (await (await fetch(`${BASE}/api/ingest/handles?platform=cc&due=1`, { headers: { 'X-Ingest-Secret': INGEST } })).json()) as string[];
+    sql(`INSERT INTO handles (user_id, platform, handle, approved_at, status) VALUES (${ANA}, 'cc', 'ana_cc', 1, 'approved')`);
+    expect(await due()).toContain('ana_cc');
+    await ingest('/synced', { platform: 'cc', handles: ['ANA_CC'] });
+    expect(await due()).not.toContain('ana_cc');
+    sql(`UPDATE handles SET synced_at = unixepoch() - 90000 WHERE handle = 'ana_cc'`);
+    expect(await due()).toContain('ana_cc');
+    await ingest('/synced', { platform: 'cc', handles: ['ana_cc'] });
+    sql(`INSERT INTO solves (user_id, platform, problem_id, solved_at, rp, points) VALUES (${ANA}, 'cc', 'X1', unixepoch() - 3600, 1000, 0)`);
+    expect(await due()).toContain('ana_cc');
+    sql(`DELETE FROM solves WHERE user_id = ${ANA} AND problem_id = 'X1'; DELETE FROM handles WHERE handle = 'ana_cc'`);
+  });
   it('2. admin endpoints refuse students, and each write adds its audit row', async () => {
     const routes: [string, string][] = [
       ['GET', '/admin/badges'], ['GET', '/admin/overview'], ['GET', '/admin/members'], ['GET', '/admin/students'], ['GET', '/admin/audit'], ['GET', '/admin/at-risk'],

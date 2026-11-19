@@ -1,12 +1,17 @@
 name: sync-solves
 on:
   workflow_dispatch:
-concurrency:
-  group: sync-solves
 jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [cc, leetcode, atcoder]
+    # One run per platform at a time; a slow CodeChef run no longer holds up the others.
+    concurrency:
+      group: sync-solves-${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -20,3 +25,4 @@ jobs:
         env:
           API_URL: ${{ secrets.API_URL }}
           INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          PLATFORM: ${{ matrix.platform }}

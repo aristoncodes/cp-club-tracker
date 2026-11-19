@@ -83,7 +83,7 @@ Tests: pure logic sits next to each file as `*.test.ts`. `admin.integration.test
 | `lib.ts` | `politeFetch`, ingest helpers, `healthProblems` |
 | `adapters/{cf,cc,atcoder,leetcode}.ts` | Fetch and parse per platform; tests use `fixtures/` |
 | `sync-contests.ts` | Contest list |
-| `sync-solves.ts` | Solves; Codeforces only in the first run of each hour |
+| `sync-solves.ts` | CodeChef, LeetCode or AtCoder solves (one platform per matrix job); active members every run, others daily |
 | `sync-problemset.ts` | Problems, rounds, full history import, and nightly CodeChef/AtCoder/LeetCode ratings |
 | `participation.ts` | Attendance and upsolve data after a contest |
 | `backfill.ts` | 6 months of solves on approval |
